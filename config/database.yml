@@ -1,0 +1,16 @@
+default: &default
+  adapter: postgresql
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
+
+development:
+  <<: *default
+  database: newton_dev
+
+test:
+  <<: *default
+  database: newton_test
+
+production:
+  <<: *default
+  database: newton_prod

@@ -1,21 +1,21 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
-type Props = {
-  name: string,
-}
+import styled from 'styled-components'
 
-const Hello = (props: Props) => (
-  <div>Hello {props.name}!</div>
+const Red = styled.div`
+  color: red;
+`
+
+const Hello = () => (
+  <>
+    <Red>Red!</Red>
+  </>
 )
-
-Hello.defaultProps = {
-  name: 'David',
-}
 
 document.addEventListener('DOMContentLoaded', () => {
   ReactDOM.render(
-    <Hello name="React" />,
+    <Hello />,
     document.body.appendChild(document.createElement('div')),
   )
 })

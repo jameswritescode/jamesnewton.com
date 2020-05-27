@@ -1,0 +1,10 @@
+type Mutation {
+}
+
+type Post {
+  id: ID!
+}
+
+type Query {
+  posts: [Post!]!
+}

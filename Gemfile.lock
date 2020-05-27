@@ -84,6 +84,10 @@ GEM
     ffi (1.12.2)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
+    graphiql-rails (1.7.0)
+      railties
+      sprockets-rails
+    graphql (1.10.10)
     i18n (1.8.2)
       concurrent-ruby (~> 1.0)
     image_processing (1.11.0)
@@ -271,6 +275,8 @@ DEPENDENCIES
   bootsnap (>= 1.4.2)
   byebug
   capybara (>= 2.15)
+  graphiql-rails
+  graphql (~> 1.10, >= 1.10.10)
   image_processing (~> 1.2)
   listen (~> 3.2)
   pg (~> 0.18.4)

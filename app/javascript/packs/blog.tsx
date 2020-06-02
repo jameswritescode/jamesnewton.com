@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
-
 import styled from 'styled-components'
+import { hot } from 'react-hot-loader/root'
 
 const Default = styled.div`
   font-size: 2rem;
@@ -75,6 +75,7 @@ const Default = styled.div`
 
   // TODO: font-weight is broken past ~20px in Chrome for system-ui/Blink
   // this only executes in chrome to make it 1 pixel less to make some bold work
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1057654
   @media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: .001dpcm) {
     strong, a {
       font-size: 19.999999px;
@@ -181,9 +182,11 @@ typedef struct {
   return <>{content}</>
 }
 
+const Component = hot(Blog)
+
 document.addEventListener('DOMContentLoaded', () => {
   ReactDOM.render(
-    <Blog />,
+    <Component />,
     document.body.appendChild(document.createElement('div')),
   )
 })

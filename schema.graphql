@@ -1,8 +1,10 @@
 type Mutation {
+  test: Boolean!
 }
 
 type Post {
   id: ID!
+  name: String!
 }
 
 type Query {

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": "app/javascript",
     "declaration": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -8,8 +9,14 @@
     "module": "es6",
     "moduleResolution": "node",
     "plugins": [{ "name": "typescript-styled-plugin" }],
+    "resolveJsonModule": true,
     "sourceMap": true,
-    "target": "es5"
+    "target": "es5",
+    "paths": {
+      "~gql": ["helpers/graphql.ts"],
+      "~helpers/*": ["helpers/*"],
+      "~mounts/*": ["mounts/*"]
+    }
   },
   "exclude": [
     "**/*.spec.ts",

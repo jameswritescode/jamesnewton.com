@@ -1,14 +1,12 @@
 import * as React from 'react'
-import styled from 'styled-components'
+import { BrowserRouter, Link, Route, Switch } from 'react-router-dom'
 
-import Layout from '~ui/layouts/Blog'
+import Flex from '~ui/Flex'
+import Layout from '~ui/Layout'
 import { usePostsQuery } from '~gql'
 
-const Code = styled.code`
-  font-size: 1rem;
-  position: relative;
-  top: -3px;
-`
+import Blog from './Blog'
+import Code from './Code'
 
 export default function Home() {
   const { data } = usePostsQuery()
@@ -16,16 +14,25 @@ export default function Home() {
   if (!data) return null
 
   return (
-    <Layout>
-      <h1>James Newton</h1>
+    <BrowserRouter>
+      <Switch>
+        <Route path="/blog/:slug">
+          <Blog />
+        </Route>
 
-      {data.posts.map(({ id, created, name, url }) => (
-        <p key={id}>
-          <Code>{created}</Code>
-          {' '}
-          <a href={url}>{name}</a>
-        </p>
-      ))}
-    </Layout>
+        <Route path="/">
+          <Layout>
+            <h1>James Newton</h1>
+
+            {data.posts.map(({ id, created, name, url }) => (
+              <Flex key={id} alignItems="center">
+                <Code mr="1rem">{created}</Code>
+                <Link to={url}>{name}</Link>
+              </Flex>
+            ))}
+          </Layout>
+        </Route>
+      </Switch>
+    </BrowserRouter>
   )
 }

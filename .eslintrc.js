@@ -34,7 +34,11 @@ module.exports = {
 
   rules: {
     'comma-dangle': ['error', 'always-multiline'],
+    'no-unused-vars': 'off',
     'space-before-function-paren': ['error', 'never'],
+
+    // typescript-eslint
+    '@typescript-eslint/no-unused-vars': ['error'],
 
     // eslint-plugin-graphql
     'graphql/template-strings': ['error',

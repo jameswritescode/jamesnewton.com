@@ -3,6 +3,7 @@ type Mutation {
 }
 
 type Post {
+  content: String!
   created: String!
   id: ID!
   name: String!
@@ -10,5 +11,6 @@ type Post {
 }
 
 type Query {
+  post(slug: String!): Post!
   posts: [Post!]!
 }

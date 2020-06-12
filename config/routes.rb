@@ -6,7 +6,7 @@ Rails.application.routes.draw do
   post '/graphql', to: 'graphql#execute'
 
   get '/blog', to: 'application#blog'
-  get '/blog/*path', to: 'application#blog'
+  get '/blog/*path', to: 'application#blog', as: :posts
 
   # TODO
   # get '/resume', to: 'application#resume'

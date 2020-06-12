@@ -18,8 +18,10 @@ export type Mutation = {
 
 export type Post = {
   __typename?: 'Post';
+  created: Scalars['String'];
   id: Scalars['ID'];
   name: Scalars['String'];
+  url: Scalars['String'];
 };
 
 export type Query = {
@@ -34,7 +36,7 @@ export type PostsQuery = (
   { __typename?: 'Query' }
   & { posts: Array<(
     { __typename?: 'Post' }
-    & Pick<Post, 'id' | 'name'>
+    & Pick<Post, 'id' | 'created' | 'name' | 'url'>
   )> }
 );
 
@@ -43,7 +45,9 @@ export const PostsDocument = gql`
     query Posts {
   posts {
     id
+    created
     name
+    url
   }
 }
     `;

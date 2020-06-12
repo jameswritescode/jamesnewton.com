@@ -1,6 +1,8 @@
 query Posts {
   posts {
     id
+    created
     name
+    url
   }
 }

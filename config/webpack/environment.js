@@ -12,6 +12,7 @@ environment.config.merge({
       '~gql': resolve(JS_PATH, 'helpers', 'graphql.ts'),
       '~helpers': resolve(JS_PATH, 'helpers'),
       '~mounts': resolve(JS_PATH, 'mounts'),
+      '~ui': resolve(JS_PATH, 'ui'),
     },
   },
 })

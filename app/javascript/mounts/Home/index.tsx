@@ -1,5 +1,6 @@
 import * as React from 'react'
 
+import Layout from '~ui/layouts/Blog'
 import { usePostsQuery } from '~gql'
 
 export default function Home() {
@@ -8,14 +9,14 @@ export default function Home() {
   if (!data) return null
 
   return (
-    <>
+    <Layout>
       <h1>James Newton</h1>
 
       {data.posts.map(({ id, name }) => (
-        <div key={id}>
+        <p key={id}>
           {name}
-        </div>
+        </p>
       ))}
-    </>
+    </Layout>
   )
 }

@@ -15,7 +15,8 @@
     "paths": {
       "~gql": ["helpers/graphql.ts"],
       "~helpers/*": ["helpers/*"],
-      "~mounts/*": ["mounts/*"]
+      "~mounts/*": ["mounts/*"],
+      "~ui/*": ["ui/*"]
     }
   },
   "exclude": [

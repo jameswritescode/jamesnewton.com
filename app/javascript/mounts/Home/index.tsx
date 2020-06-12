@@ -9,6 +9,8 @@ export default function Home() {
 
   return (
     <>
+      <h1>James Newton</h1>
+
       {data.posts.map(({ id, name }) => (
         <div key={id}>
           {name}

@@ -26,12 +26,38 @@ module.exports = {
   },
 
   plugins: [
-    'react',
     '@typescript-eslint',
+    'graphql',
+    'react',
   ],
 
   rules: {
     'comma-dangle': ['error', 'always-multiline'],
     'space-before-function-paren': ['error', 'never'],
+
+    // eslint-plugin-graphql
+    'graphql/template-strings': ['error',
+      {
+        env: 'literal',
+        schemaJson: require('./schema.json'),
+      },
+      {
+        env: 'apollo',
+        schemaJson: require('./schema.json'),
+      },
+    ],
+
+    'graphql/required-fields': ['error',
+      {
+        env: 'literal',
+        schemaJson: require('./schema.json'),
+        requiredFields: ['id'],
+      },
+      {
+        env: 'apollo',
+        schemaJson: require('./schema.json'),
+        requiredFields: ['id'],
+      },
+    ],
   },
 }

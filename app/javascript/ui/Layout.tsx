@@ -89,7 +89,7 @@ const Layout = styled.div`
     }
   }
 
-  @media (max-width: 375px) {
+  @media (max-width: 52em) {
     font-size: 1.6rem;
     padding: 2rem;
 

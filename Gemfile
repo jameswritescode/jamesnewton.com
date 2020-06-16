@@ -21,6 +21,7 @@ group :development, :test do
 end
 
 group :development do
+  gem 'graphiql-rails'
   gem 'listen', '~> 3.2'
   gem 'web-console', '>= 3.3.0'
 
@@ -44,4 +45,6 @@ group :test do
   gem 'webdrivers'
 end
 
-gem 'graphiql-rails', group: :development
+group :production do
+  gem 'aws-sdk-s3', require: false
+end

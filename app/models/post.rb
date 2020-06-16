@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Post < ApplicationRecord
-  has_many_attached :attachments
-
   validates :content, presence: true
   validates :name, presence: true
   validates :slug, uniqueness: true

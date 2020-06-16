@@ -1,3 +1,10 @@
+type Meta {
+  description: String!
+  title: String!
+  type: String!
+  url: String!
+}
+
 type Mutation {
   test: Boolean!
 }
@@ -6,6 +13,7 @@ type Post {
   content: String!
   created: String!
   id: ID!
+  meta: Meta!
   name: String!
   url: String!
 }

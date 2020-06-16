@@ -12,6 +12,14 @@ export type Scalars = {
   Float: number;
 };
 
+export type Meta = {
+  __typename?: 'Meta';
+  description: Scalars['String'];
+  title: Scalars['String'];
+  type: Scalars['String'];
+  url: Scalars['String'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   test: Scalars['Boolean'];
@@ -22,6 +30,7 @@ export type Post = {
   content: Scalars['String'];
   created: Scalars['String'];
   id: Scalars['ID'];
+  meta: Meta;
   name: Scalars['String'];
   url: Scalars['String'];
 };
@@ -47,6 +56,10 @@ export type PostQuery = (
   & { post: (
     { __typename?: 'Post' }
     & Pick<Post, 'id' | 'content' | 'created' | 'name'>
+    & { meta: (
+      { __typename?: 'Meta' }
+      & Pick<Meta, 'description' | 'title' | 'type' | 'url'>
+    ) }
   ) }
 );
 
@@ -69,6 +82,12 @@ export const PostDocument = gql`
     content
     created
     name
+    meta {
+      description
+      title
+      type
+      url
+    }
   }
 }
     `;

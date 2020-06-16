@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 
 /* import { light, dark } from '~ui/theme' */
 import Flex from '~ui/Flex'
+import Head from '~helpers/Head'
 import Layout from '~ui/Layout'
 import { usePostQuery } from '~gql'
 
@@ -26,7 +27,7 @@ export default function Blog() {
 
   if (!data) return null
 
-  const { name, content, created } = data.post
+  const { name, content, created, meta } = data.post
 
   /* const content = [light, dark].map((theme, index) => ( */
   /*   <Layout key={index} theme={theme}> */
@@ -94,6 +95,8 @@ export default function Blog() {
 
   return (
     <Layout>
+      <Head meta={meta} />
+
       <Flex
         alignItems="center"
         flexDirection={['column', 'column', 'initial']}

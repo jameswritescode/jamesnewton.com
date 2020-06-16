@@ -2,6 +2,7 @@ import * as React from 'react'
 import { BrowserRouter, Link, Route, Switch } from 'react-router-dom'
 
 import Flex from '~ui/Flex'
+import Head from '~helpers/Head'
 import Layout from '~ui/Layout'
 import { usePostsQuery } from '~gql'
 
@@ -21,6 +22,15 @@ export default function Home() {
         </Route>
 
         <Route path="/">
+          <Head
+            meta={{
+              description: 'James Newton is a software engineer in Seattle',
+              title: 'James Newton',
+              url: 'https://jamesnewton.com',
+              type: 'profile',
+            }}
+          />
+
           <Layout>
             <h1>James Newton</h1>
 

@@ -16,4 +16,13 @@ class Post < ApplicationRecord
   def url
     url_helpers.posts_path(self)
   end
+
+  def meta(controller)
+    {
+      description: content.gsub("\n", ' ').truncate(160),
+      title: "James Newton | #{name}",
+      type: 'article',
+      url: controller.posts_url(self),
+    }
+  end
 end

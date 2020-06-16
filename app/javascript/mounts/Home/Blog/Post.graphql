@@ -4,5 +4,12 @@ query Post($slug: String!) {
     content
     created
     name
+
+    meta {
+      description
+      title
+      type
+      url
+    }
   }
 }

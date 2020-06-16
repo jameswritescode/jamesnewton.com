@@ -1,24 +1,32 @@
-# README
+# jamesnewton.com
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+This is my personal website & playground
 
-Things you may want to cover:
+## Development
 
-* Ruby version
+### Setup
 
-* System dependencies
+```
+$ bundle
+$ yarn
+$ rails db:prepare gql
+```
 
-* Configuration
+### Processes
 
-* Database creation
+1. Run `rails server` and `bin/webpack-dev-server` as separate processes
+2. open http://localhost:3000
 
-* Database initialization
+## Production
 
-* How to run the test suite
+Automatic deployment via Heroku + GitHub
 
-* Services (job queues, cache servers, search engines, etc.)
+## Technologies
 
-* Deployment instructions
-
-* ...
+* Deployments via Heroku
+* Error reporting via `rollbar`
+* File uploads to S3 via `shrine`
+* GraphQL via `graphql-ruby` with TypeScript type geneneration via `graphql-code-generator`
+* Rails
+* React with TypeScript via `ts-loader`
+* Sitemap generation to S3 via `sitemap_generator`

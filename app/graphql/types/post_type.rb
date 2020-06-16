@@ -7,5 +7,10 @@ module Types
     field :created, String, null: false
     field :name, String, null: false
     field :url, String, null: false
+
+    field :meta, MetaType, null: false
+    def meta
+      object.meta(context[:controller])
+    end
   end
 end

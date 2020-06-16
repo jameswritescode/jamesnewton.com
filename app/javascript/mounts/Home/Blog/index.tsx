@@ -13,6 +13,10 @@ function CodeBlock({ value }: { value: string }) {
   return <pre>{value}</pre>
 }
 
+function Image(props: any) {
+  return <img loading="lazy" {...props} />
+}
+
 export default function Blog() {
   const { pathname } = useLocation()
   const parts = pathname.split('/')
@@ -82,6 +86,12 @@ export default function Blog() {
   /*   </Layout> */
   /* )) */
 
+  const renderers = {
+    code: CodeBlock,
+    image: Image,
+    imageReference: Image,
+  }
+
   return (
     <Layout>
       <Flex
@@ -93,7 +103,7 @@ export default function Blog() {
         <Code
           ml="1rem"
           position="relative"
-          top="-8px"
+          top="-7px"
         >
           {created}
         </Code>
@@ -101,7 +111,7 @@ export default function Blog() {
 
       <Markdown
         source={content}
-        renderers={{ code: CodeBlock }}
+        renderers={renderers}
       />
     </Layout>
   )

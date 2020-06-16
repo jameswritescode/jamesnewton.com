@@ -3,18 +3,11 @@
 unless Rails.env.test?
   require 'shrine/storage/s3'
 
-  credentials = Rails.application.credentials[Rails.env.to_sym]
-
-  s3_options = {
-    access_key_id: credentials.dig(:aws, :access_key_id),
-    bucket: credentials.dig(:aws, :bucket),
-    region: 'us-west-2',
-    secret_access_key: credentials.dig(:aws, :secret_access_key),
-  }
+  aws = Rails.application.credentials[Rails.env.to_sym][:aws]
 
   Shrine.storages = {
-    cache: Shrine::Storage::S3.new(prefix: 'uploads/cache', **s3_options),
-    store: Shrine::Storage::S3.new(prefix: 'uploads', public: true, **s3_options),
+    cache: Shrine::Storage::S3.new(prefix: 'uploads/cache', **aws),
+    store: Shrine::Storage::S3.new(prefix: 'uploads', public: true, **aws),
   }
 
   Shrine.plugin :activerecord

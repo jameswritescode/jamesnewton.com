@@ -48,3 +48,7 @@ group :test do
   gem 'selenium-webdriver'
   gem 'webdrivers'
 end
+
+group :production do
+  gem 'barnes', '~> 0.0.8'
+end

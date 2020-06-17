@@ -1,4 +1,5 @@
-import styled from 'styled-components'
+import * as React from 'react'
+import styled, { createGlobalStyle } from 'styled-components'
 
 // SUPPORTED ELEMENTS:
 // MD ---- HTML
@@ -14,8 +15,14 @@ import styled from 'styled-components'
 // `       code
 // ```     pre
 
-const Layout = styled.div`
-  background-color: ${props => props.theme.backgroundColor};
+// TODO: How should this be typed?
+const GlobalStyle = createGlobalStyle<any>`
+  body {
+    background-color: ${props => props.theme.backgroundColor};
+  }
+`
+
+const Container = styled.div`
   font-size: 2rem;
   line-height: 2;
   padding: 4rem;
@@ -113,4 +120,18 @@ const Layout = styled.div`
   }
 `
 
-export default Layout
+type Layout = {
+  children: React.ReactNode,
+}
+
+export default function Layout({ children }: Layout) {
+  return (
+    <>
+      <GlobalStyle />
+
+      <Container>
+        {children}
+      </Container>
+    </>
+  )
+}

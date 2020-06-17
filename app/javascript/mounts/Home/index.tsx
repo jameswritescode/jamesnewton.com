@@ -15,23 +15,23 @@ export default function Home() {
   if (!data) return null
 
   return (
-    <BrowserRouter>
-      <Switch>
-        <Route path="/blog/:slug">
-          <Blog />
-        </Route>
+    <Layout>
+      <BrowserRouter>
+        <Switch>
+          <Route path="/blog/:slug">
+            <Blog />
+          </Route>
 
-        <Route path="/">
-          <Head
-            meta={{
-              description: 'James Newton is a software engineer in Seattle',
-              title: 'James Newton',
-              url: 'https://jamesnewton.com',
-              type: 'profile',
-            }}
-          />
+          <Route path="/">
+            <Head
+              meta={{
+                description: 'James Newton is a software engineer in Seattle',
+                title: 'James Newton',
+                url: 'https://jamesnewton.com',
+                type: 'profile',
+              }}
+            />
 
-          <Layout>
             <h1>James Newton</h1>
 
             {data.posts.map(({ id, created, name, url }) => (
@@ -40,9 +40,9 @@ export default function Home() {
                 <Link to={url}>{name}</Link>
               </Flex>
             ))}
-          </Layout>
-        </Route>
-      </Switch>
-    </BrowserRouter>
+          </Route>
+        </Switch>
+      </BrowserRouter>
+    </Layout>
   )
 }

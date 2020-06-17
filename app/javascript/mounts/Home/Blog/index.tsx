@@ -5,7 +5,6 @@ import { useLocation, Link } from 'react-router-dom'
 
 import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
-import Layout from '~ui/Layout'
 import { usePostQuery } from '~gql'
 
 import Code from '../Code'
@@ -65,7 +64,7 @@ export default function Blog() {
   }
 
   return (
-    <Layout>
+    <>
       <Head meta={meta} />
 
       <Flex
@@ -90,6 +89,6 @@ export default function Blog() {
         source={content}
         renderers={renderers}
       />
-    </Layout>
+    </>
   )
 }

@@ -1,0 +1,18 @@
+---
+# WARNING:
+# Please read the following comment before modifying the include and exclude statements
+# https://github.com/castwide/solargraph/issues/164#issuecomment-470801845
+include:
+- "app/**/*.rb"
+exclude:
+- spec/**/*
+- test/**/*
+- vendor/**/*
+- .bundle/**/*
+require: []
+domains: []
+reporters:
+- rubocop
+plugins:
+- runtime
+require_paths: []

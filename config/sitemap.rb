@@ -7,7 +7,7 @@ SitemapGenerator::Sitemap.sitemaps_path = 'sitemaps/'
 credentials = Rails.application.credentials[Rails.env.to_sym][:aws]
 bucket = credentials[:bucket]
 
-SitemapGenerator::Sitemap.sitemaps_host = "https://#{bucket}.s3-us-west-2.amazonaws.com/sitemaps/"
+SitemapGenerator::Sitemap.sitemaps_host = "https://#{bucket}.s3-us-west-2.amazonaws.com/"
 
 SitemapGenerator::Sitemap.adapter = SitemapGenerator::AwsSdkAdapter.new(
   bucket,

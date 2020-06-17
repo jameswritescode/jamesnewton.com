@@ -1,67 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>The page you were looking for doesn't exist (404)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>404</title>
+
   <style>
-  .rails-default-error-page {
-    background-color: #EFEFEF;
-    color: #2E2F30;
-    text-align: center;
-    font-family: arial, sans-serif;
-    margin: 0;
-  }
-
-  .rails-default-error-page div.dialog {
-    width: 95%;
-    max-width: 33em;
-    margin: 4em auto 0;
-  }
-
-  .rails-default-error-page div.dialog > div {
-    border: 1px solid #CCC;
-    border-right-color: #999;
-    border-left-color: #999;
-    border-bottom-color: #BBB;
-    border-top: #B00100 solid 4px;
-    border-top-left-radius: 9px;
-    border-top-right-radius: 9px;
-    background-color: white;
-    padding: 7px 12% 0;
-    box-shadow: 0 3px 8px rgba(50, 50, 50, 0.17);
-  }
-
-  .rails-default-error-page h1 {
-    font-size: 100%;
-    color: #730E15;
-    line-height: 1.5em;
-  }
-
-  .rails-default-error-page div.dialog > p {
-    margin: 0 0 1em;
-    padding: 1em;
-    background-color: #F7F7F7;
-    border: 1px solid #CCC;
-    border-right-color: #999;
-    border-left-color: #999;
-    border-bottom-color: #999;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
-    border-top-color: #DADADA;
-    color: #666;
-    box-shadow: 0 3px 8px rgba(50, 50, 50, 0.17);
-  }
+    body {
+      background-color: #191919;
+      margin: 0;
+    }
   </style>
 </head>
 
-<body class="rails-default-error-page">
-  <!-- This file lives in public/404.html -->
-  <div class="dialog">
-    <div>
-      <h1>The page you were looking for doesn't exist.</h1>
-      <p>You may have mistyped the address or the page may have moved.</p>
-    </div>
-    <p>If you are the application owner check the logs for more information.</p>
-  </div>
+<body>
+  <canvas></canvas>
+
+  <script>
+    var cvs = document.querySelector('canvas')
+    var coords = []
+
+    window.addEventListener('resize', function() {
+      cvs.height = window.innerHeight
+      cvs.width = window.innerWidth
+    })
+
+    window.dispatchEvent(new Event('resize'))
+
+    var size = 100
+    var i = 0
+
+    for (; i < size; i++) {
+      coords.push({
+        x: Math.random() * cvs.width,
+        y: Math.random() * cvs.height,
+        t: Math.random() * Math.PI * 2,
+        vx: (.5 - Math.random()) * 2,
+        vy: (.5 - Math.random()) * 2,
+        vt: Math.random() * Math.PI/1000
+      })
+    }
+
+    var ctx = cvs.getContext('2d')
+    ctx.fillStyle  = 'white'
+    ctx.font = '100px sans-serif'
+    ctx.strokeStyle = '#191919'
+
+    var content = '404'
+
+    function draw() {
+      var i = 0
+
+      for (; i < coords.length; i++) {
+        coords[i].x += coords[i].vx
+        coords[i].y += coords[i].vy
+
+        if (coords[i].x > cvs.width) coords[i].x = -size
+        if (coords[i].y > cvs.height) coords[i].y = -size
+        if (coords[i].x < -100) coords[i].x = cvs.width + size
+        if (coords[i].y < -100) coords[i].y = cvs.height + size
+
+        coords[i].t += coords[i].vt
+
+        ctx.save()
+        ctx.translate(coords[i].x + size, coords[i].y + size)
+        ctx.rotate(coords[i].t)
+        ctx.fillText(content, -size, -size)
+        ctx.strokeText(content, -size, -size)
+        ctx.restore()
+      }
+
+      window.requestAnimationFrame(draw)
+    }
+
+    draw()
+  </script>
 </body>
 </html>

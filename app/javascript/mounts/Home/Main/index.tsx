@@ -8,6 +8,10 @@ import { useHomeQuery } from '~gql'
 
 import Code from '../Code'
 
+const StyledCode = styled(Code)`
+  white-space: nowrap;
+`
+
 const Quote = styled.q`
   display: block;
   font-size: 3rem;
@@ -15,6 +19,15 @@ const Quote = styled.q`
   @media (max-width: 52em) {
     font-size: inherit;
   }
+`
+
+const StyledFlex = styled(Flex)`
+  white-space: nowrap;
+`
+
+const StyledLink = styled(Link)`
+  overflow-x: hidden;
+  text-overflow: ellipsis;
 `
 
 export default function Main() {
@@ -30,8 +43,8 @@ export default function Main() {
         meta={{
           description: 'James Newton is a software engineer in Seattle',
           title: 'James Newton',
-          url: 'https://jamesnewton.com',
           type: 'profile',
+          url: 'https://jamesnewton.com',
         }}
       />
 
@@ -39,14 +52,20 @@ export default function Main() {
 
       <blockquote>
         <Quote>{content}</Quote>
+
         <a href="https://twitter.com/jameswritescode">@jameswritescode</a> {created}
       </blockquote>
 
       {posts.map(({ id, created, name, url }) => (
-        <Flex key={id} alignItems="center">
-          <Code mr="1rem">{created}</Code>
-          <Link to={url}>{name}</Link>
-        </Flex>
+        <StyledFlex key={id} alignItems="center">
+          <StyledCode mr="1rem">
+            {created}
+          </StyledCode>
+
+          <StyledLink to={url}>
+            {name}
+          </StyledLink>
+        </StyledFlex>
       ))}
     </>
   )

@@ -50,6 +50,11 @@ export default function Main() {
 
       <h1>James Newton</h1>
 
+      <p>
+        I&lsquo;m a Software Engineer in Seattle, WA building{' '}
+        <a href="https://www.sharegrid.com">ShareGrid</a>
+      </p>
+
       <blockquote>
         <Quote>{content}</Quote>
 

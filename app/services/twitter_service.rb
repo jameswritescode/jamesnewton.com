@@ -6,8 +6,8 @@ class TwitterService
   TWEET_URL = 'https://api.twitter.com/1.1/statuses/user_timeline/jameswritescode.json?count=1'
 
   DEFAULT_TWEET = {
-    'text' => "You're seeing this because there was an error pulling my latest tweet",
     'created_at' => Time.current.to_s,
+    'text' => "You're seeing this because there was an error pulling my latest tweet",
   }.freeze
 
   def content

@@ -90,6 +90,11 @@ export default function Blog() {
         source={content}
         renderers={renderers}
       />
+
+      {/* TODO: consider https://creativecommons.org/licenses/by-nc-nd/4.0/ */}
+      <Code>
+        &copy; 2014-{new Date().getFullYear()} James Newton
+      </Code>
     </>
   )
 }

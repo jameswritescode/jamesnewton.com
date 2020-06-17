@@ -56,7 +56,7 @@ export default function Main() {
       </p>
 
       <blockquote>
-        <Quote>{content}</Quote>
+        <Quote dangerouslySetInnerHTML={{ __html: content }} />
 
         <a href="https://twitter.com/jameswritescode">@jameswritescode</a> {created}
       </blockquote>

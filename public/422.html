@@ -17,10 +17,18 @@
   <script>
     var cvs = document.querySelector('canvas')
     var coords = []
+    var ctx = cvs.getContext('2d')
+
+    function redraw() {
+      ctx.fillStyle  = 'white'
+      ctx.font = '100px sans-serif'
+      ctx.strokeStyle = '#191919'
+    }
 
     window.addEventListener('resize', function() {
       cvs.height = window.innerHeight
       cvs.width = window.innerWidth
+      redraw()
     })
 
     window.dispatchEvent(new Event('resize'))
@@ -38,11 +46,6 @@
         vt: Math.random() * Math.PI/1000
       })
     }
-
-    var ctx = cvs.getContext('2d')
-    ctx.fillStyle  = 'white'
-    ctx.font = '100px sans-serif'
-    ctx.strokeStyle = '#191919'
 
     var content = '422'
 

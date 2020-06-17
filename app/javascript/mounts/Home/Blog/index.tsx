@@ -33,6 +33,10 @@ const Header = styled.h1`
   && {
     margin-bottom: 0;
   }
+
+  @media (max-width: 52em) {
+    text-align: center;
+  }
 `
 
 function CodeBlock({ value }: { value: string }) {

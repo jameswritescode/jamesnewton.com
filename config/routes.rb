@@ -9,6 +9,13 @@ Rails.application.routes.draw do
     get '/:any', to: redirect('https://jamesnewton.com/blog/%{any}')
   end
 
+  # Errors
+  with_options via: :all do
+    match '/404', to: 'errors#not_found'
+    match '/422', to: 'errors#unprocessable_entity'
+    match '/500', to: 'errors#internal_server_error'
+  end
+
   post '/graphql', to: 'graphql#execute'
 
   get '/blog', to: redirect('/')

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>404</title>
+  <title><%= @code %></title>
 
   <style>
     body {
@@ -12,6 +12,7 @@
 </head>
 
 <body>
+  <noscript><%= @code %></noscript>
   <canvas></canvas>
 
   <script>
@@ -47,7 +48,7 @@
       })
     }
 
-    var content = '404'
+    var content = '<%= @code %>'
 
     function draw() {
       var i = 0

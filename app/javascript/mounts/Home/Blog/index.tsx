@@ -11,7 +11,7 @@ import Code from '../Code'
 
 const StyledLink = styled(Link)`
   && {
-    font-size: 1rem;
+    font-size: 1.2rem;
     margin-right: 2rem;
     text-transform: uppercase;
 

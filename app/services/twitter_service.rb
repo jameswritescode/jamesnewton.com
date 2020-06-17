@@ -3,6 +3,13 @@
 class TwitterService
   include ActionView::Helpers::DateHelper
 
+  TWEET_URL = 'https://api.twitter.com/1.1/statuses/user_timeline/jameswritescode.json?count=1'
+
+  DEFAULT_TWEET = {
+    'text' => "You're seeing this because there was an error pulling my latest tweet",
+    'created_at' => Time.current.to_s,
+  }.freeze
+
   def content
     tweet['text']
   end
@@ -30,11 +37,12 @@ class TwitterService
   end
 
   def tweet
-    @tweet ||= JSON.parse(
-      access_token.request(
-        :get,
-        'https://api.twitter.com/1.1/statuses/user_timeline/jameswritescode.json?count=1',
-      ).body,
-    ).first
+    @tweet ||= begin
+      Rails.cache.fetch('latest_tweet', expires_in: 1.hour) do
+        JSON.parse(access_token.get(TWEET_URL).body).first
+      end
+    rescue StandardError # rubocop:disable Layout/RescueEnsureAlignment
+      DEFAULT_TWEET
+    end
   end
 end

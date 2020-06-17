@@ -11,6 +11,10 @@ import Code from '../Code'
 const Quote = styled.q`
   display: block;
   font-size: 3rem;
+
+  @media (max-width: 52em) {
+    font-size: inherit;
+  }
 `
 
 export default function Main() {

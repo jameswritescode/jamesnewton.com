@@ -11,11 +11,13 @@ import Code from '../Code'
 
 const StyledLink = styled(Link)`
   && {
-    font-size: 2em;
-    line-height: 1;
+    font-size: 1rem;
     margin-right: 2rem;
-    position: relative;
-    top: -4px;
+    text-transform: uppercase;
+
+    :before {
+      content: '« ';
+    }
 
     :after {
       content: '';
@@ -23,7 +25,6 @@ const StyledLink = styled(Link)`
 
     @media (max-width: 52em) {
       margin-right: 0;
-      top: 0;
     }
   }
 `
@@ -73,7 +74,7 @@ export default function Blog() {
         mb="2rem"
       >
         <StyledLink to="/">
-          «
+          Back
         </StyledLink>
 
         <Header>

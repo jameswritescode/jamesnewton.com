@@ -13,5 +13,10 @@ module Types
     def posts
       Post.all.order(created_at: :desc)
     end
+
+    field :latest_tweet, TweetType, null: false
+    def latest_tweet
+      TwitterService.new
+    end
   end
 end

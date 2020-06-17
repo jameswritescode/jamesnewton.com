@@ -1,0 +1,13 @@
+query Home {
+  latestTweet {
+    content
+    created
+  }
+
+  posts {
+    id
+    created
+    name
+    url
+  }
+}

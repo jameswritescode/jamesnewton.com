@@ -68,6 +68,7 @@ const Container = styled.div`
 
   a {
     font-weight: bold;
+    text-decoration: none;
 
     :after {
       content: " »";

@@ -19,6 +19,12 @@ type Post {
 }
 
 type Query {
+  latestTweet: Tweet!
   post(slug: String!): Post!
   posts: [Post!]!
+}
+
+type Tweet {
+  content: String!
+  created: String!
 }

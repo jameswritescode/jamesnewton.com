@@ -37,6 +37,7 @@ export type Post = {
 
 export type Query = {
   __typename?: 'Query';
+  latestTweet: Tweet;
   post: Post;
   posts: Array<Post>;
 };
@@ -44,6 +45,12 @@ export type Query = {
 
 export type QueryPostArgs = {
   slug: Scalars['String'];
+};
+
+export type Tweet = {
+  __typename?: 'Tweet';
+  content: Scalars['String'];
+  created: Scalars['String'];
 };
 
 export type PostQueryVariables = Exact<{
@@ -63,12 +70,15 @@ export type PostQuery = (
   ) }
 );
 
-export type PostsQueryVariables = {};
+export type HomeQueryVariables = {};
 
 
-export type PostsQuery = (
+export type HomeQuery = (
   { __typename?: 'Query' }
-  & { posts: Array<(
+  & { latestTweet: (
+    { __typename?: 'Tweet' }
+    & Pick<Tweet, 'content' | 'created'>
+  ), posts: Array<(
     { __typename?: 'Post' }
     & Pick<Post, 'id' | 'created' | 'name' | 'url'>
   )> }
@@ -117,8 +127,12 @@ export function usePostLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOpt
 export type PostQueryHookResult = ReturnType<typeof usePostQuery>;
 export type PostLazyQueryHookResult = ReturnType<typeof usePostLazyQuery>;
 export type PostQueryResult = ApolloReactCommon.QueryResult<PostQuery, PostQueryVariables>;
-export const PostsDocument = gql`
-    query Posts {
+export const HomeDocument = gql`
+    query Home {
+  latestTweet {
+    content
+    created
+  }
   posts {
     id
     created
@@ -129,26 +143,26 @@ export const PostsDocument = gql`
     `;
 
 /**
- * __usePostsQuery__
+ * __useHomeQuery__
  *
- * To run a query within a React component, call `usePostsQuery` and pass it any options that fit your needs.
- * When your component renders, `usePostsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useHomeQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHomeQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = usePostsQuery({
+ * const { data, loading, error } = useHomeQuery({
  *   variables: {
  *   },
  * });
  */
-export function usePostsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<PostsQuery, PostsQueryVariables>) {
-        return ApolloReactHooks.useQuery<PostsQuery, PostsQueryVariables>(PostsDocument, baseOptions);
+export function useHomeQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<HomeQuery, HomeQueryVariables>) {
+        return ApolloReactHooks.useQuery<HomeQuery, HomeQueryVariables>(HomeDocument, baseOptions);
       }
-export function usePostsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PostsQuery, PostsQueryVariables>) {
-          return ApolloReactHooks.useLazyQuery<PostsQuery, PostsQueryVariables>(PostsDocument, baseOptions);
+export function useHomeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HomeQuery, HomeQueryVariables>) {
+          return ApolloReactHooks.useLazyQuery<HomeQuery, HomeQueryVariables>(HomeDocument, baseOptions);
         }
-export type PostsQueryHookResult = ReturnType<typeof usePostsQuery>;
-export type PostsLazyQueryHookResult = ReturnType<typeof usePostsLazyQuery>;
-export type PostsQueryResult = ApolloReactCommon.QueryResult<PostsQuery, PostsQueryVariables>;
+export type HomeQueryHookResult = ReturnType<typeof useHomeQuery>;
+export type HomeLazyQueryHookResult = ReturnType<typeof useHomeLazyQuery>;
+export type HomeQueryResult = ApolloReactCommon.QueryResult<HomeQuery, HomeQueryVariables>;

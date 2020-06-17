@@ -1,5 +1,19 @@
 import styled from 'styled-components'
 
+// SUPPORTED ELEMENTS:
+// MD ---- HTML
+//         mark
+//         q
+// ![x](y) img
+// # x     h1, h2, hn..
+// * x     ol, ul
+// **x**   strong
+// *x*     em
+// >       blockquote
+// []()    a
+// `       code
+// ```     pre
+
 const Layout = styled.div`
   background-color: ${props => props.theme.backgroundColor};
   font-size: 2rem;

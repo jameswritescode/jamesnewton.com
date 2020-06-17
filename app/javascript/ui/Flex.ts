@@ -1,9 +1,10 @@
 import styled from 'styled-components'
-import { flexbox, FlexboxProps } from 'styled-system'
+import { flexbox, FlexboxProps, space, SpaceProps } from 'styled-system'
 
-const Flex = styled.div<FlexboxProps>`
+const Flex = styled.div<FlexboxProps & SpaceProps>`
   display: flex;
   ${flexbox};
+  ${space};
 `
 
 export default Flex

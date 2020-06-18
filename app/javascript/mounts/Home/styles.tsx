@@ -36,11 +36,12 @@ const StyledLink = styled(Link)`
 const StyledHeader = styled.h1`
   && {
     margin-bottom: 0;
-  }
 
-  @media (max-width: 52em) {
-    line-height: 1.5;
-    text-align: center;
+    @media (max-width: 52em) {
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
   }
 `
 type Header = {

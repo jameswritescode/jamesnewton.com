@@ -1,43 +1,11 @@
 import * as Markdown from 'react-markdown'
 import * as React from 'react'
-import styled from 'styled-components'
-import { useLocation, Link } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
-import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 import { usePostQuery } from '~gql'
 
-import Code from '../Code'
-
-const StyledLink = styled(Link)`
-  && {
-    font-size: 1.2rem;
-    margin-right: 2rem;
-    text-transform: uppercase;
-
-    :before {
-      content: '« ';
-    }
-
-    :after {
-      content: '';
-    }
-
-    @media (max-width: 52em) {
-      margin-right: 0;
-    }
-  }
-`
-
-const Header = styled.h1`
-  && {
-    margin-bottom: 0;
-  }
-
-  @media (max-width: 52em) {
-    text-align: center;
-  }
-`
+import { Header, Code } from '../styles'
 
 function CodeBlock({ value }: { value: string }) {
   return <pre>{value}</pre>
@@ -72,23 +40,11 @@ export default function Blog() {
     <>
       <Head meta={meta} />
 
-      <Flex
-        alignItems="center"
-        flexDirection={['column', 'column', 'row']}
-        mb="2rem"
-      >
-        <StyledLink to="/">
-          Back
-        </StyledLink>
-
-        <Header>
-          {name}
-        </Header>
-
+      <Header title={name} back>
         <Code ml={[null, null, '2rem']}>
           {created}
         </Code>
-      </Flex>
+      </Header>
 
       <Markdown
         source={content}

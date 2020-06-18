@@ -6,7 +6,7 @@ import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 import { useHomeQuery } from '~gql'
 
-import Code from '../Code'
+import { Code, Header } from '../styles'
 
 const StyledCode = styled(Code)`
   white-space: nowrap;
@@ -14,7 +14,7 @@ const StyledCode = styled(Code)`
 
 const Quote = styled.q`
   display: block;
-  font-size: 3rem;
+  font-size: 1.3em;
 
   @media (max-width: 52em) {
     font-size: inherit;
@@ -48,7 +48,7 @@ export default function Main() {
         }}
       />
 
-      <h1>James Newton</h1>
+      <Header />
 
       <p>
         I&lsquo;m a Software Engineer in Seattle, WA building{' '}

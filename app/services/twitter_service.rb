@@ -39,7 +39,11 @@ class TwitterService
   def tweet
     @tweet ||= begin
       Rails.cache.fetch('latest_tweet', expires_in: 1.hour) do
-        JSON.parse(access_token.get(TWEET_URL).body).first
+        result = JSON.parse(access_token.get(TWEET_URL).body).first
+
+        raise if result['content'].blank?
+
+        result
       end
     rescue StandardError # rubocop:disable Layout/RescueEnsureAlignment
       DEFAULT_TWEET

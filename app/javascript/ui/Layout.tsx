@@ -104,22 +104,9 @@ const Container = styled.div`
     padding-left: 4rem;
   }
 
-  // TODO: font-weight is broken past ~20px in Chrome for system-ui/Blink
-  // this only executes in chrome to make it 1 pixel less to make some bold work
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=1057654
-  @media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: .001dpcm) {
-    strong, a {
-      font-size: 19.999999px;
-    }
-  }
-
   @media (max-width: 52em) {
     font-size: 1.6rem;
     padding: 2rem;
-
-    strong, a {
-      font-size: 1.6rem;
-    }
   }
 `
 

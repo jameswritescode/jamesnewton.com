@@ -20,9 +20,7 @@ Rails.application.routes.draw do
 
   get '/blog', to: redirect('/')
   get '/blog/*path', to: 'application#home', as: :posts
-
-  # TODO: move / redesign resume
-  get '/resume', to: redirect('/', status: 302)
+  get '/resume', to: 'application#home', as: :resume
 
   root to: 'application#home'
 end

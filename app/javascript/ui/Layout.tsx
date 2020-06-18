@@ -1,6 +1,8 @@
 import * as React from 'react'
 import styled, { createGlobalStyle } from 'styled-components'
 
+import { StyledProps } from '~ui/theme'
+
 // SUPPORTED ELEMENTS:
 // MD ---- HTML
 //         mark
@@ -16,7 +18,7 @@ import styled, { createGlobalStyle } from 'styled-components'
 // ```     pre
 
 // TODO: How should this be typed?
-const GlobalStyle = createGlobalStyle<any>`
+const GlobalStyle = createGlobalStyle<StyledProps>`
   body {
     background-color: ${props => props.theme.backgroundColor};
   }

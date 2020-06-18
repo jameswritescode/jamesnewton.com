@@ -2,11 +2,11 @@
 
 module Types
   class QueryType < BaseObject
-    field :post, PostType, null: false do
+    field :post, PostType, null: true do
       argument :slug, String, required: true
     end
     def post(slug:)
-      Post.find_by!(slug: slug)
+      Post.find_by(slug: slug)
     end
 
     field :posts, [PostType], null: false

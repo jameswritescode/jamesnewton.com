@@ -15,7 +15,7 @@ export default function Home() {
             <Blog />
           </Route>
 
-          <Route path="/">
+          <Route exact path="/">
             <Main />
           </Route>
         </Switch>

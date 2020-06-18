@@ -52,11 +52,15 @@ export default function Blog() {
   const parts = pathname.split('/')
   const slug = parts[parts.length - 1]
 
-  const { data } = usePostQuery({ variables: { slug } })
+  const { data, loading } = usePostQuery({ variables: { slug } })
 
-  if (!data) return null
+  if (loading) return null
 
-  const { name, content, created, meta } = data.post
+  const { post } = data
+
+  if (!post) window.location.assign('/404')
+
+  const { name, content, created, meta } = post
 
   const renderers = {
     code: CodeBlock,

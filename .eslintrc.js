@@ -1,3 +1,11 @@
+const graphqlSchema = require('./schema.json')
+
+const graphqlSettings = (extra = {}) => [
+  'error',
+  { env: 'literal', schemaJson: graphqlSchema, ...extra },
+  { env: 'apollo', schemaJson: graphqlSchema, ...extra },
+]
+
 module.exports = {
   env: {
     browser: true,
@@ -41,28 +49,7 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['error'],
 
     // eslint-plugin-graphql
-    'graphql/template-strings': ['error',
-      {
-        env: 'literal',
-        schemaJson: require('./schema.json'),
-      },
-      {
-        env: 'apollo',
-        schemaJson: require('./schema.json'),
-      },
-    ],
-
-    'graphql/required-fields': ['error',
-      {
-        env: 'literal',
-        schemaJson: require('./schema.json'),
-        requiredFields: ['id'],
-      },
-      {
-        env: 'apollo',
-        schemaJson: require('./schema.json'),
-        requiredFields: ['id'],
-      },
-    ],
+    'graphql/required-fields': graphqlSettings({ requiredFields: ['id'] }),
+    'graphql/template-strings': graphqlSettings(),
   },
 }

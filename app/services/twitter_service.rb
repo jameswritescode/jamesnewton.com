@@ -41,7 +41,7 @@ class TwitterService
       Rails.cache.fetch('latest_tweet', expires_in: 1.hour) do
         result = JSON.parse(access_token.get(TWEET_URL).body).first
 
-        raise if result['content'].blank?
+        raise if result['text'].blank?
 
         result
       end

@@ -1,6 +1,6 @@
 import * as Markdown from 'react-markdown'
 import * as React from 'react'
-import { useLocation } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import Head from '~helpers/Head'
 import { usePostQuery } from '~gql'
@@ -16,10 +16,7 @@ function Image(props: any) {
 }
 
 export default function Blog() {
-  const { pathname } = useLocation()
-  const parts = pathname.split('/')
-  const slug = parts[parts.length - 1]
-
+  const { slug } = useParams()
   const { data, loading } = usePostQuery({ variables: { slug } })
 
   if (loading) return null

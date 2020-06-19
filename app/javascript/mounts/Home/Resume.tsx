@@ -35,11 +35,13 @@ function Heading({ skills, period, title, company }: Heading) {
 }
 
 export default function Resume() {
+  React.useEffect(() => window.scrollTo(0, 0), [])
+
   return (
     <>
       <Header back />
 
-      <p>I enjoy working with people to solve human and technical problems</p>
+      <p>I focus on following agile principles and ensuring my team and I enjoy our craft</p>
 
       <h2>What I&rsquo;m doing</h2>
 
@@ -58,9 +60,14 @@ export default function Resume() {
       </blockquote>
 
       <p>
-        I joined early in 2017 as the second full-time engineer. My responsibilities over time have included
-        working with early contractors to deliver updates to the application, interviewing as we grew our
-        small team, mentoring new employees, while collaborating to deliver major features to our users
+        Joining as the second full-time engineer, my responsibilities over time have included working with
+        early contractors to deliver updates to the application, interviewing as we grew our small team,
+        mentoring new employees, all while collaborating to deliver the best experience we can to our users
+      </p>
+
+      <p>
+        Being a small startup, we all wear many hats. I work closely with the product and operations teams to
+        discuss, plan, build and release features and updates to all parts of the application and infrastructure
       </p>
 
       <h2>What I&rsquo;ve done</h2>
@@ -89,9 +96,16 @@ export default function Resume() {
       <p>Code School, eventually acquired by Pluralsight, was an interactive code learning platform</p>
 
       <p>
-        I implemented challenges for the courses Surviving APIs with Rails, Staying Sharp with Angular.js,
-        and more. I wrote the Python code executor that powered user code execution and testing of submissions
-        for Try Python and Flying Through Python, and contributed to the backend and Angular.js code for
+        I worked in the courses team writing unit tests designed to be run against user submitted code from
+        our interactive challenge interface. Users would watch short videos followed by a series of challenges
+        where they wrote and submit code. Tests run against the code used AST parsing and sandboxed execution
+        to give the user detailed feedback for completing the challenge, or let them continue if all passed. I
+        implemented challenges for Surviving APIs with Rails, Staying Sharp with Angular.js, and more
+      </p>
+
+      <p>
+        I wrote the Python code executor that powered the execution and testing of user submitted code for Try
+        Python and Flying Through Python, and contributed to the backend and Angular.js code for
         JavaScript.com&rsquo;s Try JavaScript
       </p>
 
@@ -111,8 +125,8 @@ export default function Resume() {
       </p>
 
       <p>
-        I also helped develop features for payment gateway integrations, as well as the <em>platforms</em>
-        {' '}initial ActiveMerchant gateway support for the eWay payment processor
+        I also helped develop features for payment gateway integrations, as well as the platforms initial
+        ActiveMerchant gateway support for the eWay payment processor
       </p>
 
       <Heading
@@ -123,8 +137,9 @@ export default function Resume() {
       />
 
       <p>
-        I was responsible for various programming, debugging, and a wide range of phone and ticket based
-        support tasks while working at this small website shop in my hometown
+        I was responsible for handling customer support calls and tickets related to website hosting,
+        migrations and troubleshooting, email management and client setup, WordPress installation and
+        updates, and programming tasks related to custom client CMS&rsquo; and internal tooling
       </p>
 
       <h2>Other Projects</h2>

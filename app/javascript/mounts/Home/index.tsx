@@ -9,8 +9,8 @@ import Resume from './Resume'
 
 export default function Home() {
   return (
-    <Layout>
-      <BrowserRouter>
+    <BrowserRouter>
+      <Layout>
         <Switch>
           <Route path="/blog/:slug">
             <Blog />
@@ -24,7 +24,7 @@ export default function Home() {
             <Main />
           </Route>
         </Switch>
-      </BrowserRouter>
-    </Layout>
+      </Layout>
+    </BrowserRouter>
   )
 }

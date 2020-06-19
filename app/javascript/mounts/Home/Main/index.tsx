@@ -30,6 +30,10 @@ const StyledLink = styled(Link)`
   text-overflow: ellipsis;
 `
 
+const A = styled.a`
+  margin-left: 1rem;
+`
+
 export default function Main() {
   const { data } = useHomeQuery()
 
@@ -61,17 +65,29 @@ export default function Main() {
         <a href="https://twitter.com/jameswritescode">@jameswritescode</a> {created}
       </blockquote>
 
-      {posts.map(({ id, created, name, url }) => (
-        <StyledFlex key={id} alignItems="center">
-          <StyledCode mr="1rem">
-            {created}
-          </StyledCode>
+      <Flex mb="2rem" flexDirection="column">
+        {posts.map(({ id, created, name, url }) => (
+          <StyledFlex key={id} alignItems="center">
+            <StyledCode mr="1rem">
+              {created}
+            </StyledCode>
 
-          <StyledLink to={url}>
-            {name}
-          </StyledLink>
-        </StyledFlex>
-      ))}
+            <StyledLink to={url}>
+              {name}
+            </StyledLink>
+          </StyledFlex>
+        ))}
+      </Flex>
+
+      <Flex>
+        <Link to="/resume">
+          Resume
+        </Link>
+
+        <A href="https://github.com/jameswritescode">
+          GitHub
+        </A>
+      </Flex>
     </>
   )
 }

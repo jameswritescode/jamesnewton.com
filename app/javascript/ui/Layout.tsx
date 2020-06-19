@@ -1,17 +1,19 @@
 import * as React from 'react'
 import styled, { createGlobalStyle } from 'styled-components'
+import { useHistory, useLocation } from 'react-router-dom'
 
 import { StyledProps } from '~ui/theme'
 
 // SUPPORTED ELEMENTS:
 // MD ---- HTML
-//         mark
 //         q
 // ![x](y) img
 // # x     h1, h2, hn..
 // * x     ol, ul
+// ***x*** em + strong
 // **x**   strong
 // *x*     em
+// ::      mark
 // >       blockquote
 // []()    a
 // `       code
@@ -115,6 +117,25 @@ type Layout = {
 }
 
 export default function Layout({ children }: Layout) {
+  const history = useHistory()
+  const [input, setInput] = React.useState(null)
+  const { pathname } = useLocation()
+
+  React.useEffect(() => {
+    const toggle = ({ keyCode }: KeyboardEvent) => {
+      // ge
+      if (input === 71 && keyCode === 69 && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        pathname === '/editor' ? history.goBack() : history.push('/editor')
+      }
+
+      setInput(keyCode)
+    }
+
+    document.addEventListener('keydown', toggle)
+
+    return () => document.removeEventListener('keydown', toggle)
+  }, [history, pathname, input])
+
   return (
     <>
       <GlobalStyle />

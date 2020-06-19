@@ -1,12 +1,11 @@
-import * as Markdown from 'react-markdown'
 import * as React from 'react'
 import { useParams } from 'react-router-dom'
 
 import Head from '~helpers/Head'
 import { usePostQuery } from '~gql'
 
-import { Header, Code } from '../styles'
-import { RENDERERS, PLUGINS } from './remark'
+import Post from './Post'
+import { Code } from '../styles'
 
 export default function Blog() {
   const { slug } = useParams()
@@ -18,23 +17,13 @@ export default function Blog() {
 
   if (!post) window.location.assign('/404')
 
-  const { name, content, created, meta } = post
+  const { meta, ...postProps } = post
 
   return (
     <>
       <Head meta={meta} />
 
-      <Header title={name} back>
-        <Code ml={[null, null, '2rem']}>
-          {created}
-        </Code>
-      </Header>
-
-      <Markdown
-        plugins={PLUGINS}
-        renderers={RENDERERS}
-        source={content}
-      />
+      <Post {...postProps} />
 
       {/* TODO: consider https://creativecommons.org/licenses/by-nc-nd/4.0/ */}
       <Code>

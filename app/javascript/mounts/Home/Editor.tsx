@@ -37,7 +37,14 @@ const PLACEHOLDER_CONTENT = `# Header
 
 ::highlighting some text::
 
-*italics* **strong** ***both***
+*italics* **strong** ***both*** ~~strike~~
+
+Header | Header | Header
+------ | ------ | ------
+Cell   | Cell   | Cell
+Cell   | Cell   | Cell
+
+---
 
 * one
     1. two

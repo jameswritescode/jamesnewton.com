@@ -13,11 +13,12 @@ import { StyledProps } from '~ui/theme'
 // ***x*** em + strong
 // **x**   strong
 // *x*     em
-// ::      mark
+// ---     hr
+// ::x::   mark
 // >       blockquote
-// []()    a
-// `       code
-// ```     pre
+// [x](y)  a
+// ```x``` pre
+// `x`     code
 
 // TODO: How should this be typed?
 const GlobalStyle = createGlobalStyle<StyledProps>`
@@ -61,13 +62,30 @@ const Container = styled.div`
     quotes: "“" "”";
   }
 
-  p, ol, ul, pre, blockquote, h1 {
+  p, ol, ul, pre, blockquote, h1, table, hr {
     margin-bottom: 2rem;
     max-width: 1100px;
 
     :last-child {
       margin-bottom: 0;
     }
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  table, td, th {
+    border: 1px solid ${props => props.theme.primary};
+  }
+
+  th {
+    border-bottom: 2px solid ${props => props.theme.primary};
+    text-align: left;
+  }
+
+  td, th {
+    padding: 1rem;
   }
 
   a {

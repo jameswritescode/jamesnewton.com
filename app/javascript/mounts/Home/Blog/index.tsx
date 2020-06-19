@@ -6,14 +6,7 @@ import Head from '~helpers/Head'
 import { usePostQuery } from '~gql'
 
 import { Header, Code } from '../styles'
-
-function CodeBlock({ value }: { value: string }) {
-  return <pre>{value}</pre>
-}
-
-function Image(props: any) {
-  return <img loading="lazy" {...props} />
-}
+import { RENDERERS, PLUGINS } from './remark'
 
 export default function Blog() {
   const { slug } = useParams()
@@ -27,12 +20,6 @@ export default function Blog() {
 
   const { name, content, created, meta } = post
 
-  const renderers = {
-    code: CodeBlock,
-    image: Image,
-    imageReference: Image,
-  }
-
   return (
     <>
       <Head meta={meta} />
@@ -44,8 +31,9 @@ export default function Blog() {
       </Header>
 
       <Markdown
+        plugins={PLUGINS}
+        renderers={RENDERERS}
         source={content}
-        renderers={renderers}
       />
 
       {/* TODO: consider https://creativecommons.org/licenses/by-nc-nd/4.0/ */}

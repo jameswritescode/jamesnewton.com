@@ -46,7 +46,7 @@ const StyledHeader = styled.h1`
 `
 type Header = {
   back?: boolean,
-  children?: React.ReactElement,
+  children?: React.ReactNode,
   title?: string,
 }
 

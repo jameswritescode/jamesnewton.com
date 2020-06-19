@@ -5,9 +5,10 @@ import { Meta } from '~gql'
 
 type Head = {
   meta: Meta,
+  children?: React.ReactNode,
 }
 
-export default function Head({ meta: { title, description, url, type } }: Head) {
+export default function Head({ children, meta: { title, description, url, type } }: Head) {
   return (
     <Helmet>
       <title>{title}</title>
@@ -17,6 +18,8 @@ export default function Head({ meta: { title, description, url, type } }: Head) 
       <meta property="og:title" content={title} />
       <meta property="og:type" content={type} />
       <meta property="og:url" content={url} />
+
+      {children}
     </Helmet>
   )
 }

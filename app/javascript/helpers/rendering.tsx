@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import * as ReactGA from 'react-ga'
 import { ApolloProvider } from '@apollo/react-hooks'
+import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from 'styled-components'
 
 import client from '~helpers/apollo-client'
@@ -12,7 +13,9 @@ export function withProviders(WrappedComponent: React.ComponentType) {
     return (
       <ApolloProvider client={client}>
         <ThemeProvider theme={light}>
-          <WrappedComponent />
+          <BrowserRouter>
+            <WrappedComponent />
+          </BrowserRouter>
         </ThemeProvider>
       </ApolloProvider>
     )
@@ -28,9 +31,6 @@ export function mount(Component: React.ComponentType) {
   ReactGA.pageview(window.location.pathname + window.location.search)
 
   document.addEventListener('DOMContentLoaded', () => {
-    ReactDOM.render(
-      <Component />,
-      document.body.appendChild(document.createElement('div')),
-    )
+    ReactDOM.render(<Component />, document.querySelector('div#mount'))
   })
 }

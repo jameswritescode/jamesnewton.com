@@ -112,9 +112,9 @@ export default function Editor() {
                 e.preventDefault()
 
                 const currentTarget = e.currentTarget
-                const value = currentTarget.value
-                const start = currentTarget.selectionStart
                 const end = currentTarget.selectionEnd
+                const start = currentTarget.selectionStart
+                const value = currentTarget.value
 
                 currentTarget.value = value.substring(0, start) + '  ' + value.substring(end)
                 currentTarget.selectionStart = currentTarget.selectionEnd = start + 2
@@ -137,4 +137,14 @@ export default function Editor() {
       </Flex>
     </>
   )
+}
+
+Editor.modalStyles = {
+  content: {
+    bottom: '4rem',
+    left: '4rem',
+    padding: 0,
+    right: '4rem',
+    top: '4rem',
+  },
 }

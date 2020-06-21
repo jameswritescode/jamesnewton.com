@@ -3,8 +3,9 @@ import styled from 'styled-components'
 
 import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
+import Layout from '~ui/Layout'
 
-import Post from './Blog/Post'
+import Post from '../Blog/Post'
 
 const EditorFlex = styled(Flex)`
   textarea, input {
@@ -81,7 +82,7 @@ export default function Editor() {
   const margins = [0, 0, '2rem']
 
   return (
-    <>
+    <Layout>
       <Head
         meta={{
           description: 'Editor',
@@ -135,16 +136,8 @@ export default function Editor() {
           />
         </Flex>
       </Flex>
-    </>
+    </Layout>
   )
 }
 
-Editor.modalStyles = {
-  content: {
-    bottom: '4rem',
-    left: '4rem',
-    padding: 0,
-    right: '4rem',
-    top: '4rem',
-  },
-}
+Editor.modalFull = true

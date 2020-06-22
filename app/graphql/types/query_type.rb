@@ -2,6 +2,16 @@
 
 module Types
   class QueryType < BaseObject
+    field :latest_tweet, TweetType, null: false
+    def latest_tweet
+      TwitterService.new
+    end
+
+    field :me, UserType, null: true
+    def me
+      context[:current_user]
+    end
+
     field :post, PostType, null: true do
       argument :slug, String, required: true
     end
@@ -12,11 +22,6 @@ module Types
     field :posts, [PostType], null: false
     def posts
       Post.all.order(created_at: :desc)
-    end
-
-    field :latest_tweet, TweetType, null: false
-    def latest_tweet
-      TwitterService.new
     end
   end
 end

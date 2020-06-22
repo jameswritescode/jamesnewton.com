@@ -5,6 +5,7 @@ import styled from 'styled-components'
 import Layout from '~ui/Layout'
 
 import Editor from './Editor'
+import Login from './Login'
 
 function Help() {
   return (
@@ -21,75 +22,6 @@ Help.modalFull = false
 function Nothing() {
   return <span />
 }
-
-const LoginLayout = styled.div`
-  background-color: #ff5f60;
-  color: #42494e;
-  height: 100%;
-  padding: 10rem;
-
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 500;
-    letter-spacing: 0.5rem;
-    margin-bottom: 1rem;
-    text-align: center;
-    text-transform: uppercase;
-  }
-
-  input {
-    border: none;
-    display: block;
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-top: -1px;
-    outline: none;
-    padding: 1.5rem 1.3rem;
-    width: 100%;
-
-    &[type="submit"] {
-      background-color: #42494e;
-      color: white;
-      font-weight: 300;
-
-      &:active {
-        background-color: #3a4045;
-      }
-    }
-  }
-
-  @media (max-width: 52em) {
-    padding: 5rem;
-  }
-`
-
-function Login() {
-  return (
-    <LoginLayout>
-      <form>
-        <h1>James Newton</h1>
-
-        <input
-          placeholder="email address"
-          type="email"
-        />
-
-        <input
-          autoComplete="off"
-          placeholder="password"
-          type="password"
-        />
-
-        <input
-          type="submit"
-          value="Sign in"
-        />
-      </form>
-    </LoginLayout>
-  )
-}
-
-Login.modalFull = false
 
 export const MODALS = { Editor, Help, Nothing, Login }
 

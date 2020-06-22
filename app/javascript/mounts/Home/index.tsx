@@ -2,11 +2,13 @@ import * as React from 'react'
 import { Route, Switch } from 'react-router-dom'
 
 import Layout from '~ui/Layout'
+import UserContext from '~helpers/user-context'
+import { useMeQuery } from '~gql'
 
-import { MODALS, Modal } from './modals'
 import Blog from './Blog'
 import Main from './Main'
 import Resume from './Resume'
+import { MODALS, Modal } from './modals'
 
 const MODAL_DEFAULT = { name: 'Nothing', open: false }
 
@@ -31,19 +33,22 @@ export default function Home() {
     return () => document.removeEventListener('keydown', toggle)
   }, [input, open, setModal])
 
+  const close = () => setModal(MODAL_DEFAULT)
   const component = MODALS[name]
 
+  const { data } = useMeQuery()
+
   return (
-    <>
+    <UserContext.Provider value={data?.me}>
       <Modal
         appElement={document.querySelector('div#mount')}
+        full={component.modalFull}
         isOpen={open}
-        onRequestClose={() => setModal(MODAL_DEFAULT)}
+        onRequestClose={close}
         shouldCloseOnOverlayClick
         style={{ overlay: { backgroundColor: 'rgba(255, 255, 255, 0.25)' } }}
-        full={component.modalFull}
       >
-        {React.createElement(component)}
+        {React.createElement(component, { close })}
       </Modal>
 
       <Layout>
@@ -61,6 +66,6 @@ export default function Home() {
           </Route>
         </Switch>
       </Layout>
-    </>
+    </UserContext.Provider>
   )
 }

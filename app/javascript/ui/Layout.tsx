@@ -4,10 +4,11 @@ import styled, { createGlobalStyle } from 'styled-components'
 import { StyledProps } from '~ui/theme'
 
 // SUPPORTED ELEMENTS:
-// MD ---- HTML
+// MD------HTML
 //         q
+//         table
 // ![x](y) img
-// # x     h1, h2, hn..
+// # x     h1, h2, hN..
 // * x     ol, ul
 // ***x*** em + strong
 // **x**   strong
@@ -18,6 +19,7 @@ import { StyledProps } from '~ui/theme'
 // [x](y)  a
 // ```x``` pre
 // `x`     code
+// ~~x~~   del
 
 // TODO: How should this be typed?
 const GlobalStyle = createGlobalStyle<StyledProps>`
@@ -93,6 +95,8 @@ const Container = styled.div`
 
     :after {
       content: " »";
+      position: relative;
+      top: -1px;
     }
   }
 

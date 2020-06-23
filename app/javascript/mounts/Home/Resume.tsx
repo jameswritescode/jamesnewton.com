@@ -61,13 +61,14 @@ export default function Resume() {
 
       <p>
         Joining as the second full-time engineer, my responsibilities over time have included working with
-        early contractors to deliver updates to the application, interviewing as we grew our small team,
-        mentoring new employees, all while collaborating to deliver the best experience we can to our users
+        early contractors to review and deploy updates to the application, interviewing as we grew our small
+        team, mentoring new employees, all while collaborating to deliver the best experience we can to our
+        users
       </p>
 
       <p>
         Being a small startup, we all wear many hats. I work closely with the product and operations teams to
-        discuss, plan, build and release features and updates to all parts of the application and infrastructure
+        discuss, plan, build and release changes to all parts of the application and infrastructure
       </p>
 
       <h2>What I&rsquo;ve done</h2>

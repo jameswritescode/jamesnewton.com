@@ -41,7 +41,12 @@ export default function Home() {
     return () => document.removeEventListener('keydown', toggle)
   }, [lastKey, open, setModal, history])
 
-  const close = () => setModal(MODAL_DEFAULT)
+  const close = (callback?: () => void) => {
+    setModal(MODAL_DEFAULT)
+
+    typeof callback === 'function' && callback()
+  }
+
   const component = MODALS[name]
 
   const { data } = useMeQuery()

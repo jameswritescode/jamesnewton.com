@@ -3,6 +3,7 @@ mutation UpdateOrCreatePost($input: UpdateOrCreatePostInput!) {
     success
 
     post {
+      id
       slug
     }
   }

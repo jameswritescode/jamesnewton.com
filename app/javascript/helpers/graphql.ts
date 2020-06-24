@@ -159,7 +159,7 @@ export type UpdateOrCreatePostMutation = (
     & Pick<UpdateOrCreatePostPayload, 'success'>
     & { post: (
       { __typename?: 'Post' }
-      & Pick<Post, 'slug'>
+      & Pick<Post, 'id' | 'slug'>
     ) }
   ) }
 );
@@ -296,6 +296,7 @@ export const UpdateOrCreatePostDocument = gql`
   updateOrCreatePost(input: $input) {
     success
     post {
+      id
       slug
     }
   }

@@ -117,13 +117,26 @@ export default function Editor({ close }: Editor) {
   const onSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
 
+    const id = data?.post?.id
+
     const { data: { updateOrCreatePost: { success, post: { slug: nextSlug } } } } = await mutate({
-      refetchQueries: ['Home', 'Post'],
-      variables: { input: { id: data?.post?.id, name, content } },
+      awaitRefetchQueries: true,
+      variables: { input: { id, name, content } },
+
+      refetchQueries: ({ data: { updateOrCreatePost: { post: { slug: nextSlug } } } }) => {
+        const base = ['Home']
+
+        if (slug === nextSlug) base.push('Post')
+
+        return base
+      },
     })
 
-    if (slug !== nextSlug) history.push(`/blog/${nextSlug}`)
-    if (success) close()
+    if (success) {
+      close(() => {
+        if (slug !== nextSlug) history.push(`/blog/${nextSlug}`)
+      })
+    }
   }
 
   const margins = [0, 0, '2rem']

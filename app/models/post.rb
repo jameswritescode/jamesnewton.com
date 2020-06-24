@@ -3,7 +3,9 @@
 class Post < ApplicationRecord
   validates :content, presence: true
   validates :name, presence: true
-  validates :slug, uniqueness: true
+  validates :slug, uniqueness: true, presence: true
+
+  before_validation :generate_slug
 
   def created
     I18n.l(created_at, format: :short)
@@ -24,5 +26,11 @@ class Post < ApplicationRecord
       type: 'article',
       url: controller.posts_url(self),
     }
+  end
+
+  private
+
+  def generate_slug
+    self.slug = name.parameterize
   end
 end

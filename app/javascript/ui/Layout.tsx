@@ -1,5 +1,6 @@
 import * as React from 'react'
 import styled, { createGlobalStyle } from 'styled-components'
+import { layout, LayoutProps } from 'styled-system'
 
 import { StyledProps } from '~ui/theme'
 
@@ -29,6 +30,8 @@ const GlobalStyle = createGlobalStyle<StyledProps>`
 `
 
 const Container = styled.div`
+  ${layout}
+
   font-size: 2rem;
   line-height: 2;
   padding: 4rem;
@@ -127,6 +130,11 @@ const Container = styled.div`
     padding-left: 4rem;
   }
 
+  textarea, input {
+    background-color: ${props => props.theme.backgroundColor};
+    color: ${props => props.theme.primary};
+  }
+
   @media (max-width: 52em) {
     font-size: 1.6rem;
     padding: 2rem;
@@ -135,14 +143,14 @@ const Container = styled.div`
 
 type Layout = {
   children: React.ReactNode,
-}
+} & LayoutProps
 
-export default function Layout({ children }: Layout) {
+export default function Layout({ children, ...props }: Layout) {
   return (
     <>
       <GlobalStyle />
 
-      <Container>
+      <Container {...props}>
         {children}
       </Container>
     </>

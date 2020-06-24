@@ -32,3 +32,5 @@ export default function Blog() {
     </>
   )
 }
+
+Blog.route = '/blog/:slug'

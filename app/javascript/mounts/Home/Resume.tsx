@@ -183,3 +183,5 @@ export default function Resume() {
     </>
   )
 }
+
+Resume.route = '/resume'

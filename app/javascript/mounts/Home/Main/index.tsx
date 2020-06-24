@@ -65,19 +65,21 @@ export default function Main() {
         <a href="https://twitter.com/jameswritescode">@jameswritescode</a> {created}
       </blockquote>
 
-      <Flex mb="2rem" flexDirection="column">
-        {posts.map(({ id, created, name, url }) => (
-          <StyledFlex key={id} alignItems="center">
-            <StyledCode mr="1rem">
-              {created}
-            </StyledCode>
+      {!!posts.length && (
+        <Flex mb="2rem" flexDirection="column">
+          {posts.map(({ id, created, name, url }) => (
+            <StyledFlex key={id} alignItems="center">
+              <StyledCode mr="1rem">
+                {created}
+              </StyledCode>
 
-            <StyledLink to={url}>
-              {name}
-            </StyledLink>
-          </StyledFlex>
-        ))}
-      </Flex>
+              <StyledLink to={url}>
+                {name}
+              </StyledLink>
+            </StyledFlex>
+          ))}
+        </Flex>
+      )}
 
       <Flex>
         <Link to="/resume">
@@ -91,3 +93,5 @@ export default function Main() {
     </>
   )
 }
+
+Main.route = '/'

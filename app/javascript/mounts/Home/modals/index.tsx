@@ -12,6 +12,7 @@ function Help() {
     <Layout>
       <p><code>?</code>  open this dialog</p>
       <p><code>ge</code> open editor</p>
+      <p><code>gh</code> go home</p>
       <p><code>gl</code> open login</p>
     </Layout>
   )
@@ -23,7 +24,12 @@ function Nothing() {
   return <span />
 }
 
-export const MODALS = { Editor, Help, Nothing, Login }
+export const MODALS = {
+  Editor,
+  Help,
+  Login,
+  Nothing,
+}
 
 export const Modal = styled<any>(ReactModal)`
   background-color: ${props => props.theme.backgroundColor};

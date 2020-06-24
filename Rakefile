@@ -6,4 +6,7 @@ require_relative 'config/application'
 
 Rails.application.load_tasks
 
-GraphQL::RakeTask.new(schema_name: 'NewtonSchema')
+GraphQL::RakeTask.new(
+  load_context: ->(_task) { { GRAPHQL_RAKE_TASK: true } },
+  schema_name: 'NewtonSchema',
+)

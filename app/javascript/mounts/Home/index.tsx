@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Route, Switch } from 'react-router-dom'
+import { Route, Switch, useHistory } from 'react-router-dom'
 
 import Layout from '~ui/Layout'
 import UserContext from '~helpers/user-context'
@@ -13,25 +13,33 @@ import { MODALS, Modal } from './modals'
 const MODAL_DEFAULT = { name: 'Nothing', open: false }
 
 export default function Home() {
-  const [input, setInput] = React.useState(null)
+  const [lastKey, setLastKey] = React.useState(null)
   const [{ name, open }, setModal] = React.useState(MODAL_DEFAULT)
+  const history = useHistory()
 
   React.useEffect(() => {
     const toggle = ({ key }: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return
 
-      if (input === 'g' && key === 'e') setModal({ open: true, name: 'Editor' })
-      if (input === 'g' && key === 'l') setModal({ open: true, name: 'Login' })
-      if (key === '?') setModal({ open: true, name: 'Help' })
-      if (key === 'Escape' && open) setModal(MODAL_DEFAULT)
+      const g = lastKey === 'g'
 
-      setInput(key)
+      if (g && key === 'e') setModal({ open: true, name: 'Editor' })
+      if (g && key === 'l') setModal({ open: true, name: 'Login' })
+
+      if (g && key === 'h') {
+        history.push(Main.route)
+        setModal(MODAL_DEFAULT)
+      }
+
+      if (key === '?') setModal({ open: true, name: 'Help' })
+
+      setLastKey(key)
     }
 
     document.addEventListener('keydown', toggle)
 
     return () => document.removeEventListener('keydown', toggle)
-  }, [input, open, setModal])
+  }, [lastKey, open, setModal, history])
 
   const close = () => setModal(MODAL_DEFAULT)
   const component = MODALS[name]
@@ -53,15 +61,15 @@ export default function Home() {
 
       <Layout>
         <Switch>
-          <Route path="/blog/:slug">
+          <Route path={Blog.route}>
             <Blog />
           </Route>
 
-          <Route path="/resume">
+          <Route path={Resume.route}>
             <Resume />
           </Route>
 
-          <Route exact path="/">
+          <Route exact path={Main.route}>
             <Main />
           </Route>
         </Switch>

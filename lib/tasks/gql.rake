@@ -2,5 +2,5 @@
 
 task gql: :environment do
   Rake::Task['graphql:schema:dump'].invoke
-  sh('yarn gql')
+  sh('yarn graphql-codegen')
 end

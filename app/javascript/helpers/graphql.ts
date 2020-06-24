@@ -132,7 +132,7 @@ export type HomeQuery = (
     & Pick<Tweet, 'content' | 'created'>
   ), posts: Array<(
     { __typename?: 'Post' }
-    & Pick<Post, 'id' | 'created' | 'name' | 'url'>
+    & Pick<Post, 'id' | 'created' | 'name' | 'slug' | 'url'>
   )> }
 );
 
@@ -230,6 +230,7 @@ export const HomeDocument = gql`
     id
     created
     name
+    slug
     url
   }
 }

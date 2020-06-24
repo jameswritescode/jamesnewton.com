@@ -6,6 +6,7 @@ import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 import { useHomeQuery } from '~gql'
 
+import * as POST_QUERY from '../Blog/Post.graphql'
 import { Code, Header } from '../styles'
 
 const StyledCode = styled(Code)`
@@ -35,7 +36,7 @@ const A = styled.a`
 `
 
 export default function Main() {
-  const { data } = useHomeQuery()
+  const { data, client } = useHomeQuery()
 
   if (!data) return null
 
@@ -67,13 +68,16 @@ export default function Main() {
 
       {!!posts.length && (
         <Flex mb="2rem" flexDirection="column">
-          {posts.map(({ id, created, name, url }) => (
+          {posts.map(({ id, created, name, url, slug }) => (
             <StyledFlex key={id} alignItems="center">
               <StyledCode mr="1rem">
                 {created}
               </StyledCode>
 
-              <StyledLink to={url}>
+              <StyledLink
+                onMouseOver={() => client.query({ query: POST_QUERY, variables: { slug } })}
+                to={url}
+              >
                 {name}
               </StyledLink>
             </StyledFlex>

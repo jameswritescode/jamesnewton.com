@@ -2,8 +2,11 @@ import * as React from 'react'
 import styled from 'styled-components'
 import { Link } from 'react-router-dom'
 import { space, SpaceProps, position, PositionProps } from 'styled-system'
+import { useApolloClient } from '@apollo/react-hooks'
 
 import Flex from '~ui/Flex'
+
+import * as HOME_QUERY from './Main/Home.graphql'
 
 export const Code = styled.code<SpaceProps & PositionProps>`
   font-size: 1.2rem;
@@ -51,6 +54,8 @@ type Header = {
 }
 
 export function Header({ children, title, back }: Header) {
+  const client = useApolloClient()
+
   return (
     <Flex
       alignItems="center"
@@ -58,7 +63,10 @@ export function Header({ children, title, back }: Header) {
       mb="2rem"
     >
       {back && (
-        <StyledLink to="/">
+        <StyledLink
+          onMouseOver={() => client.query({ query: HOME_QUERY })}
+          to="/"
+        >
           Home
         </StyledLink>
       )}

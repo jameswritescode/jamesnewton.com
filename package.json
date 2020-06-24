@@ -36,7 +36,6 @@
     "@graphql-codegen/typescript-graphql-files-modules": "1.15.2",
     "@graphql-codegen/typescript-operations": "1.15.2",
     "@graphql-codegen/typescript-react-apollo": "1.15.2",
-    "@types/graphql": "^14.5.0",
     "@types/react": "^16.9.35",
     "@types/react-dom": "^16.9.8",
     "@types/react-helmet": "^6.0.0",

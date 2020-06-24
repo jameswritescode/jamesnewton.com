@@ -39,6 +39,7 @@ type Post {
   id: ID!
   meta: Meta!
   name: String!
+  slug: String!
   url: String!
 }
 
@@ -63,8 +64,8 @@ input UpdateOrCreatePostInput {
   """
   clientMutationId: String
   content: String
+  id: ID
   name: String
-  slug: String
 }
 
 """
@@ -75,6 +76,7 @@ type UpdateOrCreatePostPayload {
   A unique identifier for the client performing the mutation.
   """
   clientMutationId: String
+  post: Post!
   success: Boolean!
 }
 

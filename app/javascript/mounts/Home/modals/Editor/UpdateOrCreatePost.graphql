@@ -1,5 +1,9 @@
 mutation UpdateOrCreatePost($input: UpdateOrCreatePostInput!) {
   updateOrCreatePost(input: $input) {
     success
+
+    post {
+      slug
+    }
   }
 }

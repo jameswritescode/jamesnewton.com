@@ -117,11 +117,12 @@ export default function Editor({ close }: Editor) {
   const onSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
 
-    const { data: { updateOrCreatePost: { success } } } = await mutate({
-      refetchQueries: slug ? ['Post'] : ['Home'],
-      variables: { input: { slug, name, content } },
+    const { data: { updateOrCreatePost: { success, post: { slug: nextSlug } } } } = await mutate({
+      refetchQueries: ['Home', 'Post'],
+      variables: { input: { id: data?.post?.id, name, content } },
     })
 
+    if (slug !== nextSlug) history.push(`/blog/${nextSlug}`)
     if (success) close()
   }
 

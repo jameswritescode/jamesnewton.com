@@ -6,6 +6,7 @@ module Types
     field :content, String, null: false
     field :created, String, null: false
     field :name, String, null: false
+    field :slug, String, null: false
     field :url, String, null: false
 
     field :meta, MetaType, null: false

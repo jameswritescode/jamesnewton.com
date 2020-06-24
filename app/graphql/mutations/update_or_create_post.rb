@@ -4,18 +4,20 @@ module Mutations
   class UpdateOrCreatePost < Base
     null false
 
+    field :post, Types::PostType, null: false
     field :success, Boolean, null: false
 
     argument :content, String, required: false
+    argument :id, ID, required: false
     argument :name, String, required: false
-    argument :slug, String, required: false
 
-    def resolve(slug: nil, **kwargs)
-      post = Post.find_by(slug: slug) || Post.new(kwargs)
+    def resolve(id: nil, **kwargs)
+      post = Post.find_by(id: id) || Post.new(kwargs)
+      success = post.update(kwargs)
 
       {
         post: post,
-        success: post.update(kwargs),
+        success: success,
       }
     end
   end

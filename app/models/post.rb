@@ -21,7 +21,7 @@ class Post < ApplicationRecord
 
   def meta(controller)
     {
-      description: content.gsub("\n", ' ').truncate(160),
+      description: content.tr("\n", ' ').truncate(160),
       title: "James Newton | #{name}",
       type: 'article',
       url: controller.posts_url(self),

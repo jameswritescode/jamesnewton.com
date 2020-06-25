@@ -1,0 +1,39 @@
+name: Testing
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: testing
+          POSTGRES_DB: test
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 2.7.1
+
+    - uses: actions/cache@v2
+      with:
+        path: vendor/bundle
+        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gems
+
+    - name: Test
+      env:
+        DATABASE_URL: postgres://testing@127.0.0.1/test
+        RAILS_ENV: test
+      run: |
+        bundle
+        rails spec

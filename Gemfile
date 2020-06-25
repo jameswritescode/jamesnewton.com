@@ -4,6 +4,7 @@ source 'https://rubygems.org'
 
 ruby '2.7.1'
 
+gem 'apollo_upload_server', '~> 2.0', '>= 2.0.1'
 gem 'awesome_print'
 gem 'aws-sdk-s3'
 gem 'bcrypt', '~> 3.1.7'
@@ -28,6 +29,8 @@ end
 
 group :development do
   gem 'graphiql-rails'
+  gem 'graphql-rails_logger'
+
   gem 'listen', '~> 3.2'
   gem 'web-console', '>= 3.3.0'
 

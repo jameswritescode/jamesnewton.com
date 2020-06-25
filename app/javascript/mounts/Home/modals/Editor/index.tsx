@@ -7,7 +7,7 @@ import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 import Layout from '~ui/Layout'
 import UserContext from '~helpers/user-context'
-import { usePostQuery, useUpdateOrCreatePostMutation } from '~gql'
+import { usePostQuery, useUpdateOrCreatePostMutation, useCreateAttachmentMutation } from '~gql'
 
 import Blog from '../../Blog'
 import Post from '../../Blog/Post'
@@ -28,6 +28,7 @@ const EditorFlex = styled(Flex)`
 
   textarea {
     height: 100%;
+    resize: vertical;
     width: 100%;
   }
 
@@ -66,7 +67,7 @@ Cell   | Cell   | Cell
 
 > this is is using a blockquote
 
-\`\`\`ruby
+\`\`\`javascript
 () => {
   console.log("what's good")
 }
@@ -99,27 +100,14 @@ export default function Editor({ close }: Editor) {
   const [content, setContent] = React.useState(data?.post?.content)
   const [name, setName] = React.useState(data?.post?.name)
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.keyCode === 9) {
-      e.preventDefault()
-
-      const currentTarget = e.currentTarget
-
-      const { selectionEnd, selectionStart, value } = currentTarget
-
-      currentTarget.value = value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd)
-      currentTarget.selectionStart = currentTarget.selectionEnd = selectionStart + 2
-    }
-  }
-
-  const [mutate] = useUpdateOrCreatePostMutation()
+  const [updateOrCreatePost] = useUpdateOrCreatePostMutation()
 
   const onSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
 
     const id = data?.post?.id
 
-    const { data: { updateOrCreatePost: { success, post: { slug: nextSlug } } } } = await mutate({
+    const { data: { updateOrCreatePost: { success, post: { slug: nextSlug } } } } = await updateOrCreatePost({
       awaitRefetchQueries: true,
       variables: { input: { id, name, content } },
 
@@ -141,6 +129,37 @@ export default function Editor({ close }: Editor) {
 
   const margins = [0, 0, '2rem']
   const widths = [1, 1, 1 / 2]
+
+  function insertAtCaret(text: string, target: HTMLTextAreaElement) {
+    const { selectionEnd, selectionStart, value } = target
+
+    target.value = value.substring(0, selectionStart) + text + value.substring(selectionEnd)
+    target.selectionStart = target.selectionEnd = selectionStart + text.length
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Tab') return
+
+    e.preventDefault()
+
+    insertAtCaret('  ', e.currentTarget)
+  }
+
+  const [createAttachment] = useCreateAttachmentMutation()
+
+  const onDrop = async(e: React.DragEvent<HTMLTextAreaElement>) => {
+    if (!user) return
+
+    e.preventDefault()
+
+    const { currentTarget, dataTransfer } = e
+
+    const { data: { createAttachment: { success, url } } } = await createAttachment({
+      variables: { input: { file: dataTransfer.items[0].getAsFile() } },
+    })
+
+    if (success) insertAtCaret(`![](${url})`, currentTarget)
+  }
 
   return (
     <Layout height="100%">
@@ -177,6 +196,7 @@ export default function Editor({ close }: Editor) {
             onKeyDown={onKeyDown}
             placeholder={PLACEHOLDER_CONTENT}
             defaultValue={content}
+            onDrop={onDrop}
           />
 
           {user && (

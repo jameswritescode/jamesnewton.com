@@ -1,15 +1,11 @@
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache/* , IntrospectionFragmentMatcher */ } from 'apollo-cache-inmemory'
-import { createHttpLink } from 'apollo-link-http'
+import { createUploadLink } from 'apollo-upload-client'
 import { setContext } from 'apollo-link-context'
 
 // import * as introspectionQueryResultData from '~helpers/fragments.json'
 
 // const fragmentMatcher = new IntrospectionFragmentMatcher({ introspectionQueryResultData })
-
-const httpLink = createHttpLink({
-  uri: '/graphql',
-})
 
 const authLink = setContext((_, { headers }) => {
   const token = document
@@ -24,7 +20,9 @@ const authLink = setContext((_, { headers }) => {
   }
 })
 
+const uploadLink = createUploadLink({ uri: '/graphql' })
+
 export default new ApolloClient({
   cache: new InMemoryCache(/* { fragmentMatcher } */),
-  link: authLink.concat(httpLink),
+  link: authLink.concat(uploadLink),
 })

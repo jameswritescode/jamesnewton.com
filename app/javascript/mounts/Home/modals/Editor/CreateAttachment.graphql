@@ -1,0 +1,6 @@
+mutation CreateAttachment($input: CreateAttachmentInput!) {
+  createAttachment(input: $input) {
+    success
+    url
+  }
+}

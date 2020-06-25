@@ -34,7 +34,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gems
 
-    - name: Test
+    - name: Rails
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:${{ job.services.postgres.ports[5432] }}/postgres
         RAILS_ENV: test

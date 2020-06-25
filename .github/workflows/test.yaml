@@ -12,9 +12,13 @@ jobs:
     services:
       postgres:
         image: postgres:latest
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+        - 5432/tcp
         env:
-          POSTGRES_USER: testing
-          POSTGRES_DB: test
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
 
     steps:
     - uses: actions/checkout@v2
@@ -32,8 +36,8 @@ jobs:
 
     - name: Test
       env:
-        DATABASE_URL: postgres://testing@127.0.0.1/test
+        DATABASE_URL: postgres://postgres:postgres@localhost:${{ job.services.postgres.ports[5432] }}/postgres
         RAILS_ENV: test
       run: |
         bundle
-        rails spec
+        bundle exec rails db:prepare spec

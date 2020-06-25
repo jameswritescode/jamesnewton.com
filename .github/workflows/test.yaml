@@ -39,5 +39,5 @@ jobs:
         DATABASE_URL: postgres://postgres:postgres@localhost:${{ job.services.postgres.ports[5432] }}/postgres
         RAILS_ENV: test
       run: |
-        bundle
+        bundle install --path vendor/bundle
         bundle exec rails db:prepare spec

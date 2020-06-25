@@ -1,4 +1,4 @@
-# jamesnewton.com
+# jamesnewton.com ![Testing](https://github.com/jameswritescode/jamesnewton.com/workflows/Testing/badge.svg)
 
 This is my personal website & playground
 

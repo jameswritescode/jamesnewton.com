@@ -1,0 +1,9 @@
+query Attachments {
+  attachments {
+    id
+    embed
+    extension
+    filename
+    url
+  }
+}

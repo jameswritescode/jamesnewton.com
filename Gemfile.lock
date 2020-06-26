@@ -333,6 +333,7 @@ DEPENDENCIES
   graphql-rails_logger
   image_processing (~> 1.2)
   listen (~> 3.2)
+  mini_mime (~> 1.0, >= 1.0.2)
   oauth (~> 0.5.4)
   pg (~> 0.18.4)
   puma (~> 4.1)

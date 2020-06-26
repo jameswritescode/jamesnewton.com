@@ -25,6 +25,7 @@ export default function Home() {
 
       if (g && key === 'e') setModal({ open: true, name: 'Editor' })
       if (g && key === 'l') setModal({ open: true, name: 'Login' })
+      if (g && key === 'u') setModal({ open: true, name: 'Upload' })
 
       if (g && key === 'h') {
         history.push(Main.route)

@@ -15,4 +15,5 @@ unless Rails.env.test?
   Shrine.plugin :determine_mime_type
   Shrine.plugin :model
   Shrine.plugin :restore_cached_data
+  Shrine.plugin :type_predicates
 end

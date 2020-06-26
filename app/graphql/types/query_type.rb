@@ -2,6 +2,11 @@
 
 module Types
   class QueryType < BaseObject
+    field :attachments, [AttachmentType, null: true], null: false, user_only: true
+    def attachments
+      Attachment.all.order(created_at: :desc)
+    end
+
     field :latest_tweet, TweetType, null: false
     def latest_tweet
       TwitterService.new
@@ -19,7 +24,7 @@ module Types
       Post.find_by(slug: slug)
     end
 
-    field :posts, [PostType], null: false
+    field :posts, [PostType, null: true], null: false
     def posts
       Post.all.order(created_at: :desc)
     end

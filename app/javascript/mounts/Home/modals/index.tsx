@@ -3,17 +3,22 @@ import * as ReactModal from 'react-modal'
 import styled from 'styled-components'
 
 import Layout from '~ui/Layout'
+import UserContext from '~helpers/user-context'
 
 import Editor from './Editor'
 import Login from './Login'
+import Upload from './Upload'
 
 function Help() {
+  const user = React.useContext(UserContext)
+
   return (
     <Layout>
       <p><code>?</code>  open this dialog</p>
       <p><code>ge</code> open editor</p>
       <p><code>gh</code> go home</p>
       <p><code>gl</code> open login</p>
+      {user && <p><code>gu</code> open uploads</p>}
     </Layout>
   )
 }
@@ -29,6 +34,7 @@ export const MODALS = {
   Help,
   Login,
   Nothing,
+  Upload,
 }
 
 export const Modal = styled<any>(ReactModal)`

@@ -11,6 +11,7 @@ gem 'bcrypt', '~> 3.1.7'
 gem 'bootsnap', '>= 1.4.2', require: false
 gem 'graphql', '~> 1.10', '>= 1.10.10'
 gem 'image_processing', '~> 1.2'
+gem 'mini_mime', '~> 1.0', '>= 1.0.2'
 gem 'oauth', '~> 0.5.4'
 gem 'pg', '~> 0.18.4'
 gem 'puma', '~> 4.1'

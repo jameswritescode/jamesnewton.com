@@ -14,7 +14,7 @@ $ rails db:prepare gql
 
 ### Processes
 
-1. Run `rails server` and `bin/webpack-dev-server` as separate processes
+1. Run `rails server` and `yarn server` as separate processes
 2. open http://localhost:3000
 
 ### Tools

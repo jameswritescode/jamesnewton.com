@@ -1,9 +1,6 @@
-import * as React from 'react'
-
-// reference https://github.com/remarkjs/remark/blob/master/packages/remark-parse/lib/tokenize/strong.js
-
 const MARK_SYMBOL = ':'
 
+// reference https://github.com/remarkjs/remark/blob/master/packages/remark-parse/lib/tokenize/strong.js
 function markTokenizer(eat: any, value: string) {
   let index = 0
   let character = value.charAt(index)
@@ -48,7 +45,7 @@ function markTokenizer(eat: any, value: string) {
 
 markTokenizer.locator = (value: string, fromIndex: number) => value.indexOf(MARK_SYMBOL, fromIndex)
 
-function mark() {
+export default function mark() {
   const parser = this.Parser.prototype
   const tokenizers = parser.inlineTokenizers
   const methods = parser.inlineMethods
@@ -56,30 +53,4 @@ function mark() {
   tokenizers.mark = markTokenizer
 
   methods.splice(methods.indexOf('text'), 0, 'mark')
-}
-
-export const PLUGINS = [mark]
-
-type CodeBlock = {
-  value: string,
-}
-
-function CodeBlock({ value }: CodeBlock) {
-  return <pre>{value}</pre>
-}
-
-type Image = {
-  alt?: string,
-  src: string,
-}
-
-function Image(props: Image) {
-  return <img loading="lazy" {...props} />
-}
-
-export const RENDERERS: any = {
-  code: CodeBlock,
-  image: Image,
-  imageReference: Image,
-  mark: 'mark',
 }

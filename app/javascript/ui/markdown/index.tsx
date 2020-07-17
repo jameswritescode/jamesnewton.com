@@ -36,8 +36,8 @@ type InlineCode = {
   children: React.ReactNode,
 }
 
-function InlineCode({ children, ...props }: InlineCode) {
-  return <code {...props}>{children}</code>
+function InlineCode({ children }: InlineCode) {
+  return <code>{children}</code>
 }
 
 type Link = {

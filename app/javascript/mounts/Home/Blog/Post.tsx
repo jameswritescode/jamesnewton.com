@@ -2,7 +2,7 @@ import * as React from 'react'
 import * as Markdown from 'react-markdown'
 
 import { Post as PostType } from '~gql'
-import { RENDERERS, PLUGINS } from '~helpers/markdown'
+import { RENDERERS, PLUGINS } from '~ui/markdown'
 
 import { Header, Code } from '../styles'
 

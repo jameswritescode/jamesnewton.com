@@ -1,7 +1,6 @@
-import { ApolloClient } from 'apollo-client'
-import { InMemoryCache/* , IntrospectionFragmentMatcher */ } from 'apollo-cache-inmemory'
+import { ApolloClient, InMemoryCache } from '@apollo/client'
 import { createUploadLink } from 'apollo-upload-client'
-import { setContext } from 'apollo-link-context'
+import { setContext } from '@apollo/client/link/context'
 
 // import * as introspectionQueryResultData from '~helpers/fragments.json'
 
@@ -24,5 +23,5 @@ const uploadLink = createUploadLink({ uri: '/graphql' })
 
 export default new ApolloClient({
   cache: new InMemoryCache(/* { fragmentMatcher } */),
-  link: authLink.concat(uploadLink),
+  link: authLink.concat(uploadLink as any), // TODO: any because @types/apollo-upload-client is out of date
 })

@@ -1,8 +1,7 @@
-import gql from 'graphql-tag';
-import * as ApolloReactCommon from '@apollo/react-common';
-import * as ApolloReactHooks from '@apollo/react-hooks';
+import * as Apollo from '@apollo/client';
 export type Maybe<T> = T | null;
-export type Exact<T extends { [key: string]: any }> = { [K in keyof T]: T[K] };
+export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+const gql = Apollo.gql;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: string;
@@ -167,7 +166,7 @@ export type PostQuery = (
   )> }
 );
 
-export type HomeQueryVariables = {};
+export type HomeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type HomeQuery = (
@@ -181,7 +180,7 @@ export type HomeQuery = (
   )>> }
 );
 
-export type MeQueryVariables = {};
+export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MeQuery = (
@@ -235,7 +234,7 @@ export type LoginMutation = (
   ) }
 );
 
-export type AttachmentsQueryVariables = {};
+export type AttachmentsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AttachmentsQuery = (
@@ -281,15 +280,15 @@ export const PostDocument = gql`
  *   },
  * });
  */
-export function usePostQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<PostQuery, PostQueryVariables>) {
-        return ApolloReactHooks.useQuery<PostQuery, PostQueryVariables>(PostDocument, baseOptions);
+export function usePostQuery(baseOptions?: Apollo.QueryHookOptions<PostQuery, PostQueryVariables>) {
+        return Apollo.useQuery<PostQuery, PostQueryVariables>(PostDocument, baseOptions);
       }
-export function usePostLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PostQuery, PostQueryVariables>) {
-          return ApolloReactHooks.useLazyQuery<PostQuery, PostQueryVariables>(PostDocument, baseOptions);
+export function usePostLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PostQuery, PostQueryVariables>) {
+          return Apollo.useLazyQuery<PostQuery, PostQueryVariables>(PostDocument, baseOptions);
         }
 export type PostQueryHookResult = ReturnType<typeof usePostQuery>;
 export type PostLazyQueryHookResult = ReturnType<typeof usePostLazyQuery>;
-export type PostQueryResult = ApolloReactCommon.QueryResult<PostQuery, PostQueryVariables>;
+export type PostQueryResult = Apollo.QueryResult<PostQuery, PostQueryVariables>;
 export const HomeDocument = gql`
     query Home {
   latestTweet {
@@ -322,15 +321,15 @@ export const HomeDocument = gql`
  *   },
  * });
  */
-export function useHomeQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<HomeQuery, HomeQueryVariables>) {
-        return ApolloReactHooks.useQuery<HomeQuery, HomeQueryVariables>(HomeDocument, baseOptions);
+export function useHomeQuery(baseOptions?: Apollo.QueryHookOptions<HomeQuery, HomeQueryVariables>) {
+        return Apollo.useQuery<HomeQuery, HomeQueryVariables>(HomeDocument, baseOptions);
       }
-export function useHomeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HomeQuery, HomeQueryVariables>) {
-          return ApolloReactHooks.useLazyQuery<HomeQuery, HomeQueryVariables>(HomeDocument, baseOptions);
+export function useHomeLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<HomeQuery, HomeQueryVariables>) {
+          return Apollo.useLazyQuery<HomeQuery, HomeQueryVariables>(HomeDocument, baseOptions);
         }
 export type HomeQueryHookResult = ReturnType<typeof useHomeQuery>;
 export type HomeLazyQueryHookResult = ReturnType<typeof useHomeLazyQuery>;
-export type HomeQueryResult = ApolloReactCommon.QueryResult<HomeQuery, HomeQueryVariables>;
+export type HomeQueryResult = Apollo.QueryResult<HomeQuery, HomeQueryVariables>;
 export const MeDocument = gql`
     query Me {
   me {
@@ -354,15 +353,15 @@ export const MeDocument = gql`
  *   },
  * });
  */
-export function useMeQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MeQuery, MeQueryVariables>) {
-        return ApolloReactHooks.useQuery<MeQuery, MeQueryVariables>(MeDocument, baseOptions);
+export function useMeQuery(baseOptions?: Apollo.QueryHookOptions<MeQuery, MeQueryVariables>) {
+        return Apollo.useQuery<MeQuery, MeQueryVariables>(MeDocument, baseOptions);
       }
-export function useMeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MeQuery, MeQueryVariables>) {
-          return ApolloReactHooks.useLazyQuery<MeQuery, MeQueryVariables>(MeDocument, baseOptions);
+export function useMeLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MeQuery, MeQueryVariables>) {
+          return Apollo.useLazyQuery<MeQuery, MeQueryVariables>(MeDocument, baseOptions);
         }
 export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
 export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
-export type MeQueryResult = ApolloReactCommon.QueryResult<MeQuery, MeQueryVariables>;
+export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const CreateAttachmentDocument = gql`
     mutation CreateAttachment($input: CreateAttachmentInput!) {
   createAttachment(input: $input) {
@@ -371,7 +370,7 @@ export const CreateAttachmentDocument = gql`
   }
 }
     `;
-export type CreateAttachmentMutationFn = ApolloReactCommon.MutationFunction<CreateAttachmentMutation, CreateAttachmentMutationVariables>;
+export type CreateAttachmentMutationFn = Apollo.MutationFunction<CreateAttachmentMutation, CreateAttachmentMutationVariables>;
 
 /**
  * __useCreateAttachmentMutation__
@@ -390,12 +389,12 @@ export type CreateAttachmentMutationFn = ApolloReactCommon.MutationFunction<Crea
  *   },
  * });
  */
-export function useCreateAttachmentMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateAttachmentMutation, CreateAttachmentMutationVariables>) {
-        return ApolloReactHooks.useMutation<CreateAttachmentMutation, CreateAttachmentMutationVariables>(CreateAttachmentDocument, baseOptions);
+export function useCreateAttachmentMutation(baseOptions?: Apollo.MutationHookOptions<CreateAttachmentMutation, CreateAttachmentMutationVariables>) {
+        return Apollo.useMutation<CreateAttachmentMutation, CreateAttachmentMutationVariables>(CreateAttachmentDocument, baseOptions);
       }
 export type CreateAttachmentMutationHookResult = ReturnType<typeof useCreateAttachmentMutation>;
-export type CreateAttachmentMutationResult = ApolloReactCommon.MutationResult<CreateAttachmentMutation>;
-export type CreateAttachmentMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateAttachmentMutation, CreateAttachmentMutationVariables>;
+export type CreateAttachmentMutationResult = Apollo.MutationResult<CreateAttachmentMutation>;
+export type CreateAttachmentMutationOptions = Apollo.BaseMutationOptions<CreateAttachmentMutation, CreateAttachmentMutationVariables>;
 export const UpdateOrCreatePostDocument = gql`
     mutation UpdateOrCreatePost($input: UpdateOrCreatePostInput!) {
   updateOrCreatePost(input: $input) {
@@ -407,7 +406,7 @@ export const UpdateOrCreatePostDocument = gql`
   }
 }
     `;
-export type UpdateOrCreatePostMutationFn = ApolloReactCommon.MutationFunction<UpdateOrCreatePostMutation, UpdateOrCreatePostMutationVariables>;
+export type UpdateOrCreatePostMutationFn = Apollo.MutationFunction<UpdateOrCreatePostMutation, UpdateOrCreatePostMutationVariables>;
 
 /**
  * __useUpdateOrCreatePostMutation__
@@ -426,12 +425,12 @@ export type UpdateOrCreatePostMutationFn = ApolloReactCommon.MutationFunction<Up
  *   },
  * });
  */
-export function useUpdateOrCreatePostMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateOrCreatePostMutation, UpdateOrCreatePostMutationVariables>) {
-        return ApolloReactHooks.useMutation<UpdateOrCreatePostMutation, UpdateOrCreatePostMutationVariables>(UpdateOrCreatePostDocument, baseOptions);
+export function useUpdateOrCreatePostMutation(baseOptions?: Apollo.MutationHookOptions<UpdateOrCreatePostMutation, UpdateOrCreatePostMutationVariables>) {
+        return Apollo.useMutation<UpdateOrCreatePostMutation, UpdateOrCreatePostMutationVariables>(UpdateOrCreatePostDocument, baseOptions);
       }
 export type UpdateOrCreatePostMutationHookResult = ReturnType<typeof useUpdateOrCreatePostMutation>;
-export type UpdateOrCreatePostMutationResult = ApolloReactCommon.MutationResult<UpdateOrCreatePostMutation>;
-export type UpdateOrCreatePostMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateOrCreatePostMutation, UpdateOrCreatePostMutationVariables>;
+export type UpdateOrCreatePostMutationResult = Apollo.MutationResult<UpdateOrCreatePostMutation>;
+export type UpdateOrCreatePostMutationOptions = Apollo.BaseMutationOptions<UpdateOrCreatePostMutation, UpdateOrCreatePostMutationVariables>;
 export const LoginDocument = gql`
     mutation Login($input: LoginInput!) {
   login(input: $input) {
@@ -439,7 +438,7 @@ export const LoginDocument = gql`
   }
 }
     `;
-export type LoginMutationFn = ApolloReactCommon.MutationFunction<LoginMutation, LoginMutationVariables>;
+export type LoginMutationFn = Apollo.MutationFunction<LoginMutation, LoginMutationVariables>;
 
 /**
  * __useLoginMutation__
@@ -458,12 +457,12 @@ export type LoginMutationFn = ApolloReactCommon.MutationFunction<LoginMutation, 
  *   },
  * });
  */
-export function useLoginMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<LoginMutation, LoginMutationVariables>) {
-        return ApolloReactHooks.useMutation<LoginMutation, LoginMutationVariables>(LoginDocument, baseOptions);
+export function useLoginMutation(baseOptions?: Apollo.MutationHookOptions<LoginMutation, LoginMutationVariables>) {
+        return Apollo.useMutation<LoginMutation, LoginMutationVariables>(LoginDocument, baseOptions);
       }
 export type LoginMutationHookResult = ReturnType<typeof useLoginMutation>;
-export type LoginMutationResult = ApolloReactCommon.MutationResult<LoginMutation>;
-export type LoginMutationOptions = ApolloReactCommon.BaseMutationOptions<LoginMutation, LoginMutationVariables>;
+export type LoginMutationResult = Apollo.MutationResult<LoginMutation>;
+export type LoginMutationOptions = Apollo.BaseMutationOptions<LoginMutation, LoginMutationVariables>;
 export const AttachmentsDocument = gql`
     query Attachments {
   attachments {
@@ -491,12 +490,12 @@ export const AttachmentsDocument = gql`
  *   },
  * });
  */
-export function useAttachmentsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<AttachmentsQuery, AttachmentsQueryVariables>) {
-        return ApolloReactHooks.useQuery<AttachmentsQuery, AttachmentsQueryVariables>(AttachmentsDocument, baseOptions);
+export function useAttachmentsQuery(baseOptions?: Apollo.QueryHookOptions<AttachmentsQuery, AttachmentsQueryVariables>) {
+        return Apollo.useQuery<AttachmentsQuery, AttachmentsQueryVariables>(AttachmentsDocument, baseOptions);
       }
-export function useAttachmentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AttachmentsQuery, AttachmentsQueryVariables>) {
-          return ApolloReactHooks.useLazyQuery<AttachmentsQuery, AttachmentsQueryVariables>(AttachmentsDocument, baseOptions);
+export function useAttachmentsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AttachmentsQuery, AttachmentsQueryVariables>) {
+          return Apollo.useLazyQuery<AttachmentsQuery, AttachmentsQueryVariables>(AttachmentsDocument, baseOptions);
         }
 export type AttachmentsQueryHookResult = ReturnType<typeof useAttachmentsQuery>;
 export type AttachmentsLazyQueryHookResult = ReturnType<typeof useAttachmentsLazyQuery>;
-export type AttachmentsQueryResult = ApolloReactCommon.QueryResult<AttachmentsQuery, AttachmentsQueryVariables>;
+export type AttachmentsQueryResult = Apollo.QueryResult<AttachmentsQuery, AttachmentsQueryVariables>;

@@ -5,6 +5,11 @@ class Post < ApplicationRecord
   validates :name, presence: true
   validates :slug, uniqueness: true, presence: true
 
+  enum state: {
+    draft: 0,
+    published: 1,
+  }
+
   before_validation :generate_slug
 
   def created

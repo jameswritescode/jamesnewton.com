@@ -10,6 +10,7 @@ module Mutations
     argument :content, String, required: false
     argument :id, ID, required: false
     argument :name, String, required: false
+    argument :state, Types::PostStateType, required: false
 
     def resolve(id: nil, **kwargs)
       post = Post.find_by(id: id) || Post.new(kwargs)

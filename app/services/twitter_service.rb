@@ -7,7 +7,7 @@ class TwitterService
 
   DEFAULT_TWEET = {
     'created_at' => Time.current.to_s,
-    'text' => "You're seeing this because there was an error pulling my latest tweet",
+    'text' => 'There was an error pulling my latest tweet',
   }.freeze
 
   def content

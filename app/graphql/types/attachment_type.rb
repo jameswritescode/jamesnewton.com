@@ -2,7 +2,8 @@
 
 module Types
   class AttachmentType < BaseObject
-    field :id, ID, null: false
+    implements NodeType
+
     field :embed, Boolean, method: :embed?, null: false
     field :url, String, method: :file_url, null: false
 

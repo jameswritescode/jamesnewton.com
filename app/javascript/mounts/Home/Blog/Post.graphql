@@ -4,6 +4,7 @@ query Post($slug: String!) {
     content
     created
     name
+    state
 
     meta {
       description

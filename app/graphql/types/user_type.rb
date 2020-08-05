@@ -2,6 +2,6 @@
 
 module Types
   class UserType < BaseObject
-    field :id, ID, null: false
+    implements NodeType
   end
 end

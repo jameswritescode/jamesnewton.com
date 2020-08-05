@@ -1,8 +1,8 @@
-type Attachment {
+type Attachment implements Node {
   embed: Boolean!
   extension: String!
   filename: String!
-  id: ID!
+  id: ID
   url: String!
 }
 
@@ -65,14 +65,24 @@ type Mutation {
   updateOrCreatePost(input: UpdateOrCreatePostInput!): UpdateOrCreatePostPayload!
 }
 
-type Post {
+interface Node {
+  id: ID
+}
+
+type Post implements Node {
   content: String!
   created: String!
-  id: ID!
+  id: ID
   meta: Meta!
   name: String!
   slug: String!
+  state: PostState!
   url: String!
+}
+
+enum PostState {
+  draft
+  published
 }
 
 type Query {
@@ -99,6 +109,7 @@ input UpdateOrCreatePostInput {
   content: String
   id: ID
   name: String
+  state: PostState
 }
 
 """
@@ -115,6 +126,6 @@ type UpdateOrCreatePostPayload {
 
 scalar Upload
 
-type User {
-  id: ID!
+type User implements Node {
+  id: ID
 }

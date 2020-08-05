@@ -1,17 +1,23 @@
 import * as React from 'react'
 import styled from 'styled-components'
 import { Link } from 'react-router-dom'
-import { space, SpaceProps, position, PositionProps } from 'styled-system'
 import { useApolloClient } from '@apollo/react-hooks'
+
+import {
+  position, PositionProps,
+  space, SpaceProps,
+  typography, TypographyProps,
+} from 'styled-system'
 
 import Flex from '~ui/Flex'
 
 import * as HOME_QUERY from './Main/Home.graphql'
 
-export const Code = styled.code<SpaceProps & PositionProps>`
+export const Code = styled.code<SpaceProps & PositionProps & TypographyProps>`
   font-size: 1.2rem;
-  ${space}
   ${position}
+  ${space}
+  ${typography}
 `
 
 const StyledLink = styled(Link)`

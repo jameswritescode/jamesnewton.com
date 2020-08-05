@@ -1,5 +1,21 @@
 {
   "__schema": {
-    "types": []
+    "types": [
+      {
+        "kind": "INTERFACE",
+        "name": "Node",
+        "possibleTypes": [
+          {
+            "name": "Attachment"
+          },
+          {
+            "name": "Post"
+          },
+          {
+            "name": "User"
+          }
+        ]
+      }
+    ]
   }
 }

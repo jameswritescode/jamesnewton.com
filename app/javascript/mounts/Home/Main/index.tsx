@@ -4,12 +4,14 @@ import { Link } from 'react-router-dom'
 
 import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
+import UserContext from '~helpers/user-context'
 import { useHomeQuery } from '~gql'
 
 import * as POST_QUERY from '../Blog/Post.graphql'
 import { Code, Header } from '../styles'
 
 const StyledCode = styled(Code)`
+  margin-right: 1rem;
   white-space: nowrap;
 `
 
@@ -36,6 +38,7 @@ const A = styled.a`
 `
 
 export default function Main() {
+  const user = React.useContext(UserContext)
   const { data, client } = useHomeQuery()
 
   if (!data) return null
@@ -68,9 +71,11 @@ export default function Main() {
 
       {!!posts.length && (
         <Flex mb="2rem" flexDirection="column">
-          {posts.map(({ id, created, name, url, slug }) => (
+          {posts.map(({ id, created, name, url, slug, state }) => (
             <StyledFlex key={id} alignItems="center">
-              <StyledCode mr="1rem">
+              {user && <StyledCode fontWeight="bold">{state}</StyledCode>}
+
+              <StyledCode>
                 {created}
               </StyledCode>
 

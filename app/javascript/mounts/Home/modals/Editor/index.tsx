@@ -7,7 +7,13 @@ import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 import Layout from '~ui/Layout'
 import UserContext from '~helpers/user-context'
-import { usePostQuery, useUpdateOrCreatePostMutation, useCreateAttachmentMutation } from '~gql'
+
+import {
+  PostState,
+  useCreateAttachmentMutation,
+  usePostQuery,
+  useUpdateOrCreatePostMutation,
+} from '~gql'
 
 import Blog from '../../Blog'
 import Post from '../../Blog/Post'
@@ -90,6 +96,13 @@ type Editor = {
   close: Function,
 }
 
+function insertAtCaret(text: string, target: HTMLTextAreaElement) {
+  const { selectionEnd, selectionStart, value } = target
+
+  target.value = value.substring(0, selectionStart) + text + value.substring(selectionEnd)
+  target.selectionStart = target.selectionEnd = selectionStart + text.length
+}
+
 export default function Editor({ close }: Editor) {
   const history = useHistory()
   const match = useRouteMatch<{ slug: string }>(Blog.route)
@@ -99,17 +112,15 @@ export default function Editor({ close }: Editor) {
   const { data } = usePostQuery({ skip: !match || !user, variables: { slug } })
   const [content, setContent] = React.useState(data?.post?.content)
   const [name, setName] = React.useState(data?.post?.name)
-
+  const [state, setState] = React.useState(data?.post?.state || PostState.Draft)
   const [updateOrCreatePost] = useUpdateOrCreatePostMutation()
 
   const onSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
 
-    const id = data?.post?.id
-
     const { data: { updateOrCreatePost: { success, post: { slug: nextSlug } } } } = await updateOrCreatePost({
       awaitRefetchQueries: true,
-      variables: { input: { id, name, content } },
+      variables: { input: { id: data?.post?.id, name, content, state } },
 
       refetchQueries: ({ data: { updateOrCreatePost: { post: { slug: nextSlug } } } }) => {
         const base = ['Home']
@@ -129,13 +140,6 @@ export default function Editor({ close }: Editor) {
 
   const margins = [0, 0, '2rem']
   const widths = [1, 1, 1 / 2]
-
-  function insertAtCaret(text: string, target: HTMLTextAreaElement) {
-    const { selectionEnd, selectionStart, value } = target
-
-    target.value = value.substring(0, selectionStart) + text + value.substring(selectionEnd)
-    target.selectionStart = target.selectionEnd = selectionStart + text.length
-  }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== 'Tab') return
@@ -160,6 +164,8 @@ export default function Editor({ close }: Editor) {
 
     if (success) insertAtCaret(`![](${url})`, currentTarget)
   }
+
+  const onClick = () => setState(state => Object.values(PostState).filter(value => value !== state)[0])
 
   return (
     <Layout height="100%">
@@ -200,9 +206,21 @@ export default function Editor({ close }: Editor) {
           />
 
           {user && (
-            <Button type="submit">
-              {data ? 'Update' : 'Create'}
-            </Button>
+            <Flex>
+              <Button
+                fontSize="0.7em"
+                mr="2rem"
+                style={{ textTransform: 'uppercase' }}
+                type="button"
+                onClick={onClick}
+              >
+                {state}
+              </Button>
+
+              <Button type="submit" flexGrow={1}>
+                {data ? 'Update' : 'Create'}
+              </Button>
+            </Flex>
           )}
         </EditorFlex>
 
@@ -216,6 +234,7 @@ export default function Editor({ close }: Editor) {
             content={content || PLACEHOLDER_CONTENT}
             created="May 06, 1992"
             name={name || PLACEHOLDER_NAME}
+            state={state}
           />
         </Flex>
       </Flex>

@@ -90,7 +90,7 @@ type Query {
   latestTweet: Tweet!
   me: User
   post(slug: String!): Post
-  posts: [Post]!
+  posts(limit: Int): [Post]!
 }
 
 type Tweet {

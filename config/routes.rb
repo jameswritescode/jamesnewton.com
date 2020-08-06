@@ -19,8 +19,9 @@ Rails.application.routes.draw do
   post '/graphql', to: 'graphql#execute'
 
   get '/blog', to: redirect('/')
+  get '/blog/archive', to: 'application#home'
   get '/blog/*path', to: 'application#home', as: :posts
-  get '/resume', to: 'application#home', as: :resume
+  get '/resume', to: 'application#home'
 
   root to: 'application#home'
 end

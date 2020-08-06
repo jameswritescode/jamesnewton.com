@@ -10,8 +10,10 @@ import {
 } from 'styled-system'
 
 import Flex from '~ui/Flex'
+import UserContext from '~helpers/user-context'
 
 import * as HOME_QUERY from './Main/Home.graphql'
+import * as POST_QUERY from './Blog/Post.graphql'
 
 export const Code = styled.code<SpaceProps & PositionProps & TypographyProps>`
   font-size: 1.2rem;
@@ -89,4 +91,44 @@ export function Header({ children, title, back }: Header) {
 Header.defaultProps = {
   back: false,
   title: 'James Newton',
+}
+
+const StyledFlex = styled(Flex)`
+  white-space: nowrap;
+`
+
+const PostLink = styled(Link)`
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+`
+
+const StyledCode = styled(Code)`
+  margin-right: 1rem;
+  white-space: nowrap;
+`
+
+export function PostLine({ created, url, name, slug, state }: any) {
+  const client = useApolloClient()
+  const user = React.useContext(UserContext)
+
+  return (
+    <StyledFlex alignItems="center">
+      {user && state && (
+        <StyledCode fontWeight="bold">
+          {state}
+        </StyledCode>
+      )}
+
+      <StyledCode>
+        {created}
+      </StyledCode>
+
+      <PostLink
+        onMouseOver={() => client.query({ query: POST_QUERY, variables: { slug } })}
+        to={url}
+      >
+        {name}
+      </PostLink>
+    </StyledFlex>
+  )
 }

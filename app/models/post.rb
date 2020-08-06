@@ -11,6 +11,7 @@ class Post < ApplicationRecord
   }
 
   before_validation :generate_slug
+  before_validation :set_published_at, if: :state_changed?
 
   def created
     I18n.l(created_at, format: :short)
@@ -34,6 +35,10 @@ class Post < ApplicationRecord
   end
 
   private
+
+  def set_published_at
+    self.published_at = DateTime.current if state == 'published'
+  end
 
   def generate_slug
     self.slug = name.parameterize

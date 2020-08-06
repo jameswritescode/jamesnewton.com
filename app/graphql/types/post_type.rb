@@ -5,9 +5,11 @@ module Types
     implements NodeType
 
     def self.scope_items(items, context)
-      return items.published if context[:current_user].blank?
-
-      items
+      if context[:current_user].blank?
+        items.published.order(published_at: :desc)
+      else
+        items.order(created_at: :desc)
+      end
     end
 
     field :content, String, null: false

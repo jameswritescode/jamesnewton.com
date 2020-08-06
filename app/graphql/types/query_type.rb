@@ -24,9 +24,13 @@ module Types
       Post.find_by(slug: slug)
     end
 
-    field :posts, [PostType, null: true], null: false
-    def posts
-      Post.all.order(created_at: :desc)
+    field :posts, [PostType, null: true], null: false do
+      argument :limit, Integer, required: false
+    end
+    def posts(limit: nil)
+      query = Post.all
+      query = query.limit(limit) if limit.present?
+      query
     end
   end
 end

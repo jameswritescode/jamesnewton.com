@@ -1,19 +1,13 @@
 import * as React from 'react'
 import styled from 'styled-components'
 import { Link } from 'react-router-dom'
+import { useApolloClient } from '@apollo/client'
 
 import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
-import UserContext from '~helpers/user-context'
 import { useHomeQuery } from '~gql'
 
-import * as POST_QUERY from '../Blog/Post.graphql'
-import { Code, Header } from '../styles'
-
-const StyledCode = styled(Code)`
-  margin-right: 1rem;
-  white-space: nowrap;
-`
+import { PostLine, Header } from '../styles'
 
 const Quote = styled.q`
   display: block;
@@ -24,22 +18,12 @@ const Quote = styled.q`
   }
 `
 
-const StyledFlex = styled(Flex)`
-  white-space: nowrap;
-`
-
-const StyledLink = styled(Link)`
-  overflow-x: hidden;
-  text-overflow: ellipsis;
-`
-
 const A = styled.a`
   margin-left: 1rem;
 `
 
 export default function Main() {
-  const user = React.useContext(UserContext)
-  const { data, client } = useHomeQuery()
+  const { data } = useHomeQuery()
 
   if (!data) return null
 
@@ -71,22 +55,13 @@ export default function Main() {
 
       {!!posts.length && (
         <Flex mb="2rem" flexDirection="column">
-          {posts.map(({ id, created, name, url, slug, state }) => (
-            <StyledFlex key={id} alignItems="center">
-              {user && <StyledCode fontWeight="bold">{state}</StyledCode>}
+          {posts.map(({ id, ...post }) => <PostLine key={id} {...post} />)}
 
-              <StyledCode>
-                {created}
-              </StyledCode>
-
-              <StyledLink
-                onMouseOver={() => client.query({ query: POST_QUERY, variables: { slug } })}
-                to={url}
-              >
-                {name}
-              </StyledLink>
-            </StyledFlex>
-          ))}
+          <Flex fontSize="0.8em">
+            <Link to="/blog/archive">
+              Archive
+            </Link>
+          </Flex>
         </Flex>
       )}
 

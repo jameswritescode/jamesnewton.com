@@ -118,6 +118,11 @@ export type QueryPostArgs = {
   slug: Scalars['String'];
 };
 
+
+export type QueryPostsArgs = {
+  limit?: Maybe<Scalars['Int']>;
+};
+
 export type Tweet = {
   __typename?: 'Tweet';
   content: Scalars['String'];
@@ -149,6 +154,17 @@ export type User = Node & {
   id?: Maybe<Scalars['ID']>;
 };
 
+export type PostsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PostsQuery = (
+  { __typename?: 'Query' }
+  & { posts: Array<Maybe<(
+    { __typename?: 'Post' }
+    & Pick<Post, 'id' | 'created' | 'name' | 'slug' | 'state' | 'url'>
+  )>> }
+);
+
 export type PostQueryVariables = Exact<{
   slug: Scalars['String'];
 }>;
@@ -176,7 +192,7 @@ export type HomeQuery = (
     & Pick<Tweet, 'content' | 'created'>
   ), posts: Array<Maybe<(
     { __typename?: 'Post' }
-    & Pick<Post, 'id' | 'created' | 'name' | 'slug' | 'state' | 'url'>
+    & Pick<Post, 'id' | 'created' | 'name' | 'slug' | 'url'>
   )>> }
 );
 
@@ -246,6 +262,43 @@ export type AttachmentsQuery = (
 );
 
 
+export const PostsDocument = gql`
+    query Posts {
+  posts {
+    id
+    created
+    name
+    slug
+    state
+    url
+  }
+}
+    `;
+
+/**
+ * __usePostsQuery__
+ *
+ * To run a query within a React component, call `usePostsQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePostsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePostsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function usePostsQuery(baseOptions?: Apollo.QueryHookOptions<PostsQuery, PostsQueryVariables>) {
+        return Apollo.useQuery<PostsQuery, PostsQueryVariables>(PostsDocument, baseOptions);
+      }
+export function usePostsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PostsQuery, PostsQueryVariables>) {
+          return Apollo.useLazyQuery<PostsQuery, PostsQueryVariables>(PostsDocument, baseOptions);
+        }
+export type PostsQueryHookResult = ReturnType<typeof usePostsQuery>;
+export type PostsLazyQueryHookResult = ReturnType<typeof usePostsLazyQuery>;
+export type PostsQueryResult = Apollo.QueryResult<PostsQuery, PostsQueryVariables>;
 export const PostDocument = gql`
     query Post($slug: String!) {
   post(slug: $slug) {
@@ -295,12 +348,11 @@ export const HomeDocument = gql`
     content
     created
   }
-  posts {
+  posts(limit: 3) {
     id
     created
     name
     slug
-    state
     url
   }
 }

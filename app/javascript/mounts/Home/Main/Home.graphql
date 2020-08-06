@@ -4,12 +4,11 @@ query Home {
     created
   }
 
-  posts {
+  posts(limit: 3) {
     id
     created
     name
     slug
-    state
     url
   }
 }

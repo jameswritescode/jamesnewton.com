@@ -6,7 +6,7 @@ module Types
 
     def self.scope_items(items, context)
       if context[:current_user].blank?
-        items.published.order(published_at: :desc)
+        items.published_desc
       else
         items.order(created_at: :desc)
       end

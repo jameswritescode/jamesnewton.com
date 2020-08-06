@@ -13,6 +13,8 @@ class Post < ApplicationRecord
   before_validation :generate_slug
   before_validation :set_published_at, if: :state_changed?
 
+  scope :published_desc, -> { published.order(published_at: :desc) }
+
   def created
     I18n.l(created_at, format: :short)
   end

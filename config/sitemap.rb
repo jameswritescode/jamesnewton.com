@@ -15,7 +15,7 @@ SitemapGenerator::Sitemap.adapter = SitemapGenerator::AwsSdkAdapter.new(
 )
 
 SitemapGenerator::Sitemap.create do
-  add blog_archive_path
+  add blog_archive_path, lastmod: Post.published_desc.first.created_at
   add resume_path
 
   Post.published.find_each do |post|

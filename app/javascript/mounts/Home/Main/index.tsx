@@ -1,7 +1,6 @@
 import * as React from 'react'
 import styled from 'styled-components'
 import { Link } from 'react-router-dom'
-import { useApolloClient } from '@apollo/client'
 
 import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
@@ -33,7 +32,7 @@ export default function Main() {
     <>
       <Head
         meta={{
-          description: 'James Newton is a software engineer in Seattle',
+          description: 'James Newton is a Software Engineer in Seattle',
           title: 'James Newton',
           type: 'profile',
           url: 'https://jamesnewton.com',

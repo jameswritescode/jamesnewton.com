@@ -2,6 +2,7 @@ import * as React from 'react'
 import styled from 'styled-components'
 
 import Flex from '~ui/Flex'
+import Head from 'helpers/Head'
 
 import { Code, Header } from './styles'
 
@@ -39,6 +40,15 @@ export default function Resume() {
 
   return (
     <>
+      <Head
+        meta={{
+          description: 'James Newton is a Software Engineer in Seattle',
+          title: 'Resume | James Newton',
+          type: 'profile',
+          url: 'https://jamesnewton.com/resume',
+        }}
+      />
+
       <Header back />
 
       <p>I focus on following agile principles and ensuring my team and I enjoy our craft</p>

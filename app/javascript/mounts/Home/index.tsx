@@ -68,7 +68,7 @@ export default function Home() {
 
       <Layout>
         <Switch>
-          <Route path="/blog/archive">
+          <Route path={Archive.route}>
             <Archive />
           </Route>
 

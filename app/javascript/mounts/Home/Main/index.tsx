@@ -57,7 +57,7 @@ export default function Main() {
           {posts.map(({ id, ...post }) => <PostLine key={id} {...post} />)}
 
           <Flex fontSize="0.8em">
-            <Link to="/blog/archive">
+            <Link to="/blog">
               Archive
             </Link>
           </Flex>

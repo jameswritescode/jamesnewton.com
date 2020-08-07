@@ -16,7 +16,7 @@ class Post < ApplicationRecord
   scope :published_desc, -> { published.order(published_at: :desc) }
 
   def created
-    I18n.l(created_at, format: :short)
+    I18n.l(published_at || created_at, format: :short)
   end
 
   def to_param

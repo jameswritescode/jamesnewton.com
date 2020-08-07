@@ -192,7 +192,7 @@ export type HomeQuery = (
     & Pick<Tweet, 'content' | 'created'>
   ), posts: Array<Maybe<(
     { __typename?: 'Post' }
-    & Pick<Post, 'id' | 'created' | 'name' | 'slug' | 'url'>
+    & Pick<Post, 'id' | 'created' | 'name' | 'slug' | 'state' | 'url'>
   )>> }
 );
 
@@ -353,6 +353,7 @@ export const HomeDocument = gql`
     created
     name
     slug
+    state
     url
   }
 }

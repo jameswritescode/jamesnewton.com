@@ -17,7 +17,7 @@ export default function Archive() {
           description: 'James Newton is a Software Engineer in Seattle',
           title: 'Archive | James Newton',
           type: 'article',
-          url: 'https://jamesnewton.com/blog/archive',
+          url: 'https://jamesnewton.com/blog',
         }}
       />
 
@@ -29,3 +29,5 @@ export default function Archive() {
     </>
   )
 }
+
+Archive.route = '/blog'

@@ -9,6 +9,7 @@ query Home {
     created
     name
     slug
+    state
     url
   }
 }

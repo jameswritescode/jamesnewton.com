@@ -15,8 +15,8 @@ import {
   useUpdateOrCreatePostMutation,
 } from '~gql'
 
-import Blog from '../../Blog'
-import Post from '../../Blog/Post'
+import Archive from '../../Blog/Archive'
+import Content from '../../Blog/Post/Content'
 
 const EditorFlex = styled(Flex)`
   textarea, input {
@@ -105,11 +105,12 @@ function insertAtCaret(text: string, target: HTMLTextAreaElement) {
 
 export default function Editor({ close }: Editor) {
   const history = useHistory()
-  const match = useRouteMatch<{ slug: string }>(Blog.route)
+  const match = useRouteMatch<{ slug: string }>(Archive.route)
   const slug = match?.params?.slug
   const user = React.useContext(UserContext)
 
   const { data } = usePostQuery({ skip: !match || !user, variables: { slug } })
+  console.log(match)
   const [content, setContent] = React.useState(data?.post?.content)
   const [name, setName] = React.useState(data?.post?.name)
   const [state, setState] = React.useState(data?.post?.state || PostState.Draft)
@@ -230,7 +231,7 @@ export default function Editor({ close }: Editor) {
           overflowY="scroll"
           width={widths}
         >
-          <Post
+          <Content
             content={content || PLACEHOLDER_CONTENT}
             created="May 06, 1992"
             name={name || PLACEHOLDER_NAME}

@@ -6,6 +6,7 @@ import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 import { useHomeQuery } from '~gql'
 
+import * as POSTS_QUERY from '../Blog/Archive/Posts.graphql'
 import { PostLine, Header } from '../styles'
 
 const Quote = styled.q`
@@ -22,7 +23,7 @@ const A = styled.a`
 `
 
 export default function Main() {
-  const { data } = useHomeQuery()
+  const { client, data } = useHomeQuery()
 
   if (!data) return null
 
@@ -57,7 +58,10 @@ export default function Main() {
           {posts.map(({ id, ...post }) => <PostLine key={id} {...post} />)}
 
           <Flex fontSize="0.8em">
-            <Link to="/blog">
+            <Link
+              to="/blog"
+              onMouseOver={() => client.query({ query: POSTS_QUERY })}
+            >
               Archive
             </Link>
           </Flex>

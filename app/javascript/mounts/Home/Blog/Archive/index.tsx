@@ -5,7 +5,7 @@ import * as React from 'react'
 import Head from 'helpers/Head'
 import { usePostsQuery } from '~gql'
 
-import { Header, PostLine } from '../styles'
+import { Header, PostLine } from '../../styles'
 
 export default function Archive() {
   const { data } = usePostsQuery()
@@ -30,4 +30,4 @@ export default function Archive() {
   )
 }
 
-Archive.route = '/blog'
+Archive.route = '/blog/:slug'

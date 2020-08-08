@@ -1,16 +1,13 @@
-import * as React from 'react'
 import * as Markdown from 'react-markdown'
+import * as React from 'react'
 
 import Flex from '~ui/Flex'
 import UserContext from '~helpers/user-context'
-import { Post as PostType } from '~gql'
 import { RENDERERS, PLUGINS } from '~ui/markdown'
 
-import { Header, Code } from '../styles'
+import { Header, Code } from '../../styles'
 
-type Props = Pick<PostType, 'name' | 'content' | 'created' | 'state'>
-
-export default function Post({ name, content, created, state }: Props) {
+export default function Content({ name, created, state, content }: any) {
   const user = React.useContext(UserContext)
 
   return (

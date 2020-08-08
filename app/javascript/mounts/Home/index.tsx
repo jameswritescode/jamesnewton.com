@@ -5,7 +5,6 @@ import Layout from '~ui/Layout'
 import UserContext from '~helpers/user-context'
 import { useMeQuery } from '~gql'
 
-import Archive from './Archive'
 import Blog from './Blog'
 import Main from './Main'
 import Resume from './Resume'
@@ -68,10 +67,6 @@ export default function Home() {
 
       <Layout>
         <Switch>
-          <Route path={Archive.route}>
-            <Archive />
-          </Route>
-
           <Route path={Blog.route}>
             <Blog />
           </Route>

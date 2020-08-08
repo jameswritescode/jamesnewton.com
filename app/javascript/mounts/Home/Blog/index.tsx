@@ -1,36 +1,25 @@
 import * as React from 'react'
-import { useParams } from 'react-router-dom'
+import { Switch, Route } from 'react-router-dom'
 
-import Head from '~helpers/Head'
-import { usePostQuery } from '~gql'
-
+import Archive from './Archive'
 import Post from './Post'
-import { Code } from '../styles'
+
+const PATH = '/blog'
 
 export default function Blog() {
-  const { slug } = useParams()
-  const { data, loading } = usePostQuery({ variables: { slug } })
-
-  if (loading) return null
-
-  const { post } = data
-
-  if (!post) window.location.assign('/404')
-
-  const { meta, ...postProps } = post
-
   return (
     <>
-      <Head meta={meta} />
+      <Switch>
+        <Route path={Archive.route}>
+          <Post />
+        </Route>
 
-      <Post {...postProps} />
-
-      {/* TODO: consider https://creativecommons.org/licenses/by-nc-nd/4.0/ */}
-      <Code>
-        &copy; 2014-{new Date().getFullYear()} James Newton
-      </Code>
+        <Route path={PATH}>
+          <Archive />
+        </Route>
+      </Switch>
     </>
   )
 }
 
-Blog.route = '/blog/:slug'
+Blog.route = PATH

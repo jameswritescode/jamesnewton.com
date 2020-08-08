@@ -5,6 +5,7 @@ mutation UpdateOrCreatePost($input: UpdateOrCreatePostInput!) {
     post {
       id
       slug
+      url
     }
   }
 }

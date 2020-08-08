@@ -232,7 +232,7 @@ export type UpdateOrCreatePostMutation = (
     & Pick<UpdateOrCreatePostPayload, 'success'>
     & { post: (
       { __typename?: 'Post' }
-      & Pick<Post, 'id' | 'slug'>
+      & Pick<Post, 'id' | 'slug' | 'url'>
     ) }
   ) }
 );
@@ -455,6 +455,7 @@ export const UpdateOrCreatePostDocument = gql`
     post {
       id
       slug
+      url
     }
   }
 }

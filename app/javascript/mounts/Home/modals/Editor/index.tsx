@@ -15,6 +15,7 @@ import {
   useUpdateOrCreatePostMutation,
 } from '~gql'
 
+import * as POST_QUERY from '../../Blog/Post/Post.graphql'
 import Archive from '../../Blog/Archive'
 import Content from '../../Blog/Post/Content'
 
@@ -110,7 +111,6 @@ export default function Editor({ close }: Editor) {
   const user = React.useContext(UserContext)
 
   const { data } = usePostQuery({ skip: !match || !user, variables: { slug } })
-  console.log(match)
   const [content, setContent] = React.useState(data?.post?.content)
   const [name, setName] = React.useState(data?.post?.name)
   const [state, setState] = React.useState(data?.post?.state || PostState.Draft)
@@ -119,24 +119,15 @@ export default function Editor({ close }: Editor) {
   const onSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
 
-    const { data: { updateOrCreatePost: { success, post: { slug: nextSlug } } } } = await updateOrCreatePost({
+    const { data: { updateOrCreatePost: { success, post: { url } } } } = await updateOrCreatePost({
       awaitRefetchQueries: true,
       variables: { input: { id: data?.post?.id, name, content, state } },
-
-      refetchQueries: ({ data: { updateOrCreatePost: { post: { slug: nextSlug } } } }) => {
-        const base = ['Home']
-
-        if (slug === nextSlug) base.push('Post')
-
-        return base
-      },
+      refetchQueries: ({ data: { updateOrCreatePost: { post: { slug: nextSlug } } } }) => (
+        ['Home', { query: POST_QUERY, variables: { slug: nextSlug } }]
+      ),
     })
 
-    if (success) {
-      close(() => {
-        if (slug !== nextSlug) history.push(`/blog/${nextSlug}`)
-      })
-    }
+    if (success) close(() => history.push(url))
   }
 
   const margins = [0, 0, '2rem']

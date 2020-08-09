@@ -6,15 +6,16 @@ import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from 'styled-components'
 
 import client from '~helpers/apollo-client'
-import { dark, light } from '~ui/theme'
+import theme from '~ui/theme'
 
 export function withProviders(WrappedComponent: React.ComponentType) {
-  const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? dark : light
+  let currTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  currTheme = window.localStorage.getItem('theme') || currTheme
 
   function WithProviders() {
     return (
       <ApolloProvider client={client}>
-        <ThemeProvider theme={theme}>
+        <ThemeProvider theme={theme[currTheme]}>
           <BrowserRouter>
             <WrappedComponent />
           </BrowserRouter>

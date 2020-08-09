@@ -1,16 +1,14 @@
-export type StyledProps = {
-  theme: {
+type Theme = {
+  backgroundColor: string,
+  primary: string,
+  secondary: string,
+  mark: {
     backgroundColor: string,
-    primary: string,
-    secondary: string,
-    mark: {
-      backgroundColor: string,
-      color: string,
-    }
+    color: string,
   }
 }
 
-export const light: StyledProps['theme'] = {
+const light: Theme = {
   backgroundColor: 'white',
   primary: '#191919',
   secondary: '#f7f7f7',
@@ -21,7 +19,7 @@ export const light: StyledProps['theme'] = {
   },
 }
 
-export const dark: StyledProps['theme'] = {
+const dark: Theme = {
   backgroundColor: light.primary,
   primary: light.backgroundColor,
   secondary: '#080808',
@@ -30,4 +28,13 @@ export const dark: StyledProps['theme'] = {
     backgroundColor: 'yellow',
     color: light.primary,
   },
+}
+
+export type StyledProps = {
+  theme: Theme,
+}
+
+export default {
+  dark,
+  light,
 }

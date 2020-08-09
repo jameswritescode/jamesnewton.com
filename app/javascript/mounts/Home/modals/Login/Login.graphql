@@ -3,3 +3,9 @@ mutation Login($input: LoginInput!) {
     success
   }
 }
+
+mutation Logout($input: LogoutInput!) {
+  logout(input: $input) {
+    success
+  }
+}

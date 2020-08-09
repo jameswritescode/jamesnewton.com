@@ -1,8 +1,9 @@
 import * as React from 'react'
 import styled from 'styled-components'
 
+import Button from '~ui/Button'
 import UserContext from '~helpers/user-context'
-import { useLoginMutation } from '~gql'
+import { useLoginMutation, useLogoutMutation } from '~gql'
 
 const LoginLayout = styled.form`
   background-color: #ff5f60;
@@ -54,7 +55,9 @@ const LoginLayout = styled.form`
 
 export default function Login() {
   const [input, setInput] = React.useState({ email: '', password: '' })
-  const [login] = useLoginMutation()
+  const refetchQueries = ['Me', 'Home', 'Posts']
+  const [login] = useLoginMutation({ refetchQueries })
+  const [logout] = useLogoutMutation({ refetchQueries })
   const user = React.useContext(UserContext)
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,14 +69,20 @@ export default function Login() {
   const onSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    login({ variables: { input }, refetchQueries: ['Me'] })
+    login({ variables: { input } })
   }
+
+  const onClick = () => logout({ variables: { input: {} } })
 
   return (
     <LoginLayout onSubmit={onSubmit}>
       <h1>James Newton</h1>
 
-      {!user && (
+      {user ? (
+        <Button onClick={onClick}>
+          Logout
+        </Button>
+      ) : (
         <>
           <input
             name="email"

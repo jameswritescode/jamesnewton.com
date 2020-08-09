@@ -52,6 +52,10 @@ export default function Home() {
 
   const { data } = useMeQuery()
 
+  history.listen(() => {
+    window.scrollTo(0, 0)
+  })
+
   return (
     <UserContext.Provider value={data?.me}>
       <Modal

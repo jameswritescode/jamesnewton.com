@@ -15,14 +15,16 @@ const ItemFlex = styled.a<{ line: Direction }>`
   border: 1px solid ${props => props.theme.primary};
   display: flex;
   margin-bottom: 1rem;
+  padding: 0 1rem;
   position: relative;
+  height: 8.2rem;
 
   :last-child {
     margin-bottom: 0;
   }
 
-  // Disable our global anchor decoration
   && {
+    // Disable our global anchor decoration
     :after {
       content: '';
     }
@@ -55,7 +57,7 @@ const ItemFlex = styled.a<{ line: Direction }>`
 
   img {
     height: 8rem;
-    margin: 0 1rem;
+    margin-right: 1rem;
     object-fit: contain;
     width: 8rem;
   }
@@ -64,7 +66,7 @@ const ItemFlex = styled.a<{ line: Direction }>`
 type Item = {
   href: string,
   line?: Direction,
-  src: string,
+  src?: string,
   text: string,
 }
 
@@ -76,11 +78,7 @@ function Item({ text, href, src, line }: Item) {
       rel="noreferrer"
       target="_blank"
     >
-      <img
-        loading="lazy"
-        src={src}
-      />
-
+      {src && <img loading="lazy" src={src} />}
       {text}
     </ItemFlex>
   )
@@ -88,16 +86,27 @@ function Item({ text, href, src, line }: Item) {
 
 Item.defaultProps = {
   line: null,
+  src: null,
 }
 
 const Container = styled(Flex)`
-  overflow-x: scroll;
+  flex-wrap: wrap;
 
-  @media(max-width: 1606px) {
-    flex-direction: column;
-    overflow-x: initial;
+  > div {
+    margin: 0 1rem;
 
+    :first-child {
+      margin-left: 0;
+    }
+
+    :last-child {
+      margin-right: 0;
+    }
+  }
+
+  @media(max-width: 1080px) {
     > div {
+      margin: 0;
       width: 100%;
     }
   }
@@ -134,7 +143,7 @@ export default function Gear() {
       </p>
 
       <Container>
-        <Flex flexDirection="column" mr="2rem" width={1 / 3}>
+        <Flex flexDirection="column" width="50rem">
           <h2>Audio</h2>
 
           <Item
@@ -179,7 +188,7 @@ export default function Gear() {
           />
         </Flex>
 
-        <Flex flexDirection="column" mr="2rem" width={1 / 3}>
+        <Flex flexDirection="column" width="50rem">
           <h2>Development</h2>
 
           <Item
@@ -187,6 +196,13 @@ export default function Gear() {
             line="bottom"
             src="/gear/u3415w.png"
             text="Dell UltraSharp 34-Inch Curved Monitor"
+          />
+
+          <Item
+            href="#"
+            line="bottom"
+            src="/gear/arms.png"
+            text="Monoprice Dual Monitor Desk Mount"
           />
 
           {p2715q}
@@ -210,7 +226,7 @@ export default function Gear() {
           />
         </Flex>
 
-        <Flex flexDirection="column" mr="2rem" width={1 / 3}>
+        <Flex flexDirection="column" width="50rem">
           <h2>Gaming</h2>
 
           {p2715q}
@@ -239,6 +255,21 @@ export default function Gear() {
             href="https://www.amazon.com/gp/product/B00N4OBCWY/"
             src="/gear/k95.png"
             text="Corsair K95 RGB Cherry MX Red"
+          />
+        </Flex>
+
+        <Flex flexDirection="column" width="50rem">
+          <h2>Desk</h2>
+
+          <Item
+            href="https://www.autonomous.ai/office-chairs/ergonomic-chair"
+            src="/gear/chair.png"
+            text="ErgoChair 2"
+          />
+
+          <Item
+            href="https://www.amazon.com/stores/FLEXISPOT/FLEXISPOT/page/DC73F9D6-1819-4EA6-A8A0-73BAF9007518"
+            text="2x Flexispot Adjustable Desk Frame"
           />
         </Flex>
       </Container>

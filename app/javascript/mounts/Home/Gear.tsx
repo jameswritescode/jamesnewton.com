@@ -35,7 +35,12 @@ type Item = {
 
 function Item({ text, href, src }: Item) {
   return (
-    <ItemFlex as="a" href={href}>
+    <ItemFlex
+      as="a"
+      href={href}
+      rel="noreferrer"
+      target="_blank"
+    >
       <img
         loading="lazy"
         src={src}

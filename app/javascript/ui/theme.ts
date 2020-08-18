@@ -20,7 +20,6 @@ const light: Theme = {
   backgroundColor: 'white',
   primary: '#191919',
   secondary: '#f7f7f7',
-  borderRadius: '3px',
 
   mark: {
     backgroundColor: '#fff9b2',
@@ -32,7 +31,7 @@ const dark: Theme = {
   ...defaults,
 
   backgroundColor: light.primary,
-  primary: light.backgroundColor,
+  primary: light.secondary,
   secondary: '#080808',
 
   mark: {

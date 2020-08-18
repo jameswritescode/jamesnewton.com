@@ -22,10 +22,13 @@ import { StyledProps } from '~ui/theme'
 // `x`     code
 // ~~x~~   del
 
-// TODO: How should this be typed?
 const GlobalStyle = createGlobalStyle<StyledProps>`
   body {
     background-color: ${props => props.theme.backgroundColor};
+  }
+
+  .ReactModal__Overlay {
+    z-index: 9001;
   }
 `
 

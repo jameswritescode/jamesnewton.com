@@ -6,6 +6,7 @@ import UserContext from '~helpers/user-context'
 import { useMeQuery } from '~gql'
 
 import Blog from './Blog'
+import Gear from './Gear'
 import Main from './Main'
 import Resume from './Resume'
 import { MODALS, Modal } from './modals'
@@ -73,6 +74,10 @@ export default function Home() {
         <Switch>
           <Route path={Blog.route}>
             <Blog />
+          </Route>
+
+          <Route path={Gear.route}>
+            <Gear />
           </Route>
 
           <Route path={Resume.route}>

@@ -20,6 +20,7 @@ Rails.application.routes.draw do
 
   get '/blog', to: 'application#home'
   get '/blog/*path', to: 'application#home', as: :posts
+  get '/gear', to: 'application#home'
   get '/resume', to: 'application#home'
 
   root to: 'application#home'

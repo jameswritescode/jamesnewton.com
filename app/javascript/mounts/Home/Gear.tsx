@@ -2,6 +2,7 @@ import * as React from 'react'
 import styled from 'styled-components'
 
 import Flex from '~ui/Flex'
+import Head from '~helpers/Head'
 
 const ItemFlex = styled(Flex)`
   align-items: center;
@@ -73,12 +74,21 @@ export default function Gear() {
 
   return (
     <>
+      <Head
+        meta={{
+          description: 'James Newton is a Software Engineer in Seattle',
+          title: 'Gear | James Newton',
+          type: 'profile',
+          url: 'https://jamesnewton.com/gear',
+        }}
+      />
+
       <h1>Gear</h1>
 
       <p>This is the equipment I use for work and play</p>
 
       <p>
-        Audio is available to both my Workstation and Gaming machines via a{' '}
+        Audio is available to both my Development and Gaming machines via a{' '}
         <a href="https://www.amazon.com/gp/product/B07TS5JNT3/">USB Switch</a>
       </p>
 
@@ -124,7 +134,7 @@ export default function Gear() {
         </Flex>
 
         <Flex flexDirection="column" mr="2rem" width={1 / 3}>
-          <h2>Workstation</h2>
+          <h2>Development</h2>
 
           <Item
             href="https://www.amazon.com/gp/product/B00PXYRMPE/"

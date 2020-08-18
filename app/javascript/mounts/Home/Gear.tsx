@@ -35,7 +35,10 @@ type Item = {
 function Item({ text, href, src }: Item) {
   return (
     <ItemFlex as="a" href={href}>
-      <img src={src} />
+      <img
+        loading="lazy"
+        src={src}
+      />
 
       {text}
     </ItemFlex>
@@ -138,7 +141,7 @@ export default function Gear() {
           />
 
           <Item
-            href="#"
+            href="https://www.amazon.com/gp/product/B0146YF1FO"
             src="/gear/apple-keyboard.png"
             text="Apple Wireless Keyboard"
           />

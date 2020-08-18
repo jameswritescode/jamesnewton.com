@@ -4,19 +4,51 @@ import styled from 'styled-components'
 import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 
-const ItemFlex = styled(Flex)`
+type Direction = 'top' | 'bottom' | null
+
+const ItemFlex = styled.a<{ line: Direction }>`
   align-items: center;
   background-color: ${props => props.theme.secondary};
   border-radius: ${props => props.theme.borderRadius};
-  border: 1px solid ${props => props.theme.secondary};
+  border: 1px solid ${props => props.theme.primary};
+  display: flex;
   margin-bottom: 1rem;
-
-  :hover {
-    border-color: ${props => props.theme.primary};
-  }
+  position: relative;
 
   :last-child {
     margin-bottom: 0;
+  }
+
+  // Disable our global anchor decoration
+  && {
+    :after {
+      content: '';
+    }
+
+    :hover {
+      background-color: ${props => props.theme.primary};
+      color: ${props => props.theme.secondary};
+      z-index: 2;
+
+      :before, :after {
+        background-color: ${props => props.theme.primary};
+      }
+    }
+
+    ${({ line, theme }) => line && `
+      :${line === 'top' ? 'before' : 'after'} {
+        background-color: ${theme.secondary};
+        border-left: 1px solid ${theme.primary};
+        border-right: 1px solid ${theme.primary};
+        content: '';
+        height: 1.2rem;
+        left: 4.6rem;
+        position: absolute;
+        ${line === 'top' ? 'bottom' : 'top'}: 8rem;
+        width: 1rem;
+        z-index: 1;
+      }
+    `}
   }
 
   img {
@@ -29,15 +61,16 @@ const ItemFlex = styled(Flex)`
 
 type Item = {
   href: string,
+  line?: Direction,
   src: string,
   text: string,
 }
 
-function Item({ text, href, src }: Item) {
+function Item({ text, href, src, line }: Item) {
   return (
     <ItemFlex
-      as="a"
       href={href}
+      line={line}
       rel="noreferrer"
       target="_blank"
     >
@@ -51,6 +84,10 @@ function Item({ text, href, src }: Item) {
   )
 }
 
+Item.defaultProps = {
+  line: null,
+}
+
 const Container = styled(Flex)`
   overflow-x: scroll;
 
@@ -61,10 +98,6 @@ const Container = styled(Flex)`
     > div {
       width: 100%;
     }
-
-    a:after {
-      content: '';
-    }
   }
 `
 
@@ -72,6 +105,7 @@ export default function Gear() {
   const p2715q = (
     <Item
       href="#"
+      line="bottom"
       src="/gear/p2715q.png"
       text="Dell Ultra 4k 27-Inch Monitor"
     />
@@ -103,12 +137,14 @@ export default function Gear() {
 
           <Item
             href="https://www.amazon.com/gp/product/B00018MSNI/"
+            line="bottom"
             src="/gear/headphones.png"
             text="Sennheiser HD 650"
           />
 
           <Item
             href="https://www.schiit.com/products/magni-1"
+            line="bottom"
             src="/gear/amp.png"
             text="Schiit Magni 3+"
           />
@@ -121,18 +157,21 @@ export default function Gear() {
 
           <Item
             href="https://www.amazon.com/gp/product/B004MQSV04/"
+            line="top"
             src="/gear/cloudlifter.png"
             text="Cloudlifter CL-1"
           />
 
           <Item
             href="https://www.amazon.com/gp/product/B0002E4Z8M/"
+            line="top"
             src="/gear/mic.png"
             text="Shure SM7B"
           />
 
           <Item
             href="https://www.amazon.com/gp/product/B001D7UYBO/"
+            line="top"
             src="/gear/boom.png"
             text="RODE PSA 1 Boom Arm"
           />
@@ -143,6 +182,7 @@ export default function Gear() {
 
           <Item
             href="https://www.amazon.com/gp/product/B00PXYRMPE/"
+            line="bottom"
             src="/gear/u3415w.png"
             text="Dell UltraSharp 34-Inch Curved Monitor"
           />
@@ -175,6 +215,7 @@ export default function Gear() {
 
           <Item
             href="https://www.amazon.com/gp/product/B06Y15DWXR/"
+            line="bottom"
             src="/gear/gpu.png"
             text="EVGA GeForce GTX 1080 Ti"
           />
@@ -187,6 +228,7 @@ export default function Gear() {
 
           <Item
             href="https://www.amazon.com/gp/product/B00CO8TBQ0/"
+            line="top"
             src="/gear/cpu.png"
             text="Intel Core i7-4770K Processor"
           />

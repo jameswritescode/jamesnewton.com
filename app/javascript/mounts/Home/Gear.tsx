@@ -4,6 +4,8 @@ import styled from 'styled-components'
 import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 
+import { Header } from './styles'
+
 type Direction = 'top' | 'bottom' | null
 
 const ItemFlex = styled.a<{ line: Direction }>`
@@ -122,7 +124,7 @@ export default function Gear() {
         }}
       />
 
-      <h1>Gear</h1>
+      <Header back title="Gear" />
 
       <p>This is the equipment I use for work and play</p>
 

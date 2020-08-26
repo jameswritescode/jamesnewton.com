@@ -92,12 +92,11 @@ Item.defaultProps = {
 const Container = styled(Flex)`
   flex-wrap: wrap;
 
+  // Negates the layout padding so wrapping looks better
+  margin-left: -1rem;
+
   > div {
     margin: 0 1rem;
-
-    :first-child {
-      margin-left: 0;
-    }
 
     :last-child {
       margin-right: 0;
@@ -105,6 +104,8 @@ const Container = styled(Flex)`
   }
 
   @media(max-width: 1080px) {
+    margin-left: 0;
+
     > div {
       margin: 0;
       width: 100%;
@@ -270,6 +271,22 @@ export default function Gear() {
           <Item
             href="https://www.amazon.com/stores/FLEXISPOT/FLEXISPOT/page/DC73F9D6-1819-4EA6-A8A0-73BAF9007518"
             text="2x Flexispot Adjustable Desk Frame"
+          />
+        </Flex>
+
+        <Flex flexDirection="column" width="50rem">
+          <h2>EDC</h2>
+
+          <Item
+            href="https://www.apple.com/shop/refurbished/iphone/iphone-x"
+            src="/gear/iphone.png"
+            text="iPhone X"
+          />
+
+          <Item
+            href="https://www.apple.com/airpods-pro/"
+            src="/gear/airpods.png"
+            text="AirPods Pro"
           />
         </Flex>
       </Container>

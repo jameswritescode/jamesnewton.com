@@ -167,7 +167,7 @@ export default function Resume() {
 
       <p>
         As a fan of data-driven software, I&rsquo;ve contributed to the web application for several years in
-        the form of backend work and consulting. I&rsquo;m currently working on an undisclosed project
+        the form of backend work and consulting, partnering up to build a more B2B offering
       </p>
 
       <Heading

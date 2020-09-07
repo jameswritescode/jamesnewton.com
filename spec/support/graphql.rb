@@ -5,7 +5,7 @@ module GraphQLHelpers
     NewtonSchema.execute(
       query,
       { context: { controller: controller } }.merge(kwargs),
-    )
+    ).to_h
   end
 
   def sign_in(user)
@@ -38,7 +38,7 @@ module GraphQLMatchers
     include RSpecHelpers
 
     match do |actual|
-      values_match?({ 'data' => { field_name => inner_response } }, actual.to_h)
+      values_match?({ 'data' => { field_name => inner_response } }, actual)
     end
 
     failure_message do |actual|
@@ -52,7 +52,7 @@ module GraphQLMatchers
     match do |actual|
       values_match?(
         graphql_error('message' => "Field '#{field_name}' doesn't exist on type '#{type}'"),
-        actual.to_h,
+        actual,
       )
     end
 
@@ -74,7 +74,7 @@ module GraphQLMatchers
             ),
           ),
         ),
-        actual.to_h,
+        actual,
       )
     end
   end

@@ -20,7 +20,6 @@ class GraphqlController < ApplicationController
     {
       GRAPHQL_RAKE_TASK: false,
       controller: self,
-      current_user: User.find_by(id: session[:user_id]),
     }
   end
 

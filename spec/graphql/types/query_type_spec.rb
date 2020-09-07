@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Types::QueryType, type: :graphql do
+RSpec.describe GraphqlController, type: :controller do
   let(:user) { create(:user) }
 
   describe '#attachments' do
@@ -19,9 +19,9 @@ RSpec.describe Types::QueryType, type: :graphql do
     end
 
     it 'is visible to signed in users' do
-      result = execute_graphql(query, context: { current_user: user })
+      sign_in(user)
 
-      expect(result).not_to be_missing_graphql_field('Query', 'attachments')
+      expect(execute_graphql(query)).not_to be_missing_graphql_field('Query', 'attachments')
     end
   end
 
@@ -42,7 +42,9 @@ RSpec.describe Types::QueryType, type: :graphql do
     end
 
     it 'shows drafts to users' do
-      expect(execute_graphql(query, context: { current_user: user }).to_h).to match(
+      sign_in(user)
+
+      expect(execute_graphql(query).to_h).to match(
         'data' => {
           'posts' => [
             { 'state' => 'draft' },

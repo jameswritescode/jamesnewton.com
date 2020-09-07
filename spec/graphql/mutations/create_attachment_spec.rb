@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Mutations::CreateAttachment, type: :graphql do
+RSpec.describe GraphqlController, type: :controller do
   let(:mutation) do
     <<~GQL
       mutation($input: CreateAttachmentInput!) {

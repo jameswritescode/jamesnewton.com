@@ -2,7 +2,14 @@
 
 module GraphQLHelpers
   def execute_graphql(query, **kwargs)
-    NewtonSchema.execute(query, **kwargs)
+    NewtonSchema.execute(
+      query,
+      { context: { controller: controller } }.merge(kwargs),
+    )
+  end
+
+  def sign_in(user)
+    controller.session[:user_id] = user.id
   end
 end
 
@@ -74,6 +81,6 @@ module GraphQLMatchers
 end
 
 RSpec.configure do |c|
-  c.include GraphQLHelpers, type: :graphql
-  c.include GraphQLMatchers, type: :graphql
+  c.include GraphQLHelpers, type: :controller
+  c.include GraphQLMatchers, type: :controller
 end

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Mutations::UpdateOrCreatePost, type: :graphql do
+RSpec.describe GraphqlController, type: :controller do
   let(:mutation) do
     <<~GQL
       mutation($input: UpdateOrCreatePostInput!) {
@@ -18,8 +18,8 @@ RSpec.describe Mutations::UpdateOrCreatePost, type: :graphql do
   end
 
   it 'is visible to signed in users' do
-    result = execute_graphql(mutation, context: { current_user: create(:user) })
+    sign_in(create(:user))
 
-    expect(result).not_to be_missing_graphql_field('Mutation', 'updateOrCreatePost')
+    expect(execute_graphql(mutation)).not_to be_missing_graphql_field('Mutation', 'updateOrCreatePost')
   end
 end

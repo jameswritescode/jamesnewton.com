@@ -15,7 +15,7 @@ module Types
     def visible?(context)
       return true if context[:GRAPHQL_RAKE_TASK]
 
-      super && (!user_only || context[:current_user].present?)
+      super && (!user_only || context[:controller]&.current_user.present?)
     end
   end
 end

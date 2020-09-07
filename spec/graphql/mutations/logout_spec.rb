@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Mutations::Logout, type: :graphql do
+RSpec.describe GraphqlController, type: :controller do
   let(:mutation) do
     <<~GQL
       mutation($input: LogoutInput!) {
@@ -13,13 +13,13 @@ RSpec.describe Mutations::Logout, type: :graphql do
     GQL
   end
 
-  let(:context) { { current_user: build(:user), controller: OpenStruct.new(session: { user_id: 1 }) } }
-
   it 'is successful' do
-    result = execute_graphql(mutation, context: context, variables: { input: {} })
+    sign_in(create(:user))
+
+    result = execute_graphql(mutation, variables: { input: {} })
 
     aggregate_failures do
-      expect(context[:controller].session[:user_id]).to be_nil
+      expect(controller.session[:user_id]).to be_nil
       expect(result['data']['logout']['success']).to eq true
     end
   end

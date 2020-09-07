@@ -10,6 +10,13 @@ Metrics/BlockLength:
   Exclude:
     - spec/**/*_spec.rb
 
+RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/FilePath:
+  Exclude:
+    - spec/graphql/**/*_spec.rb
+
 Style/Documentation:
   Enabled: false
 
@@ -21,6 +28,3 @@ Style/TrailingCommaInArrayLiteral:
 
 Style/TrailingCommaInHashLiteral:
   EnforcedStyleForMultiline: consistent_comma
-
-RSpec/ExampleLength:
-  Enabled: false

@@ -5,7 +5,7 @@ module Types
     implements NodeType
 
     def self.scope_items(items, context)
-      if context[:current_user].blank?
+      if context[:controller]&.current_user.blank?
         items.published_desc
       else
         items.order(created_at: :desc)

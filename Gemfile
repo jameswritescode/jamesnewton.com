@@ -29,7 +29,6 @@ group :development, :test do
 end
 
 group :development do
-  gem 'graphiql-rails'
   gem 'graphql-rails_logger'
 
   gem 'listen', '~> 3.2'

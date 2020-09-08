@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  mount GraphiQL::Rails::Engine, at: '/graphiql', graphql_path: '/graphql' if Rails.env.development?
-
   # NOTE: Support for redirecting legacy blog.jamesnewton.com
   constraints subdomain: 'blog' do
     get '/', to: redirect('https://jamesnewton.com', status: 302)

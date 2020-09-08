@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 module GraphQLHelpers
+  def controller
+    @controller ||= GraphqlController.new.tap do |obj|
+      obj.set_request! ActionDispatch::Request.new({})
+    end
+  end
+
   def execute_graphql(query, **kwargs)
     NewtonSchema.execute(
       query,
@@ -81,6 +87,6 @@ module GraphQLMatchers
 end
 
 RSpec.configure do |c|
-  c.include GraphQLHelpers, type: :controller
-  c.include GraphQLMatchers, type: :controller
+  c.include GraphQLHelpers, type: :graphql
+  c.include GraphQLMatchers, type: :graphql
 end

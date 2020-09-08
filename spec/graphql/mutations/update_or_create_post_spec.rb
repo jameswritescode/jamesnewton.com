@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe GraphqlController, type: :controller do
+RSpec.describe Mutations::UpdateOrCreatePost, type: :graphql do
   let(:mutation) do
     <<~GQL
       mutation($input: UpdateOrCreatePostInput!) {

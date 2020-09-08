@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe GraphqlController, type: :controller do
+RSpec.describe Types::QueryType, type: :graphql do
   let(:user) { create(:user) }
 
   describe '#attachments' do

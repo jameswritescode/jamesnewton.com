@@ -1,12 +1,10 @@
 const graphql = require('./loaders/graphql')
-const typescript = require('./loaders/typescript')
 const { environment } = require('@rails/webpacker')
 const { resolve } = require('path')
 
 const JS_PATH = resolve(__dirname, '..', '..', 'app', 'javascript')
 
 environment.loaders.prepend('graphql', graphql)
-environment.loaders.prepend('typescript', typescript)
 
 environment.config.merge({
   resolve: {

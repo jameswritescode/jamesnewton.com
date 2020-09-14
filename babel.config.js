@@ -27,6 +27,7 @@ module.exports = function(api) {
         },
         '@babel/preset-react',
       ],
+      ['@babel/preset-typescript', { allExtensions: true, isTSX: true }],
       (isProductionEnv || isDevelopmentEnv) && [
         '@babel/preset-env',
         {
@@ -45,13 +46,11 @@ module.exports = function(api) {
         },
       ],
     ].filter(Boolean),
-
     plugins: [
+      process.env.WEBPACK_DEV_SERVER && 'react-refresh/babel',
       'babel-plugin-macros',
       '@babel/plugin-syntax-dynamic-import',
       isTestEnv && 'babel-plugin-dynamic-import-node',
-      'babel-plugin-styled-components',
-      ['react-hot-loader/babel', { safetyNet: false }],
       '@babel/plugin-transform-destructuring',
       [
         '@babel/plugin-proposal-class-properties',
@@ -77,6 +76,12 @@ module.exports = function(api) {
         '@babel/plugin-transform-regenerator',
         {
           async: false,
+        },
+      ],
+      isProductionEnv && [
+        'babel-plugin-transform-react-remove-prop-types',
+        {
+          removeImport: true,
         },
       ],
     ].filter(Boolean),

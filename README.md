@@ -21,7 +21,7 @@ $ rails db:prepare gql
 
 * Run `rails gql` when making changes to `.graphql` files or files in `app/graphql`
   * After making changes to `app/graphql` files this will update the `schema.{graphql,json}` files, which are used by ESLint, tests, and other tools
-  * After making changes to queries inside of `.graphql` files and `gql` tags this will generate TypeScript types and typed methods based off of `schema.graphql` and the query for using in place of `@apollo/react-hooks` directly in most cases
+  * After making changes to queries inside of `.graphql` files and `gql` tags this will generate TypeScript types and typed methods based off of `schema.graphql` and the query for using in place of `@apollo/client` directly in most cases
 * Use `[ci skip]` in commit message to skip running the testing workflow on GitHub
 
 ## Production

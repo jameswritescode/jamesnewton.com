@@ -1,1 +1,1 @@
-Sitemap: https://jamesnewton-production.s3-us-west-2.amazonaws.com/sitemaps/sitemap.xml.gz
+Sitemap: https://jamesnewton.com/sitemap.xml.gz

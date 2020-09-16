@@ -16,6 +16,10 @@ Rails.application.routes.draw do
 
   post '/graphql', to: 'graphql#execute'
 
+  get '/sitemap.xml.gz', to: redirect(
+    "https://jamesnewton-#{Rails.env}.s3-us-west-2.amazonaws.com/sitemaps/sitemap.xml.gz",
+  )
+
   get '/blog', to: 'application#home'
   get '/blog/*path', to: 'application#home', as: :posts
   get '/gear', to: 'application#home'

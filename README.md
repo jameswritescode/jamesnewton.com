@@ -35,5 +35,5 @@ Automatic deployment via Heroku + GitHub
 * File uploads to S3 via `shrine`
 * GraphQL via `graphql-ruby` with TypeScript type generation via `graphql-code-generator`
 * Rails
-* React with TypeScript via `ts-loader`
+* React with TypeScript
 * Sitemap generation to S3 via `sitemap_generator`

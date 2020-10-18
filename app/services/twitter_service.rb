@@ -3,7 +3,7 @@
 class TwitterService
   include ActionView::Helpers::DateHelper
 
-  TWEET_URL = 'https://api.twitter.com/1.1/statuses/user_timeline/jameswritescode.json?count=1'
+  TWEET_URL = 'https://api.twitter.com/1.1/statuses/user_timeline/jameswritescode.json?count=10'
 
   DEFAULT_TWEET = {
     'created_at' => Time.current.to_s,
@@ -36,10 +36,14 @@ class TwitterService
     )
   end
 
+  def find_tweet(tweet)
+    !tweet['retweeted'] && !tweet['in_reply_to_status_id']
+  end
+
   def tweet
     @tweet ||= begin
       Rails.cache.fetch('latest_tweet', expires_in: 1.hour) do
-        result = JSON.parse(access_token.get(TWEET_URL).body).first
+        result = JSON.parse(access_token.get(TWEET_URL).body).find(&method(:find_tweet))
 
         raise if result['text'].blank?
 

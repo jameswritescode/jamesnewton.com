@@ -41,3 +41,5 @@ yarn-debug.log*
 .yarn-integrity
 
 app/javascript/types/graphql.d.ts
+
+drafts/

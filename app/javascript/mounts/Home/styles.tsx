@@ -47,6 +47,7 @@ const StyledLink = styled(Link)`
 const StyledHeader = styled.h1`
   && {
     margin-bottom: 0;
+    max-width: unset;
 
     @media (max-width: 52em) {
       line-height: 1.5;

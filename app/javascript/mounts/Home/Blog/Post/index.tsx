@@ -8,7 +8,7 @@ import Content from './Content'
 import { Code } from '../../styles'
 
 export default function Post() {
-  const { slug } = useParams()
+  const { slug } = useParams<{ slug: string }>()
   const { data, loading } = usePostQuery({ variables: { slug } })
 
   if (loading) return null

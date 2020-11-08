@@ -1,0 +1,5 @@
+mutation DestroyPost($input: DestroyPostInput!) {
+  destroyPost(input: $input) {
+    success
+  }
+}

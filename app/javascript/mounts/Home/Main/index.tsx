@@ -7,7 +7,8 @@ import Head from '~helpers/Head'
 import { useHomeQuery } from '~gql'
 
 import * as POSTS_QUERY from '../Blog/Archive/Posts.graphql'
-import { PostLine, Header } from '../styles'
+import PostLine from '../PostLine'
+import { Header } from '../styles'
 
 const Quote = styled.q`
   display: block;

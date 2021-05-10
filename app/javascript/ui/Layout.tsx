@@ -71,7 +71,6 @@ const Container = styled.div`
 
   p, ol, ul, pre, blockquote, h1, table, hr {
     margin-bottom: 2rem;
-    max-width: 100rem;
 
     :last-child {
       margin-bottom: 0;

@@ -6,13 +6,13 @@ import Head from 'helpers/Head'
 import { usePostsQuery } from '~gql'
 
 import PostLine from '../../PostLine'
-import { Header } from '../../styles'
+import { Header, Container } from '../../styles'
 
 export default function Archive() {
   const { data } = usePostsQuery()
 
   return (
-    <>
+    <Container>
       <Head
         meta={{
           description: 'James Newton is a Software Engineer in Seattle',
@@ -27,7 +27,7 @@ export default function Archive() {
       {data && data.posts.map(({ id, ...post }) => (
         <PostLine key={id} {...post} />
       ))}
-    </>
+    </Container>
   )
 }
 

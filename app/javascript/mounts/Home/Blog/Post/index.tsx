@@ -5,7 +5,7 @@ import Head from '~helpers/Head'
 import { usePostQuery } from '~gql'
 
 import Content from './Content'
-import { Code } from '../../styles'
+import { Code, Container } from '../../styles'
 
 export default function Post() {
   const { slug } = useParams<{ slug: string }>()
@@ -20,7 +20,7 @@ export default function Post() {
   const { meta, ...rest } = post
 
   return (
-    <>
+    <Container centered>
       <Head meta={meta} />
 
       <Content {...rest} />
@@ -29,6 +29,6 @@ export default function Post() {
       <Code>
         &copy; 2014-{new Date().getFullYear()} James Newton
       </Code>
-    </>
+    </Container>
   )
 }

@@ -20,6 +20,12 @@ export const Code = styled.code<SpaceProps & PositionProps & TypographyProps>`
   ${typography}
 `
 
+export const Container = styled.div<{ centered?: boolean }>`
+  ${props => props.centered && 'margin: 0 auto;'}
+
+  max-width: 100rem;
+`
+
 const StyledLink = styled(Link)`
   && {
     font-size: 1.2rem;

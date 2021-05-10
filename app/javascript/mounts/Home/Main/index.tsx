@@ -8,7 +8,7 @@ import { useHomeQuery } from '~gql'
 
 import * as POSTS_QUERY from '../Blog/Archive/Posts.graphql'
 import PostLine from '../PostLine'
-import { Header } from '../styles'
+import { Header, Container } from '../styles'
 
 const Quote = styled.q`
   display: block;
@@ -31,7 +31,7 @@ export default function Main() {
   const { posts, latestTweet: { content, created } } = data
 
   return (
-    <>
+    <Container>
       <Head
         meta={{
           description: 'James Newton is a Software Engineer in Seattle',
@@ -78,7 +78,7 @@ export default function Main() {
           GitHub
         </A>
       </Flex>
-    </>
+    </Container>
   )
 }
 

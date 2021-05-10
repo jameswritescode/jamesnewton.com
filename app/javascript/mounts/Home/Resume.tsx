@@ -4,7 +4,7 @@ import styled from 'styled-components'
 import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 
-import { Code, Header } from './styles'
+import { Code, Header, Container } from './styles'
 
 const HideOnMobile = styled(Flex)`
   align-items: center;
@@ -37,7 +37,7 @@ function Heading({ skills, period, title, company }: Heading) {
 
 export default function Resume() {
   return (
-    <>
+    <Container centered>
       <Head
         meta={{
           description: 'James Newton is a Software Engineer in Seattle',
@@ -188,7 +188,7 @@ export default function Resume() {
           Email me today
         </a>
       </p>
-    </>
+    </Container>
   )
 }
 

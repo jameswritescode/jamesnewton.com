@@ -22,7 +22,7 @@ gem 'sass-rails', '>= 6'
 gem 'shrine', '~> 3.3'
 gem 'sitemap_generator', '~> 6.1', '>= 6.1.2'
 gem 'tzinfo-data', platforms: %i[mingw mswin x64_mingw jruby]
-gem 'webpacker', '~> 5.2.1'
+gem 'webpacker', '6.0.0.beta.7'
 
 group :development, :test do
   gem 'byebug', platforms: %i[mri mingw x64_mingw]

@@ -1,12 +1,18 @@
-const graphql = require('./loaders/graphql')
-const { environment } = require('@rails/webpacker')
+const { webpackConfig, merge } = require('@rails/webpacker')
 const { resolve } = require('path')
 
 const JS_PATH = resolve(__dirname, '..', '..', 'app', 'javascript')
 
-environment.loaders.prepend('graphql', graphql)
+const customConfig = {
+  module: {
+    rules: [
+      {
+        test: /\.graphql$/,
+        use: ['graphql-tag/loader'],
+      },
+    ],
+  },
 
-environment.config.merge({
   resolve: {
     alias: {
       '~gql': resolve(JS_PATH, 'helpers', 'graphql.ts'),
@@ -15,6 +21,6 @@ environment.config.merge({
       '~ui': resolve(JS_PATH, 'ui'),
     },
   },
-})
+}
 
-module.exports = environment
+module.exports = merge(webpackConfig, customConfig)

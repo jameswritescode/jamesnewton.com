@@ -64,7 +64,7 @@ const ItemFlex = styled.a<{ line: Direction }>`
 `
 
 type Item = {
-  href: string,
+  href?: string,
   line?: Direction,
   src?: string,
   text: string,
@@ -114,15 +114,6 @@ const Container = styled(Flex)`
 `
 
 export default function Gear() {
-  const p2715q = (
-    <Item
-      href="#"
-      line="bottom"
-      src="/gear/p2715q.png"
-      text="Dell Ultra 4k 27-Inch Monitor"
-    />
-  )
-
   return (
     <>
       <Head
@@ -136,10 +127,10 @@ export default function Gear() {
 
       <Header back title="Gear" />
 
-      <p>This is the equipment I use for work and play</p>
+      <p>This is the equipment I use for work and play.</p>
 
       <p>
-        Audio is available to both my Development and Gaming machines via a{' '}
+        Audio and Video are available to both machines via a{' '}
         <a href="https://www.amazon.com/gp/product/B07TS5JNT3/">USB Switch</a>
       </p>
 
@@ -200,13 +191,16 @@ export default function Gear() {
           />
 
           <Item
-            href="#"
-            line="bottom"
+            href="https://www.amazon.com/gp/product/B01J6KMNOK/"
             src="/gear/arms.png"
             text="Monoprice Dual Monitor Desk Mount"
           />
 
-          {p2715q}
+          <Item
+            line="top"
+            src="/gear/27bl85u-w.png"
+            text="LG 4K UHD 27-Inch Monitor"
+          />
 
           <Item
             href="https://www.apple.com/macbook-pro-16/"
@@ -230,7 +224,11 @@ export default function Gear() {
         <Flex flexDirection="column" width="50rem">
           <h2>Gaming</h2>
 
-          {p2715q}
+          <Item
+            line="bottom"
+            src="/gear/p2715q.png"
+            text="Dell Ultra 4K 27-Inch Monitor"
+          />
 
           <Item
             href="https://www.amazon.com/gp/product/B06Y15DWXR/"
@@ -287,6 +285,16 @@ export default function Gear() {
             href="https://www.apple.com/airpods-pro/"
             src="/gear/airpods.png"
             text="AirPods Pro"
+          />
+        </Flex>
+
+        <Flex flexDirection="column" width="50rem">
+          <h2>Video</h2>
+
+          <Item
+            href="https://www.amazon.com/Logitech-BRIO-Conferencing-Recording-Streaming/dp/B01N5UOYC4"
+            src="/gear/brio.png"
+            text="Logitech BRIO"
           />
         </Flex>
       </Container>

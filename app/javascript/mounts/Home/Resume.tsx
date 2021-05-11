@@ -49,37 +49,49 @@ export default function Resume() {
 
       <Header back />
 
-      <p>I focus on following agile principles and ensuring my team and I enjoy our craft</p>
-
       <h2>What I&rsquo;m doing</h2>
 
       <Heading
-        company="ShareGrid"
-        period="2017 &mdash; Current"
-        skills={['Rails', 'GraphQL', 'React + Flow', 'Elasticsearch', 'AWS']}
-        title="Lead Engineer"
+        company="Shopify"
+        period="2021 &mdash; Current"
+        skills={['Rails', 'GraphQL', 'React']}
+        title="Developer"
       />
 
       <blockquote>
         <q>
-          ShareGrid is an online marketplace for sharing film and photography equipment with other people in
-          your city.
+          Shopify is a platform with all the ecommerce and point of sale features you need to start, run, and
+          grow your business.
         </q>
       </blockquote>
 
       <p>
-        Joining as the second full-time engineer, my responsibilities over time have included working with
-        early contractors to review and deploy updates to the application, interviewing as we grew our small
-        team, mentoring new employees, all while collaborating to deliver the best experience we can to our
-        users
-      </p>
-
-      <p>
-        Being a small startup, we all wear many hats. I work closely with the product and operations teams to
-        discuss, plan, build and release changes to all parts of the application and infrastructure
+        I recently joined the Revenue RnD team!
       </p>
 
       <h2>What I&rsquo;ve done</h2>
+
+      <Heading
+        company="ShareGrid"
+        period="2017 &mdash; 2021"
+        skills={['Rails', 'GraphQL', 'React', 'Flow & TypeScript', 'Elasticsearch', 'AWS']}
+        title="Lead Engineer"
+      />
+
+      <p>
+        ShareGrid is an online marketplace for sharing film and photography equipment.
+      </p>
+
+      <p>
+        Joining as the second full-time engineer, my responsibilities over time included working with early
+        contractors to review and deploy updates to the application, interviewing as we grew our small team,
+        mentoring new employees, all while collaborating to deliver the best experience we could to our users.
+      </p>
+
+      <p>
+        Being a small startup, I wore many hats. I worked closely with the product and operations teams to
+        discuss, plan, build and release changes to all parts of the application and infrastructure.
+      </p>
 
       <Heading
         company="IZEA"
@@ -88,11 +100,11 @@ export default function Resume() {
         title="Software Engineer"
       />
 
-      <p>IZEA connects brands with influential content creators and publishers</p>
+      <p>IZEA connects brands with influential content creators and publishers.</p>
 
       <p>
         I worked on a steady stream of APIs that powered the Rails backend of the IZEA Exchange and the mobile
-        applications, occasionally working on the frontend Ember application using those APIs
+        applications, occasionally working on the frontend Ember application using those APIs.
       </p>
 
       <Heading
@@ -102,20 +114,20 @@ export default function Resume() {
         title="Software Engineer II"
       />
 
-      <p>Code School, eventually acquired by Pluralsight, was an interactive code learning platform</p>
+      <p>Code School, eventually acquired by Pluralsight, was an interactive code learning platform.</p>
 
       <p>
         I worked in the courses team writing unit tests designed to be run against user submitted code from
         our interactive challenge interface. Users would watch short videos followed by a series of challenges
         where they wrote and submit code. Tests run against the code used AST parsing and sandboxed execution
         to give the user detailed feedback for completing the challenge, or let them continue if all passed. I
-        implemented challenges for Surviving APIs with Rails, Staying Sharp with Angular.js, and more
+        implemented challenges for Surviving APIs with Rails, Staying Sharp with Angular.js, and more.
       </p>
 
       <p>
         I wrote the Python code executor that powered the execution and testing of user submitted code for Try
         Python and Flying Through Python, and contributed to the backend and Angular.js code for
-        JavaScript.com&rsquo;s Try JavaScript
+        JavaScript.com&rsquo;s Try JavaScript.
       </p>
 
       <Heading
@@ -125,17 +137,17 @@ export default function Resume() {
         title="Tech Support Developer"
       />
 
-      <p>Chargify is a recurring billing platform</p>
+      <p>Chargify is a recurring billing platform.</p>
 
       <p>
         As the first hire of Tier 2 support, I was responsible for helping customers and developers with
         platform and API issues. I handled support through Zendesk and phone calls, addressing issues with
-        implementation and usage of the application
+        implementation and usage of the application.
       </p>
 
       <p>
         I also helped develop features for payment gateway integrations, as well as the platforms initial
-        ActiveMerchant gateway support for the eWay payment processor
+        ActiveMerchant gateway support for the eWay payment processor.
       </p>
 
       <Heading
@@ -148,7 +160,7 @@ export default function Resume() {
       <p>
         I was responsible for handling customer support calls and tickets related to website hosting,
         migrations and troubleshooting, email management and client setup, WordPress installation and
-        updates, and programming tasks related to custom client CMS&rsquo; and internal tooling
+        updates, and programming tasks related to custom client CMS&rsquo; and internal tooling.
       </p>
 
       <h2>Other Projects</h2>
@@ -162,12 +174,12 @@ export default function Resume() {
 
       <p>
         WhatPulse is a desktop application that collects keyboard, mouse, application, and network usage. The
-        data can be sent to the web application (pulsed) for personal analysis and competition
+        data can be sent to the web application (pulsed) for personal analysis and competition.
       </p>
 
       <p>
         As a fan of data-driven software, I&rsquo;ve contributed to the web application for several years in
-        the form of backend work and consulting, partnering up to build a more B2B offering
+        the form of backend work and consulting, partnering up to build a more B2B offering.
       </p>
 
       <Heading
@@ -180,7 +192,7 @@ export default function Resume() {
       <p>
         I was a member of the core team of volunteers for GitLab, having contributed and{' '}
         <a href="https://about.gitlab.com/community/mvp/">been recognized</a> for supporting users in the
-        #gitlab IRC channel for several years
+        #gitlab IRC channel for several years.
       </p>
 
       <p>

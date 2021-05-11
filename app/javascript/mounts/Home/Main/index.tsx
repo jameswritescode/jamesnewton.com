@@ -45,7 +45,7 @@ export default function Main() {
 
       <p>
         I&lsquo;m a Software Engineer in Seattle, WA building{' '}
-        <a href="https://www.sharegrid.com">ShareGrid</a>
+        <a href="https://www.shopify.com">Shopify</a>
       </p>
 
       <blockquote>

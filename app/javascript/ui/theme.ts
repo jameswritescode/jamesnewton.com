@@ -5,11 +5,6 @@ type Theme = {
   borderRadius: string,
   primary: string,
   secondary: string,
-
-  mark: {
-    backgroundColor: string,
-    color: string,
-  }
 }
 
 const defaults = { borderRadius: '3px' }
@@ -20,11 +15,6 @@ const light: Theme = {
   backgroundColor: 'white',
   primary: '#191919',
   secondary: '#f7f7f7',
-
-  mark: {
-    backgroundColor: '#fff9b2',
-    color: '#191919',
-  },
 }
 
 const dark: Theme = {
@@ -33,11 +23,6 @@ const dark: Theme = {
   backgroundColor: light.primary,
   primary: light.secondary,
   secondary: '#080808',
-
-  mark: {
-    backgroundColor: 'yellow',
-    color: light.primary,
-  },
 }
 
 export type StyledProps = {

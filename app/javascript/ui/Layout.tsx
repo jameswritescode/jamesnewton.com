@@ -15,7 +15,6 @@ import { StyledProps } from '~ui/theme'
 // **x**   strong
 // *x*     em
 // ---     hr
-// ::x::   mark
 // >       blockquote
 // [x](y)  a
 // ```x``` pre
@@ -124,11 +123,6 @@ const Container = styled.div`
     margin: 0 auto;
     max-height: 70rem;
     max-width: 100%;
-  }
-
-  mark {
-    background-color: ${props => props.theme.mark.backgroundColor};
-    color: ${props => props.theme.mark.color}
   }
 
   li ul, li ol {

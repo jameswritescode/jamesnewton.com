@@ -143,6 +143,10 @@ const Container = styled.div`
     }
   }
 
+  .contains-task-list {
+    list-style: none;
+  }
+
   @media (max-width: 52em) {
     font-size: 1.6rem;
     padding: 2rem;

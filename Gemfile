@@ -12,7 +12,7 @@ gem 'bootsnap', '>= 1.4.2', require: false
 gem 'graphql', '~> 1.10', '>= 1.10.10'
 gem 'image_processing', '~> 1.2'
 gem 'mini_mime', '~> 1.0', '>= 1.0.2'
-gem 'oauth', '~> 0.5.4'
+gem 'oauth', '~> 0.5.5'
 gem 'pg', '~> 1.2.3'
 gem 'puma', '~> 4.1'
 gem 'rails', '~> 6.1'

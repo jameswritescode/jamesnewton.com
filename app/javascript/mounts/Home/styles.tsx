@@ -9,7 +9,7 @@ import {
   typography, TypographyProps,
 } from 'styled-system'
 
-import Flex from '~ui/Flex'
+import { Block } from '~ui/Elements'
 
 import * as HOME_QUERY from './Main/Home.graphql'
 
@@ -29,7 +29,6 @@ export const Container = styled.div<{ centered?: boolean }>`
 const StyledLink = styled(Link)`
   && {
     font-size: 1.2rem;
-    margin-right: 2rem;
     text-transform: uppercase;
 
     :before {
@@ -40,10 +39,6 @@ const StyledLink = styled(Link)`
 
     :after {
       content: '';
-    }
-
-    @media (max-width: 52em) {
-      margin-right: 0;
     }
   }
 `
@@ -68,11 +63,15 @@ type Header = {
 
 export function Header({ children, title, back }: Header) {
   const client = useApolloClient()
+  const gridTemplateColumns = [back && '7rem', 'auto', 'max-content'].filter(Boolean).join(' ')
 
   return (
-    <Flex
+    <Block
       alignItems="center"
-      flexDirection={['column', 'column', 'row']}
+      display={['flex', 'flex', 'grid']}
+      flexDirection="column"
+      gridAutoFlow="column"
+      gridTemplateColumns={gridTemplateColumns}
       mb="2rem"
     >
       {back && (
@@ -89,7 +88,7 @@ export function Header({ children, title, back }: Header) {
       </StyledHeader>
 
       {children}
-    </Flex>
+    </Block>
   )
 }
 

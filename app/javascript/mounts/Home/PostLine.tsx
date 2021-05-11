@@ -3,8 +3,8 @@ import styled from 'styled-components'
 import { Link } from 'react-router-dom'
 import { useApolloClient } from '@apollo/client'
 
-import Flex from '~ui/Flex'
 import UserContext from '~helpers/user-context'
+import { Flex } from '~ui/Elements'
 import { useDestroyPostMutation } from '~gql'
 
 import * as POST_QUERY from './Blog/Post/Post.graphql'

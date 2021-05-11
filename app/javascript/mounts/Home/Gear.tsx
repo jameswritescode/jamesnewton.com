@@ -1,8 +1,8 @@
 import * as React from 'react'
 import styled from 'styled-components'
 
-import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
+import { Flex } from '~ui/Elements'
 
 import { Header } from './styles'
 

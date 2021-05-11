@@ -1,70 +1,32 @@
 import * as React from 'react'
+import * as ReactMarkdown from 'react-markdown'
+import * as footnotes from 'remark-footnotes'
+import * as gfm from 'remark-gfm'
 
-import mark from './mark'
+// import mark from './mark'
 
-export const PLUGINS = [mark]
+const REMARK_PLUGINS = [
+  // mark
+  footnotes,
+  gfm,
+]
 
-type CodeBlock = {
-  value: string,
-}
-
-function CodeBlock({ value, ...props }: CodeBlock) {
-  return <pre {...props}>{value}</pre>
-}
-
-type Heading = {
-  children: React.ReactNode,
-  depth?: number,
-  level?: number,
-}
-
-// TODO: ReactMarkdown expects a level, but remark returns a depth?
-function Heading({ children, depth, level, ...props }: Heading) {
-  return React.createElement(`h${depth || level}`, props, children)
-}
-
-type Image = {
-  alt?: string,
-  src: string,
-}
-
-function Image(props: Image) {
+function Image(props) {
   return <img loading="lazy" {...props} />
 }
 
-type InlineCode = {
-  children: React.ReactNode,
-}
-
-function InlineCode({ children }: InlineCode) {
-  return <code>{children}</code>
-}
-
-type Link = {
-  children: React.ReactNode,
-  href?: string,
-  url?: string,
-}
-
-// TODO: ReactMarkdown expects a href, but remark returns a url?
-function Link({ href, url, children, ...props }: Link) {
-  return (
-    <a
-      href={url || href}
-      {...props}
-    >
-      {children}
-    </a>
-  )
-}
-
-export const RENDERERS: any = {
-  code: CodeBlock,
-  heading: Heading,
+const RENDERERS = {
   image: Image,
   imageReference: Image,
-  inlineCode: InlineCode,
-  link: Link,
-  linkReference: Link,
-  mark: 'mark',
+}
+
+export default function Markdown({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      // eslint-disable-next-line react/no-children-prop
+      children={content}
+      components={RENDERERS}
+      remarkPlugins={REMARK_PLUGINS}
+    />
+  )
 }

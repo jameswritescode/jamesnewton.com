@@ -1,8 +1,8 @@
 import * as React from 'react'
 import styled from 'styled-components'
 
-import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
+import { Flex } from '~ui/Elements'
 
 import { Code, Header, Container } from './styles'
 
@@ -37,7 +37,7 @@ function Heading({ skills, period, title, company }: Heading) {
 
 export default function Resume() {
   return (
-    <Container centered>
+    <Container>
       <Head
         meta={{
           description: 'James Newton is a Software Engineer in Seattle',

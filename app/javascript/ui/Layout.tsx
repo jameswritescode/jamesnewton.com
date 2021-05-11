@@ -52,12 +52,26 @@ const Container = styled.div`
     list-style-position: inside;
   }
 
+  code, pre {
+    border-radius: 3px;
+  }
+
+  code {
+    background-color: ${props => props.theme.secondary};
+    font-variant-ligatures: normal;
+    padding: 4px;
+  }
+
   pre {
     background-color: ${props => props.theme.secondary};
     line-height: normal;
     width: 100%;
     padding: 2rem;
     overflow-x: scroll;
+
+    code {
+      padding: 0;
+    }
   }
 
   blockquote {
@@ -105,22 +119,11 @@ const Container = styled.div`
     }
   }
 
-  code {
-    background-color: ${props => props.theme.secondary};
-    padding: 4px;
-  }
-
-  pre, code {
-    border-radius: 3px;
-  }
-
-  // TODO: would be nice to have p text-align: center if img is present
   p > img {
-    border-radius: 3px;
-    border: 1px solid ${props => props.theme.secondary};
+    display: block;
+    margin: 0 auto;
     max-height: 70rem;
     max-width: 100%;
-    vertical-align: top;
   }
 
   mark {
@@ -135,6 +138,10 @@ const Container = styled.div`
   textarea, input {
     background-color: ${props => props.theme.backgroundColor};
     color: ${props => props.theme.primary};
+  }
+
+  .footnotes {
+    font-size: 1.5rem;
   }
 
   @media (max-width: 52em) {

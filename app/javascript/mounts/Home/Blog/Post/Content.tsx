@@ -1,9 +1,8 @@
-import * as Markdown from 'react-markdown'
 import * as React from 'react'
 
-import Flex from '~ui/Flex'
+import Markdown from '~ui/markdown'
 import UserContext from '~helpers/user-context'
-import { RENDERERS, PLUGINS } from '~ui/markdown'
+import { Flex } from '~ui/Elements'
 
 import { Header, Code } from '../../styles'
 
@@ -14,7 +13,7 @@ export default function Content({ name, created, state, content }: any) {
     <>
       <Header title={name} back>
         <Flex>
-          <Code ml={[null, null, '2rem']}>
+          <Code>
             {created}
           </Code>
 
@@ -26,11 +25,7 @@ export default function Content({ name, created, state, content }: any) {
         </Flex>
       </Header>
 
-      <Markdown
-        plugins={PLUGINS}
-        renderers={RENDERERS}
-        source={content}
-      />
+      <Markdown content={content} />
     </>
   )
 }

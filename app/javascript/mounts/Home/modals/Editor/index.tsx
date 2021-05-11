@@ -3,10 +3,10 @@ import styled from 'styled-components'
 import { useRouteMatch, useHistory } from 'react-router-dom'
 
 import Button from '~ui/Button'
-import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
 import Layout from '~ui/Layout'
 import UserContext from '~helpers/user-context'
+import { Flex } from '~ui/Elements'
 
 import {
   PostState,

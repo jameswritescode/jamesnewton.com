@@ -2,8 +2,8 @@ import * as React from 'react'
 import styled from 'styled-components'
 import { Link } from 'react-router-dom'
 
-import Flex from '~ui/Flex'
 import Head from '~helpers/Head'
+import { Flex } from '~ui/Elements'
 import { useHomeQuery } from '~gql'
 
 import * as POSTS_QUERY from '../Blog/Archive/Posts.graphql'

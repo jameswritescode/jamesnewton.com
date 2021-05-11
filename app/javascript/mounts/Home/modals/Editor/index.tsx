@@ -53,11 +53,9 @@ const PLACEHOLDER_CONTENT = `# Header
 ### Header
 #### Header
 ##### Header
-###### Header
+###### Header[^1]
 
-::highlighting some text::
-
-*italics* **strong** ***both*** ~~strike~~
+*italics* **strong** ***both*** ~~strike~~ ~~***all***~~
 
 Header | Header | Header
 ------ | ------ | ------
@@ -80,7 +78,7 @@ Cell   | Cell   | Cell
 }
 \`\`\`
 
-1. one
+1. one[^2]
     * two
 2. three
 3. four
@@ -91,6 +89,14 @@ Cell   | Cell   | Cell
 This is a paragraph of text using \`code\`
 
 This is another paragraph of text with a [link](#) in it
+
+www.example.com
+
+- [ ] one
+- [x] two
+
+[^1]: This is some detailed footnote for ^1
+[^2]: Wow such footnote
 `
 
 type Editor = {

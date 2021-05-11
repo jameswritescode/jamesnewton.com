@@ -14,7 +14,10 @@ import { Block } from '~ui/Elements'
 import * as HOME_QUERY from './Main/Home.graphql'
 
 export const Code = styled.code<SpaceProps & PositionProps & TypographyProps>`
-  font-size: 1.2rem;
+  && {
+    font-size: 1.2rem;
+  }
+
   ${position}
   ${space}
   ${typography}

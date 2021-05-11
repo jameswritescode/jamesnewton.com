@@ -57,6 +57,7 @@ const Container = styled.div`
 
   code {
     background-color: ${props => props.theme.secondary};
+    font-size: 0.8em;
     font-variant-ligatures: normal;
     padding: 4px;
   }

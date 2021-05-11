@@ -136,7 +136,11 @@ const Container = styled.div`
   }
 
   .footnotes {
-    font-size: 1.5rem;
+    font-size: 0.75em;
+
+    a::after {
+      content: '';
+    }
   }
 
   @media (max-width: 52em) {

@@ -16,12 +16,14 @@ Rails.application.routes.draw do
 
   post '/graphql', to: 'graphql#execute'
 
-  get '/sitemap.xml.gz', to: redirect(
-    "https://jamesnewton-#{Rails.env}.s3-us-west-2.amazonaws.com/sitemaps/sitemap.xml.gz",
+  get(
+    '/sitemap.xml.gz',
+    to: redirect("https://jamesnewton-#{Rails.env}.s3-us-west-2.amazonaws.com/sitemaps/sitemap.xml.gz"),
   )
 
   get '/blog', to: 'application#home'
-  get '/blog/*path', to: 'application#home', as: :posts
+  get '/blog/*path', to: 'application#home', as: :post
+  get '/feed', to: 'application#feed', as: :feed
   get '/gear', to: 'application#home'
   get '/resume', to: 'application#home'
 

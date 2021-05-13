@@ -24,7 +24,7 @@ class Post < ApplicationRecord
   end
 
   def url
-    url_helpers.posts_path(self)
+    url_helpers.post_path(self)
   end
 
   def meta(controller)
@@ -32,7 +32,7 @@ class Post < ApplicationRecord
       description: content.tr("\n", ' ').truncate(160),
       title: "#{name} | James Newton",
       type: 'article',
-      url: controller.posts_url(self),
+      url: controller.post_url(self),
     }
   end
 

@@ -20,6 +20,6 @@ SitemapGenerator::Sitemap.create do
   add resume_path
 
   Post.published.find_each do |post|
-    add posts_path(post), lastmod: post.updated_at
+    add post_path(post), lastmod: post.updated_at
   end
 end

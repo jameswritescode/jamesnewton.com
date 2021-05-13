@@ -46,9 +46,8 @@ const StyledLink = styled(Link)`
   }
 `
 
-const StyledHeader = styled.h1<{ resize: boolean }>`
+const StyledHeader = styled.h1`
   && {
-    ${props => props.resize && 'font-size: 1.3em;'}
     margin-bottom: 0;
     max-width: unset;
 
@@ -59,10 +58,6 @@ const StyledHeader = styled.h1<{ resize: boolean }>`
     }
   }
 `
-
-// NOTE: Guesstimate -- smaller post title font-size if we go over this length
-const RESIZE_TITLE_LENGTH = 37
-
 type Header = {
   back?: boolean,
   children?: React.ReactNode,
@@ -91,7 +86,7 @@ export function Header({ children, title, back }: Header) {
         </StyledLink>
       )}
 
-      <StyledHeader resize={title.length > RESIZE_TITLE_LENGTH}>
+      <StyledHeader>
         {title}
       </StyledHeader>
 

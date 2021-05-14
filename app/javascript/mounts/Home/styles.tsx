@@ -10,8 +10,7 @@ import {
 } from 'styled-system'
 
 import { Block } from '~ui/Elements'
-
-import * as HOME_QUERY from './Main/Home.graphql'
+import { HomeDocument } from '~gql'
 
 export const Code = styled.code<SpaceProps & PositionProps & TypographyProps>`
   && {
@@ -79,7 +78,7 @@ export function Header({ children, title, back }: Header) {
     >
       {back && (
         <StyledLink
-          onMouseOver={() => client.query({ query: HOME_QUERY })}
+          onMouseOver={() => client.query({ query: HomeDocument })}
           to="/"
         >
           Home

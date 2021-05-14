@@ -9,6 +9,7 @@ documents:
 generates:
   app/javascript/helpers/graphql.ts:
     plugins:
+      - named-operations-object
       - typescript
       - typescript-operations
       - typescript-react-apollo

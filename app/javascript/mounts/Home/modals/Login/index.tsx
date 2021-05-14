@@ -3,7 +3,7 @@ import styled from 'styled-components'
 
 import Button from '~ui/Button'
 import UserContext from '~helpers/user-context'
-import { useLoginMutation, useLogoutMutation } from '~gql'
+import { useLoginMutation, useLogoutMutation, namedOperations } from '~gql'
 
 const LoginLayout = styled.form`
   background-color: #ff5f60;
@@ -55,7 +55,13 @@ const LoginLayout = styled.form`
 
 export default function Login() {
   const [input, setInput] = React.useState({ email: '', password: '' })
-  const refetchQueries = ['Me', 'Home', 'Posts']
+
+  const refetchQueries = [
+    namedOperations.Query.Me,
+    namedOperations.Query.Home,
+    namedOperations.Query.Posts,
+  ]
+
   const [login] = useLoginMutation({ refetchQueries })
   const [logout] = useLogoutMutation({ refetchQueries })
   const user = React.useContext(UserContext)

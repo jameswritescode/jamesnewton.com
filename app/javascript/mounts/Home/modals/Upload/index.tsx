@@ -2,7 +2,12 @@ import * as React from 'react'
 import styled from 'styled-components'
 
 import UserContext from '~helpers/user-context'
-import { useAttachmentsQuery, useCreateAttachmentMutation } from '~gql'
+
+import {
+  namedOperations,
+  useAttachmentsQuery,
+  useCreateAttachmentMutation,
+} from '~gql'
 
 const Div = styled.div`
   min-height: 50px;
@@ -46,7 +51,7 @@ export default function Upload() {
     e.preventDefault()
 
     mutate({
-      refetchQueries: ['Attachments'],
+      refetchQueries: [namedOperations.Query.Attachments],
       variables: { input: { file: e.dataTransfer.items[0].getAsFile() } },
     })
   }

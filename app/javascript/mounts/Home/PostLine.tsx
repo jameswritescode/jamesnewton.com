@@ -5,9 +5,8 @@ import { useApolloClient } from '@apollo/client'
 
 import UserContext from '~helpers/user-context'
 import { Flex } from '~ui/Elements'
-import { useDestroyPostMutation } from '~gql'
+import { useDestroyPostMutation, namedOperations, PostDocument } from '~gql'
 
-import * as POST_QUERY from './Blog/Post/Post.graphql'
 import { Code } from './styles'
 
 const StyledFlex = styled(Flex)`
@@ -36,7 +35,7 @@ export default function PostLine({ created, url, name, slug, state }: any) {
   const user = React.useContext(UserContext)
 
   const [mutate] = useDestroyPostMutation({
-    refetchQueries: ['Posts', 'Home'],
+    refetchQueries: [namedOperations.Query.Posts, namedOperations.Query.Home],
     variables: { input: { slug } },
   })
 
@@ -59,7 +58,7 @@ export default function PostLine({ created, url, name, slug, state }: any) {
       </StyledCode>
 
       <PostLink
-        onMouseOver={() => client.query({ query: POST_QUERY, variables: { slug } })}
+        onMouseOver={() => client.query({ query: PostDocument, variables: { slug } })}
         to={url}
       >
         {name}

@@ -9,13 +9,14 @@ import UserContext from '~helpers/user-context'
 import { Flex } from '~ui/Elements'
 
 import {
+  PostDocument,
   PostState,
+  namedOperations,
   useCreateAttachmentMutation,
   usePostQuery,
   useUpdateOrCreatePostMutation,
 } from '~gql'
 
-import * as POST_QUERY from '../../Blog/Post/Post.graphql'
 import Archive from '../../Blog/Archive'
 import Content from '../../Blog/Post/Content'
 
@@ -129,7 +130,11 @@ export default function Editor({ close }: Editor) {
       awaitRefetchQueries: true,
       variables: { input: { id: data?.post?.id, name, content, state } },
       refetchQueries: ({ data: { updateOrCreatePost: { post: { slug: nextSlug } } } }) => (
-        ['Home', { query: POST_QUERY, variables: { slug: nextSlug } }]
+        [
+          namedOperations.Query.Home,
+          namedOperations.Query.Posts,
+          { query: PostDocument, variables: { slug: nextSlug } },
+        ]
       ),
     })
 

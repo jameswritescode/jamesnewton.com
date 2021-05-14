@@ -4,9 +4,8 @@ import { Link } from 'react-router-dom'
 
 import Head from '~helpers/Head'
 import { Flex } from '~ui/Elements'
-import { useHomeQuery } from '~gql'
+import { useHomeQuery, PostsDocument } from '~gql'
 
-import * as POSTS_QUERY from '../Blog/Archive/Posts.graphql'
 import PostLine from '../PostLine'
 import { Header, Container } from '../styles'
 
@@ -61,7 +60,7 @@ export default function Main() {
           <Flex fontSize="0.8em">
             <Link
               to="/blog"
-              onMouseOver={() => client.query({ query: POSTS_QUERY })}
+              onMouseOver={() => client.query({ query: PostsDocument })}
             >
               Archive
             </Link>

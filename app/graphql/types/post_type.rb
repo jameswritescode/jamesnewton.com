@@ -4,6 +4,8 @@ module Types
   class PostType < BaseObject
     implements NodeType
 
+    global_id_field :id
+
     def self.scope_items(items, context)
       if context[:controller]&.current_user.blank?
         items.published_desc
@@ -12,6 +14,7 @@ module Types
       end
     end
 
+    field :attachments, [Types::AttachmentType], null: true
     field :content, String, null: false
     field :created, String, null: false
     field :name, String, null: false

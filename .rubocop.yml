@@ -3,6 +3,9 @@ require:
   - rubocop-rails
   - rubocop-rspec
 
+Layout/EndAlignment:
+  EnforcedStyleAlignWith: start_of_line
+
 Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
 

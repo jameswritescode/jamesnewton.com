@@ -10,6 +10,8 @@ class Post < ApplicationRecord
     published: 1,
   }
 
+  has_many :attachments, dependent: :nullify
+
   before_validation :generate_slug
   before_validation :set_published_at, if: :state_changed?
 

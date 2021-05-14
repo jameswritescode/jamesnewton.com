@@ -15,6 +15,7 @@ input CreateAttachmentInput {
   """
   clientMutationId: String
   file: Upload!
+  postId: ID
 }
 
 """
@@ -115,9 +116,10 @@ interface Node {
 }
 
 type Post implements Node {
+  attachments: [Attachment!]
   content: String!
   created: String!
-  id: ID
+  id: ID!
   meta: Meta!
   name: String!
   slug: String!

@@ -8,9 +8,10 @@ module Mutations
     field :url, String, null: true
 
     argument :file, ApolloUploadServer::Upload, required: true
+    argument :post_id, ID, required: false, loads: Types::PostType
 
-    def resolve(file:)
-      attachment = Attachment.new(file: file)
+    def resolve(file:, post: nil)
+      attachment = Attachment.new(file: file, post: post)
       success = attachment.save
 
       {

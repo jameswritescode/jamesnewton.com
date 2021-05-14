@@ -8,12 +8,12 @@ module Mutations
     field :success, Boolean, null: false
 
     argument :content, String, required: false
-    argument :id, ID, required: false
+    argument :id, ID, required: false, loads: Types::PostType
     argument :name, String, required: false
     argument :state, Types::PostStateType, required: false
 
     def resolve(id: nil, **kwargs)
-      post = Post.find_by(id: id) || Post.new(kwargs)
+      post = id.presence || Post.new(kwargs)
       success = post.update(kwargs)
 
       {

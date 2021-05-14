@@ -157,13 +157,23 @@ export default function Editor({ close }: Editor) {
     const { currentTarget, dataTransfer } = e
 
     const { data: { createAttachment: { success, url } } } = await createAttachment({
-      variables: { input: { file: dataTransfer.items[0].getAsFile() } },
+      variables: {
+        input: {
+          file: dataTransfer.items[0].getAsFile(),
+          postId: data?.post?.id,
+        },
+      },
     })
 
     if (success) insertAtCaret(`![](${url})`, currentTarget)
   }
 
   const onClick = () => setState(state => Object.values(PostState).filter(value => value !== state)[0])
+
+  const handleDrag = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+  }
 
   return (
     <Layout height="100%">
@@ -201,6 +211,8 @@ export default function Editor({ close }: Editor) {
             placeholder={PLACEHOLDER_CONTENT}
             defaultValue={content}
             onDrop={onDrop}
+            onDragOver={handleDrag}
+            onDragEnter={handleDrag}
           />
 
           {user && (

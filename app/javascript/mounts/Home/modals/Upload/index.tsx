@@ -5,7 +5,8 @@ import UserContext from '~helpers/user-context'
 import { useAttachmentsQuery, useCreateAttachmentMutation } from '~gql'
 
 const Div = styled.div`
-  height: 100%;
+  min-height: 50px;
+  min-width: 50px;
 
   a, img {
     vertical-align: top;

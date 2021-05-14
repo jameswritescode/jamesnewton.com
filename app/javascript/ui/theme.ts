@@ -1,10 +1,10 @@
 // NOTE: styled-system's breakpoints are 40em, 52em, 64em (400px, 520px, 640px)
 
-type Theme = {
-  backgroundColor: string,
-  borderRadius: string,
-  primary: string,
-  secondary: string,
+export interface Theme {
+  backgroundColor: string
+  borderRadius: string
+  primary: string
+  secondary: string
 }
 
 const defaults = { borderRadius: '3px' }

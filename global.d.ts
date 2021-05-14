@@ -1,7 +1,6 @@
-declare module '*.graphql' {
-  import { DocumentNode } from 'graphql'
+import 'styled-components'
+import { Theme } from '~ui/theme'
 
-  const Schema: DocumentNode
-
-  export = Schema
+declare module 'styled-components' {
+  export interface DefaultTheme extends Theme {}
 }

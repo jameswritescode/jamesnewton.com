@@ -1,8 +1,7 @@
 import * as React from 'react'
-import styled from 'styled-components'
+import styled, { useTheme } from 'styled-components'
 
 import Head from 'helpers/Head'
-import UserContext from '~helpers/user-context'
 import { Block } from '~ui/Elements'
 import { usePostsQuery, PostsQuery } from '~gql'
 
@@ -18,22 +17,30 @@ interface IGrid {
 }
 
 function Grid({ images }: IGrid) {
+  const theme = useTheme()
+
   return (
     <Block
-      display="flex"
+      backgroundColor={theme.secondary}
+      borderRadius={theme.borderRadius}
+      display="inline-flex"
       flexWrap="wrap"
       gridGap="0.5em"
       my="0.5em"
+      p="0.5em"
     >
       {images.map(image => (
-        <Img key={image.id} src={image.url} />
+        <Img
+          key={image.id}
+          loading="lazy"
+          src={image.url}
+        />
       ))}
     </Block>
   )
 }
 
 export default function Archive() {
-  const user = React.useContext(UserContext)
   const { data } = usePostsQuery()
 
   return (
@@ -53,7 +60,7 @@ export default function Archive() {
         <div key={id}>
           <PostLine {...post} />
 
-          {user && images.length > 0 && <Grid images={images} />}
+          {images.length > 0 && <Grid images={images} />}
         </div>
       ))}
     </Container>

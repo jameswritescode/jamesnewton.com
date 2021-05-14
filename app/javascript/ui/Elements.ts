@@ -1,6 +1,8 @@
 import styled, { css } from 'styled-components'
 
 import {
+  border, BorderProps,
+  color, ColorProps,
   flexbox, FlexboxProps,
   grid, GridProps,
   layout, LayoutProps,
@@ -8,9 +10,11 @@ import {
   typography, TypographyProps,
 } from 'styled-system'
 
-type SharedProps = SpaceProps & LayoutProps & TypographyProps
+type SharedProps = BorderProps & ColorProps & SpaceProps & LayoutProps & TypographyProps
 
 const shared = css`
+  ${border}
+  ${color}
   ${layout}
   ${space}
   ${typography}

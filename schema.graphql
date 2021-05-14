@@ -116,10 +116,10 @@ interface Node {
 }
 
 type Post implements Node {
-  attachments: [Attachment!]
   content: String!
   created: String!
   id: ID!
+  images: [Attachment!]!
   meta: Meta!
   name: String!
   slug: String!

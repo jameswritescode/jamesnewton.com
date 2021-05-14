@@ -1,14 +1,39 @@
-// @flow
-
 import * as React from 'react'
+import styled from 'styled-components'
 
 import Head from 'helpers/Head'
-import { usePostsQuery } from '~gql'
+import UserContext from '~helpers/user-context'
+import { Block } from '~ui/Elements'
+import { usePostsQuery, PostsQuery } from '~gql'
 
 import PostLine from '../../PostLine'
 import { Header, Container } from '../../styles'
 
+const Img = styled.img`
+  max-height: 100px;
+`
+
+interface IGrid {
+  images: PostsQuery['posts'][0]['images']
+}
+
+function Grid({ images }: IGrid) {
+  return (
+    <Block
+      display="flex"
+      flexWrap="wrap"
+      gridGap="0.5em"
+      my="0.5em"
+    >
+      {images.map(image => (
+        <Img key={image.id} src={image.url} />
+      ))}
+    </Block>
+  )
+}
+
 export default function Archive() {
+  const user = React.useContext(UserContext)
   const { data } = usePostsQuery()
 
   return (
@@ -24,8 +49,12 @@ export default function Archive() {
 
       <Header back />
 
-      {data && data.posts.map(({ id, ...post }) => (
-        <PostLine key={id} {...post} />
+      {data && data.posts.map(({ id, images, ...post }) => (
+        <div key={id}>
+          <PostLine {...post} />
+
+          {user && images.length > 0 && <Grid images={images} />}
+        </div>
       ))}
     </Container>
   )

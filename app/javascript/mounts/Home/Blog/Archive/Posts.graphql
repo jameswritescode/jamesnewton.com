@@ -6,5 +6,10 @@ query Posts {
     slug
     state
     url
+
+    images {
+      id
+      url
+    }
   }
 }

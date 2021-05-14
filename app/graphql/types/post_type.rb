@@ -14,13 +14,17 @@ module Types
       end
     end
 
-    field :attachments, [Types::AttachmentType], null: true
     field :content, String, null: false
     field :created, String, null: false
     field :name, String, null: false
     field :slug, String, null: false
     field :state, PostStateType, null: false
     field :url, String, null: false
+
+    field :images, [Types::AttachmentType], null: false
+    def images
+      object.attachments.select(&:embed?)
+    end
 
     field :meta, MetaType, null: false
     def meta

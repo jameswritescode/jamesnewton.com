@@ -131,10 +131,10 @@ export type Node = {
 
 export type Post = Node & {
   __typename?: 'Post';
-  attachments?: Maybe<Array<Attachment>>;
   content: Scalars['String'];
   created: Scalars['String'];
   id: Scalars['ID'];
+  images: Array<Attachment>;
   meta: Meta;
   name: Scalars['String'];
   slug: Scalars['String'];
@@ -205,6 +205,10 @@ export type PostsQuery = (
   & { posts: Array<Maybe<(
     { __typename?: 'Post' }
     & Pick<Post, 'id' | 'created' | 'name' | 'slug' | 'state' | 'url'>
+    & { images: Array<(
+      { __typename?: 'Attachment' }
+      & Pick<Attachment, 'id' | 'url'>
+    )> }
   )>> }
 );
 
@@ -340,6 +344,10 @@ export const PostsDocument = gql`
     slug
     state
     url
+    images {
+      id
+      url
+    }
   }
 }
     `;

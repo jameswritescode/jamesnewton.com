@@ -54,7 +54,7 @@ export default function Home() {
   const { data } = useMeQuery()
 
   history.listen(({ hash }) => {
-    if (hash != null) return
+    if (hash !== '') return
 
     window.scrollTo(0, 0)
   })

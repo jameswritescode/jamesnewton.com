@@ -10,12 +10,7 @@ import { Header, Container } from '../../styles'
 
 const Img = styled.img`
   border-radius: ${props => props.theme.borderRadius};
-  margin: 0.5em 0.5em 0 0;
   max-height: 100px;
-
-  :first-child {
-    margin-left: 0.5em;
-  }
 `
 
 interface IGrid {
@@ -31,8 +26,9 @@ function Grid({ images }: IGrid) {
       borderRadius={theme.borderRadius}
       display="inline-flex"
       flexWrap="wrap"
+      gridGap="0.5em"
       my="0.5em"
-      pb="0.5em"
+      p="0.5em"
     >
       {images.map(image => (
         <Img

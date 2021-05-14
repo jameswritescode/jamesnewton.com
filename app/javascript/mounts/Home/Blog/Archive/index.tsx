@@ -9,11 +9,12 @@ import PostLine from '../../PostLine'
 import { Header, Container } from '../../styles'
 
 const Img = styled.img`
+  border-radius: ${props => props.theme.borderRadius};
+  margin: 0.5em 0.5em 0 0;
   max-height: 100px;
-  margin-right: 0.5em;
 
-  &:last-child {
-    margin-right: 0;
+  :first-child {
+    margin-left: 0.5em;
   }
 `
 
@@ -31,7 +32,7 @@ function Grid({ images }: IGrid) {
       display="inline-flex"
       flexWrap="wrap"
       my="0.5em"
-      p="0.5em"
+      pb="0.5em"
     >
       {images.map(image => (
         <Img

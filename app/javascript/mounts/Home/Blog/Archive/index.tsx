@@ -10,6 +10,11 @@ import { Header, Container } from '../../styles'
 
 const Img = styled.img`
   max-height: 100px;
+  margin-right: 0.5em;
+
+  &:last-child {
+    margin-right: 0;
+  }
 `
 
 interface IGrid {
@@ -25,7 +30,6 @@ function Grid({ images }: IGrid) {
       borderRadius={theme.borderRadius}
       display="inline-flex"
       flexWrap="wrap"
-      gridGap="0.5em"
       my="0.5em"
       p="0.5em"
     >

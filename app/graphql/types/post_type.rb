@@ -10,7 +10,7 @@ module Types
       if context[:controller]&.current_user.blank?
         items.published_desc
       else
-        items.order(created_at: :desc)
+        items.order(state: :asc, created_at: :desc)
       end
     end
 

@@ -47,6 +47,14 @@ const EditorFlex = styled(Flex)`
   }
 `
 
+const ContentFlex = styled(Flex)`
+  scrollbar-width: none;
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+`
+
 const PLACEHOLDER_NAME = 'Placeholder'
 
 const PLACEHOLDER_CONTENT = `# Header
@@ -239,7 +247,7 @@ export default function Editor({ close }: Editor) {
           )}
         </EditorFlex>
 
-        <Flex
+        <ContentFlex
           flexDirection="column"
           ml={margins}
           overflowY="scroll"
@@ -251,7 +259,7 @@ export default function Editor({ close }: Editor) {
             name={name || PLACEHOLDER_NAME}
             state={state}
           />
-        </Flex>
+        </ContentFlex>
       </Flex>
     </Layout>
   )

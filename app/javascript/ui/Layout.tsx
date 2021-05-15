@@ -65,9 +65,9 @@ const Container = styled.div`
   pre {
     background-color: ${props => props.theme.secondary};
     line-height: normal;
-    width: 100%;
+    overflow-x: auto;
     padding: 2rem;
-    overflow-x: scroll;
+    width: 100%;
 
     code {
       padding: 0;

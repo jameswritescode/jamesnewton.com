@@ -141,6 +141,15 @@ const Container = styled.div`
     a::after {
       content: '';
     }
+
+    li:target {
+      background-color: ${props => props.theme.primary};
+      color: ${props => props.theme.secondary};
+
+      a {
+        color: ${props => props.theme.secondary};
+      }
+    }
   }
 
   .contains-task-list {

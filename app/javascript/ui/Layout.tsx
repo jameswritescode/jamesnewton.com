@@ -52,7 +52,7 @@ const Container = styled.div`
   }
 
   code, pre {
-    border-radius: 3px;
+    border-radius: ${props => props.theme.borderRadius};
   }
 
   code {
@@ -92,6 +92,8 @@ const Container = styled.div`
   }
 
   .markdown-table {
+    border-radius: ${props => props.theme.borderRadius};
+    border: 1px solid ${props => props.theme.primary};
     overflow-x: auto;
   }
 
@@ -101,8 +103,13 @@ const Container = styled.div`
     width: 100%;
   }
 
-  table, td, th {
-    border: 1px solid ${props => props.theme.primary};
+  td, th {
+    border-right: 1px solid ${props => props.theme.primary};
+    padding: 1rem;
+
+    :last-child {
+      border-right: none;
+    }
   }
 
   th {
@@ -110,8 +117,14 @@ const Container = styled.div`
     text-align: left;
   }
 
-  td, th {
-    padding: 1rem;
+  td {
+    border-bottom: 1px solid ${props => props.theme.primary};
+  }
+
+  tr:last-child {
+    td {
+      border-bottom: 0;
+    }
   }
 
   a {

@@ -15,9 +15,20 @@ function Image(props) {
   return <img loading="lazy" {...props} />
 }
 
+function Table({ children }) {
+  return (
+    <div className="markdown-table">
+      <table>
+        {children}
+      </table>
+    </div>
+  )
+}
+
 const RENDERERS = {
   image: Image,
   imageReference: Image,
+  table: Table,
 }
 
 export default function Markdown({ content }: { content: string }) {

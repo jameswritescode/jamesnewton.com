@@ -83,7 +83,7 @@ const Container = styled.div`
     quotes: "“" "”";
   }
 
-  p, ol, ul, pre, blockquote, h1, table, hr {
+  p, ol, ul, pre, blockquote, h1, hr, .markdown-table {
     margin-bottom: 2rem;
 
     :last-child {
@@ -91,8 +91,14 @@ const Container = styled.div`
     }
   }
 
+  .markdown-table {
+    overflow-x: auto;
+  }
+
   table {
     border-collapse: collapse;
+    white-space: nowrap;
+    width: 100%;
   }
 
   table, td, th {

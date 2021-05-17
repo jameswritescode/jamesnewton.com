@@ -67,6 +67,7 @@ const Container = styled.div`
     line-height: normal;
     overflow-x: auto;
     padding: 2rem;
+    position: relative;
     width: 100%;
 
     code {

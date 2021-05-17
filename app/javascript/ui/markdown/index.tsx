@@ -9,34 +9,36 @@ const REMARK_PLUGINS = [
   gfm,
 ]
 
-const Badge = styled.div`
-  background-color: ${props => props.theme.primary};
-  border-radius: ${props => props.theme.borderRadius};
-  color: ${props => props.theme.secondary};
-  font-size: 0.7em;
-  padding: 0.5em;
-  position: absolute;
-  right: 2rem;
-  user-select: none;
-`
-
-interface ICode {
-  children: React.ReactNode
-  className?: string
-  inline?: boolean
-}
-
-function Code({ inline, className, children }: ICode) {
-  return (
-    <code className={className}>
-      {!inline && className && <Badge>{className.split('-')[1]}</Badge>}
-      {children}
-    </code>
-  )
-}
-
 function Image(props) {
   return <img loading="lazy" {...props} />
+}
+
+const Badge = styled.code`
+  && {
+    background-color: ${props => props.theme.primary};
+    color: ${props => props.theme.secondary};
+    font-size: 0.55em;
+    line-height: initial;
+    position: absolute;
+    right: 2rem;
+    top: 2rem;
+    user-select: none;
+  }
+`
+
+function Pre({ children }: { children: React.ReactNode }) {
+  const language = children[0].props.className
+  const badge = language && language.split('-')[1]
+
+  return (
+    <div className="markdown-code">
+      {badge && <Badge>{badge}</Badge>}
+
+      <pre>
+        {children}
+      </pre>
+    </div>
+  )
 }
 
 function Table({ children }: { children: React.ReactNode }) {
@@ -50,9 +52,9 @@ function Table({ children }: { children: React.ReactNode }) {
 }
 
 const RENDERERS = {
-  code: Code,
   image: Image,
   imageReference: Image,
+  pre: Pre,
   table: Table,
 }
 

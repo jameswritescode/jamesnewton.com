@@ -62,12 +62,15 @@ const Container = styled.div`
     padding: 4px;
   }
 
+  .markdown-code {
+    position: relative;
+  }
+
   pre {
     background-color: ${props => props.theme.secondary};
     line-height: normal;
     overflow-x: auto;
     padding: 2rem;
-    position: relative;
     width: 100%;
 
     code {
@@ -84,7 +87,7 @@ const Container = styled.div`
     quotes: "“" "”";
   }
 
-  p, ol, ul, pre, blockquote, h1, hr, .markdown-table {
+  p, ol, ul, blockquote, h1, hr, .markdown-table, .markdown-code {
     margin-bottom: 2rem;
 
     :last-child {

@@ -96,8 +96,6 @@ const Container = styled.div`
   }
 
   .markdown-table {
-    border-radius: ${props => props.theme.borderRadius};
-    border: 1px solid ${props => props.theme.primary};
     overflow-x: auto;
   }
 
@@ -108,12 +106,7 @@ const Container = styled.div`
   }
 
   td, th {
-    border-right: 1px solid ${props => props.theme.primary};
     padding: 1rem;
-
-    :last-child {
-      border-right: none;
-    }
   }
 
   th {

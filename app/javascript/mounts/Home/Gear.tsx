@@ -130,13 +130,13 @@ export default function Gear() {
       <p>This is the equipment I use for work and play.</p>
 
       <p>
-        Audio and Video are available to both machines via a{' '}
+        Shared gear is available to both machines via a{' '}
         <a href="https://www.amazon.com/gp/product/B07TS5JNT3/">USB Switch</a>
       </p>
 
       <Container>
         <Flex flexDirection="column" width="50rem">
-          <h2>Audio</h2>
+          <h2>Shared</h2>
 
           <Item
             href="https://www.amazon.com/gp/product/B00018MSNI/"
@@ -178,6 +178,18 @@ export default function Gear() {
             src="/gear/boom.png"
             text="RODE PSA 1 Boom Arm"
           />
+
+          <Item
+            href="https://www.amazon.com/Logitech-BRIO-Conferencing-Recording-Streaming/dp/B01N5UOYC4"
+            src="/gear/brio.png"
+            text="Logitech BRIO"
+          />
+
+          <Item
+            href="https://www.amazon.com/gp/product/B06XKNZT1P/"
+            src="/gear/streamdeck.png"
+            text="Elgato Stream Deck"
+          />
         </Flex>
 
         <Flex flexDirection="column" width="50rem">
@@ -192,12 +204,13 @@ export default function Gear() {
 
           <Item
             href="https://www.amazon.com/gp/product/B01J6KMNOK/"
+            line="bottom"
             src="/gear/arms.png"
             text="Monoprice Dual Monitor Desk Mount"
           />
 
           <Item
-            line="top"
+            line="bottom"
             src="/gear/27bl85u-w.png"
             text="LG 4K UHD 27-Inch Monitor"
           />
@@ -209,15 +222,15 @@ export default function Gear() {
           />
 
           <Item
-            href="https://www.amazon.com/gp/product/B0146YF1FO"
-            src="/gear/apple-keyboard.png"
-            text="Apple Wireless Keyboard"
+            href="https://www.zsa.io/moonlander/"
+            src="/gear/keyboard.png"
+            text="ZSA Moonlander"
           />
 
           <Item
-            href="https://www.apple.com/shop/product/MJ2R2LL/A/magic-trackpad-2-silver"
-            src="/gear/trackpad.png"
-            text="Magic Trackpad"
+            href="https://www.amazon.com/gp/product/B00BIFNTMC/"
+            src="/gear/mouse.png"
+            text="Anker Vertical Ergonomic Mouse"
           />
         </Flex>
 
@@ -285,16 +298,6 @@ export default function Gear() {
             href="https://www.apple.com/airpods-pro/"
             src="/gear/airpods.png"
             text="AirPods Pro"
-          />
-        </Flex>
-
-        <Flex flexDirection="column" width="50rem">
-          <h2>Video</h2>
-
-          <Item
-            href="https://www.amazon.com/Logitech-BRIO-Conferencing-Recording-Streaming/dp/B01N5UOYC4"
-            src="/gear/brio.png"
-            text="Logitech BRIO"
           />
         </Flex>
       </Container>

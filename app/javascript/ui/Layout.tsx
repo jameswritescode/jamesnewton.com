@@ -22,6 +22,24 @@ import { StyledProps } from '~ui/theme'
 // ~~x~~   del
 
 const GlobalStyle = createGlobalStyle<StyledProps>`
+  :root {
+    scroll-behavior: smooth;
+    scrollbar-color: ${props => `${props.theme.primary} transparent`};
+  }
+
+  body, pre, .markdown-table {
+    ::-webkit-scrollbar {
+      background-color: transparent;
+      width: .9rem;
+      height: .9rem;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background-color: ${props => props.theme.primary};
+      border-radius: 1em;
+    }
+  }
+
   body {
     background-color: ${props => props.theme.backgroundColor};
   }

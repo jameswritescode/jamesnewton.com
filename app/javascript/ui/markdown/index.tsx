@@ -21,7 +21,7 @@ const Badge = styled.code`
     line-height: initial;
     position: absolute;
     right: 2rem;
-    top: 2rem;
+    top: 2.05rem;
     user-select: none;
   }
 `

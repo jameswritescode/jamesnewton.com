@@ -171,6 +171,26 @@ const Container = styled.div`
     color: ${props => props.theme.primary};
   }
 
+  sup:target {
+    a {
+      background-color: ${props => props.theme.primary};
+      color: ${props => props.theme.secondary};
+    }
+  }
+
+  a.footnote-ref {
+    background-color: ${props => props.theme.secondary};
+    border-radius: ${props => props.theme.borderRadius};
+    color: ${props => props.theme.primary};
+    font-size: .7em;
+    margin-left: 2px;
+    padding: 0 2px;
+
+    ::after {
+      content: '';
+    }
+  }
+
   .footnotes {
     font-size: 0.75em;
 
@@ -179,8 +199,10 @@ const Container = styled.div`
     }
 
     li:target {
-      background-color: ${props => props.theme.primary};
-      color: ${props => props.theme.secondary};
+      &, * {
+        background-color: ${props => props.theme.primary};
+        color: ${props => props.theme.secondary};
+      }
 
       a {
         color: ${props => props.theme.secondary};

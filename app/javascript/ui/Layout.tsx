@@ -108,7 +108,9 @@ const Container = styled.div`
   }
 
   p, ol, ul, blockquote, h1, hr, .markdown-table, .markdown-code {
+    hyphens: auto;
     margin-bottom: 2rem;
+    text-align: justify;
 
     :last-child {
       margin-bottom: 0;
@@ -193,19 +195,38 @@ const Container = styled.div`
 
   .footnotes {
     font-size: 0.75em;
+    position: relative;
+
+    ol {
+      list-style-type: none;
+    }
 
     a::after {
       content: '';
     }
 
-    li:target {
-      &, * {
-        background-color: ${props => props.theme.primary};
-        color: ${props => props.theme.secondary};
+    li {
+      counter-increment: footnotes;
+      position: relative;
+
+      ::before {
+        content: counter(footnotes) '.';
+        position: absolute;
       }
 
-      a {
-        color: ${props => props.theme.secondary};
+      :target {
+        &, * {
+          background-color: ${props => props.theme.primary};
+          color: ${props => props.theme.secondary};
+        }
+
+        a {
+          color: ${props => props.theme.secondary};
+        }
+      }
+
+      p {
+        margin-left: 1em;
       }
     }
   }

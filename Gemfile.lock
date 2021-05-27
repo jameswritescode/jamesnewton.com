@@ -119,7 +119,7 @@ GEM
     ffi (1.13.1)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
-    graphql (1.11.2)
+    graphql (1.12.10)
     graphql-rails_logger (1.2.2)
       actionpack (> 5.0)
       activesupport (> 5.0)

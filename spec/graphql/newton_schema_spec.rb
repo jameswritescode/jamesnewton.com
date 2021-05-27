@@ -7,8 +7,8 @@ RSpec.describe NewtonSchema do
     context = { GRAPHQL_RAKE_TASK: true }
 
     aggregate_failures do
-      expect(described_class.to_definition(context: context)).to eq(File.read(Rails.root.join('schema.graphql')))
-      expect(described_class.to_json(context: context)).to eq(File.read(Rails.root.join('schema.json')))
+      expect(described_class.to_definition(context: context)).to eq(File.read(Rails.root.join('schema.graphql')).rstrip)
+      expect(described_class.to_json(context: context)).to eq(File.read(Rails.root.join('schema.json')).rstrip)
     end
   end
 end

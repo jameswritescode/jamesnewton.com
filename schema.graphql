@@ -104,11 +104,36 @@ type Meta {
 }
 
 type Mutation {
-  createAttachment(input: CreateAttachmentInput!): CreateAttachmentPayload!
-  destroyPost(input: DestroyPostInput!): DestroyPostPayload
-  login(input: LoginInput!): LoginPayload!
-  logout(input: LogoutInput!): LogoutPayload
-  updateOrCreatePost(input: UpdateOrCreatePostInput!): UpdateOrCreatePostPayload!
+  createAttachment(
+    """
+    Parameters for CreateAttachment
+    """
+    input: CreateAttachmentInput!
+  ): CreateAttachmentPayload!
+  destroyPost(
+    """
+    Parameters for DestroyPost
+    """
+    input: DestroyPostInput!
+  ): DestroyPostPayload
+  login(
+    """
+    Parameters for Login
+    """
+    input: LoginInput!
+  ): LoginPayload!
+  logout(
+    """
+    Parameters for Logout
+    """
+    input: LogoutInput!
+  ): LogoutPayload
+  updateOrCreatePost(
+    """
+    Parameters for UpdateOrCreatePost
+    """
+    input: UpdateOrCreatePostInput!
+  ): UpdateOrCreatePostPayload!
 }
 
 interface Node {

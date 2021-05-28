@@ -68,7 +68,13 @@ const Container = styled.div`
   }
 
   ul, ol {
-    list-style-position: inside;
+    margin-left: 2rem;
+
+    li {
+      p:last-of-type {
+        margin-bottom: 0;
+      }
+    }
   }
 
   code, pre {
@@ -107,7 +113,7 @@ const Container = styled.div`
     quotes: "“" "”";
   }
 
-  p, ol, ul, blockquote, h1, hr, .markdown-table, .markdown-code {
+  p, ol, ul, blockquote, h1, hr, .markdown-table, .markdown-code, .footnotes {
     hyphens: auto;
     margin-bottom: 2rem;
     text-align: justify;
@@ -164,13 +170,13 @@ const Container = styled.div`
     max-width: 100%;
   }
 
-  li ul, li ol {
-    padding-left: 4rem;
-  }
-
   textarea, input {
     background-color: ${props => props.theme.backgroundColor};
     color: ${props => props.theme.primary};
+  }
+
+  hr {
+    color: ${props => props.theme.secondary};
   }
 
   sup:target {
@@ -195,38 +201,23 @@ const Container = styled.div`
 
   .footnotes {
     font-size: 0.75em;
-    position: relative;
-
-    ol {
-      list-style-type: none;
-    }
 
     a::after {
       content: '';
     }
 
-    li {
-      counter-increment: footnotes;
-      position: relative;
-
-      ::before {
-        content: counter(footnotes) '.';
-        position: absolute;
+    li:target {
+      ::marker {
+        color: ${props => props.theme.primary};
       }
 
-      :target {
-        &, * {
-          background-color: ${props => props.theme.primary};
-          color: ${props => props.theme.secondary};
-        }
-
-        a {
-          color: ${props => props.theme.secondary};
-        }
+      &, * {
+        background-color: ${props => props.theme.primary};
+        color: ${props => props.theme.secondary};
       }
 
-      p {
-        margin-left: 1em;
+      a {
+        color: ${props => props.theme.secondary};
       }
     }
   }

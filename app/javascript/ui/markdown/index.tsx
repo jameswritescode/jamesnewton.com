@@ -16,12 +16,13 @@ function Image(props) {
 const Badge = styled.code`
   && {
     background-color: ${props => props.theme.primary};
+    border-radius: 0 ${props => props.theme.borderRadius};
     color: ${props => props.theme.secondary};
     font-size: 0.55em;
     line-height: initial;
     position: absolute;
-    right: 2rem;
-    top: 2.05rem;
+    right: 0;
+    top: 0;
     user-select: none;
   }
 `

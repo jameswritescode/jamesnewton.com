@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '2.7.1'
+ruby '3.0.1'
 
 gem 'apollo_upload_server', '~> 2.0', '>= 2.0.1'
 gem 'awesome_print'
@@ -31,7 +31,7 @@ end
 group :development do
   gem 'graphql-rails_logger'
 
-  gem 'listen', '~> 3.2'
+  gem 'listen', '~> 3.5.1'
   gem 'web-console', '>= 3.3.0'
 
   gem 'spring'

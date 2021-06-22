@@ -2,7 +2,7 @@
 
 module Types
   class QueryType < BaseObject
-    field :attachments, [AttachmentType, null: true], null: false, user_only: true
+    field :attachments, [AttachmentType, { null: true }], null: false, user_only: true
     def attachments
       Attachment.all.order(created_at: :desc)
     end
@@ -24,7 +24,7 @@ module Types
       Post.find_by(slug: slug)
     end
 
-    field :posts, [PostType, null: true], null: false do
+    field :posts, [PostType, { null: true }], null: false do
       argument :limit, Integer, required: false
     end
     def posts(limit: nil)

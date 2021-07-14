@@ -159,10 +159,10 @@ export default function Gear() {
           />
 
           <Item
-            href="https://www.amazon.com/gp/product/B004MQSV04/"
+            href="https://www.amazon.com/dp/B004LWH79A"
             line="top"
-            src="/gear/cloudlifter.png"
-            text="Cloudlifter CL-1"
+            src="/gear/dbx286s.png"
+            text="dbx 286s Microphone Pre-amp Processor"
           />
 
           <Item
@@ -218,7 +218,7 @@ export default function Gear() {
           <Item
             href="https://www.apple.com/macbook-pro-16/"
             src="/gear/macbook.png"
-            text="MacBook Pro (16-inch, 2019)"
+            text="2x MacBook Pro (16-inch, 2019)"
           />
 
           <Item

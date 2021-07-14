@@ -162,7 +162,7 @@ export default function Gear() {
             href="https://www.amazon.com/dp/B004LWH79A"
             line="top"
             src="/gear/dbx286s.png"
-            text="dbx 286s Microphone Pre-amp Processor"
+            text="dbx 286s Mic Pre-amp Processor"
           />
 
           <Item

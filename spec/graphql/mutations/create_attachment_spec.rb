@@ -21,7 +21,7 @@ RSpec.describe Mutations::CreateAttachment, type: :graphql do
   it 'works for signed in users' do
     sign_in(create(:user))
 
-    file = Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/kitten.jpg'), 'image/jpg')
+    file = ApolloUploadServer::Wrappers::UploadedFile.new(fixture_file_upload('kitten.jpg'))
 
     response = execute_graphql(
       mutation,

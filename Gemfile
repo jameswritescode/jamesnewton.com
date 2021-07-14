@@ -4,7 +4,7 @@ source 'https://rubygems.org'
 
 ruby '3.0.1'
 
-gem 'apollo_upload_server', '~> 2.0', '>= 2.0.1'
+gem 'apollo_upload_server', '~> 2.0', '>= 2.0.5'
 gem 'awesome_print'
 gem 'aws-sdk-s3'
 gem 'bcrypt', '~> 3.1.7'

@@ -10,7 +10,7 @@ module GraphQLHelpers
   def execute_graphql(query, **kwargs)
     NewtonSchema.execute(
       query,
-      { context: { controller: controller } }.merge(kwargs),
+      **{ context: { controller: controller } }.merge(kwargs),
     ).to_h
   end
 

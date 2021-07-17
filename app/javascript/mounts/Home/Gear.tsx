@@ -223,8 +223,15 @@ export default function Gear() {
 
           <Item
             href="https://www.zsa.io/moonlander/"
+            line="top"
             src="/gear/keyboard.png"
             text="ZSA Moonlander"
+          />
+
+          <Item
+            line="top"
+            src="/gear/holypanda.png"
+            text="Holy Panda Switches"
           />
 
           <Item

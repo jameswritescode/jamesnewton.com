@@ -43,3 +43,5 @@ yarn-debug.log*
 app/javascript/types/graphql.d.ts
 
 drafts/
+
+.DS_Store

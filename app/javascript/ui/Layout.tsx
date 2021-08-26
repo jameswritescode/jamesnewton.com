@@ -116,7 +116,6 @@ const Container = styled.div`
   p, ol, ul, blockquote, h1, hr, .markdown-table, .markdown-code, .footnotes {
     hyphens: auto;
     margin-bottom: 2rem;
-    text-align: justify;
 
     :last-child {
       margin-bottom: 0;

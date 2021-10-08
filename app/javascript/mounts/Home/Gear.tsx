@@ -275,6 +275,12 @@ export default function Gear() {
             src="/gear/k95.png"
             text="Corsair K95 RGB Cherry MX Red"
           />
+
+          <Item
+            href="https://www.amazon.com/dp/product/B07GBZ4Q68/"
+            src="/gear/logitech-hero.png"
+            text="Logitech G G502 HERO"
+          />
         </Flex>
 
         <Flex flexDirection="column" width="50rem">

@@ -251,23 +251,22 @@ export default function Gear() {
           />
 
           <Item
-            href="https://www.amazon.com/gp/product/B06Y15DWXR/"
             line="bottom"
             src="/gear/gpu.png"
-            text="EVGA GeForce GTX 1080 Ti"
+            text="Nvidia GeForce RTX™ 3070 Ti"
           />
 
           <Item
-            href="https://www.amazon.com/gp/product/B00D12OBEU/"
+            href="https://www.amazon.com/dp/B08WBYQQ8C"
             src="/gear/motherboard.png"
-            text="MSI Z87-G45 Motherboard"
+            text="MSI Z590 Pro WIFI (CEC)"
           />
 
           <Item
-            href="https://www.amazon.com/gp/product/B00CO8TBQ0/"
+            href="https://www.amazon.com/dp/B08X6KQSZ1"
             line="top"
             src="/gear/cpu.png"
-            text="Intel Core i7-4770K Processor"
+            text="Intel Core i9-11900KF 8-Core 3.5GHz"
           />
 
           <Item

@@ -222,8 +222,14 @@ export default function Gear() {
           />
 
           <Item
-            href="https://www.zsa.io/moonlander/"
+            href="https://www.bluemic.com/en-us/products/yeti/"
             line="top"
+            src="/gear/yeti.png"
+            text="Yeti"
+          />
+
+          <Item
+            href="https://www.zsa.io/moonlander/"
             src="/gear/keyboard.png"
             text="ZSA Moonlander"
           />

@@ -276,9 +276,23 @@ export default function Gear() {
           />
 
           <Item
-            href="https://www.amazon.com/gp/product/B00N4OBCWY/"
-            src="/gear/k95.png"
-            text="Corsair K95 RGB Cherry MX Red"
+            href="https://www.pcgamingrace.com/products/gmmk-full-brown-switch"
+            src="/gear/gmmk.png"
+            text="GMMK"
+          />
+
+          <Item
+            href="https://www.pcgamingrace.com/products/glorious-panda-mechanical-switches"
+            line="top"
+            src="/gear/glorious-panda.png"
+            text="Glorious Panda Switches"
+          />
+
+          <Item
+            href="https://www.pcgamingrace.com/products/glorious-aura-keycaps-v2-black"
+            line="top"
+            src="/gear/glorious-aura.png"
+            text="Glorious Aura Keycaps"
           />
 
           <Item

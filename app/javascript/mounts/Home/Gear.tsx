@@ -298,7 +298,7 @@ export default function Gear() {
           <Item
             href="https://www.amazon.com/dp/product/B07GBZ4Q68/"
             src="/gear/logitech-hero.png"
-            text="Logitech G G502 HERO"
+            text="Logitech G502 HERO"
           />
         </Flex>
 

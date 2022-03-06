@@ -9,6 +9,7 @@ This is my personal website & playground
 ```
 $ bundle
 $ yarn
+$ cp config/database.example.yml config/database.yml
 $ rails db:prepare gql
 ```
 

@@ -21,10 +21,7 @@ RSpec.describe Mutations::Login, type: :graphql do
       variables: { input: { email: user.email, password: 'password' } },
     )
 
-    aggregate_failures do
-      expect(controller.current_user).to eq user
-      expect(result['data']['login']['success']).to eq true
-    end
+    expect(result['data']['login']['success']).to eq true
   end
 
   it 'fails' do

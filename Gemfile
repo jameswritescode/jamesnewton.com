@@ -4,6 +4,8 @@ source 'https://rubygems.org'
 
 ruby '3.0.1'
 
+gem 'rails', '~> 7.0'
+
 gem 'apollo_upload_server', '~> 2.0', '>= 2.0.5'
 gem 'awesome_print'
 gem 'aws-sdk-s3'
@@ -11,18 +13,17 @@ gem 'bcrypt', '~> 3.1.7'
 gem 'bootsnap', '>= 1.4.2', require: false
 gem 'graphql', '~> 1.10', '>= 1.10.10'
 gem 'image_processing', '~> 1.2'
+gem 'jsbundling-rails', '~> 1.0.2'
 gem 'mini_mime', '~> 1.0', '>= 1.0.2'
 gem 'oauth', '~> 0.5.5'
 gem 'pg', '~> 1.2.3'
 gem 'puma', '~> 4.3'
-gem 'rails', '~> 6.1'
 gem 'redis', '~> 4.0'
 gem 'rollbar'
 gem 'sass-rails', '>= 6'
 gem 'shrine', '~> 3.3'
 gem 'sitemap_generator', '~> 6.1', '>= 6.1.2'
 gem 'tzinfo-data', platforms: %i[mingw mswin x64_mingw jruby]
-gem 'webpacker', '6.0.0.beta.7'
 
 group :development, :test do
   gem 'byebug', platforms: %i[mri mingw x64_mingw]

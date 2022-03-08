@@ -14,7 +14,7 @@ module Types
 
     field :me, UserType, null: true
     def me
-      context[:controller]&.current_user
+      context.current_user
     end
 
     field :post, PostType, null: true do

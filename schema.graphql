@@ -100,7 +100,6 @@ type Meta {
   description: String!
   title: String!
   type: String!
-  url: String!
 }
 
 type Mutation {

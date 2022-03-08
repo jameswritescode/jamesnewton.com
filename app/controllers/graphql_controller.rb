@@ -19,7 +19,7 @@ class GraphqlController < ApplicationController
   def context
     {
       GRAPHQL_RAKE_TASK: false,
-      controller: self,
+      session: session,
     }
   end
 

@@ -29,12 +29,11 @@ class Post < ApplicationRecord
     url_helpers.post_path(self)
   end
 
-  def meta(controller)
+  def meta
     {
       description: content.tr("\n", ' ').truncate(160),
       title: "#{name} | James Newton",
       type: 'article',
-      url: controller.post_url(self),
     }
   end
 

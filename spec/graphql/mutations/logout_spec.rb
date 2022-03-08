@@ -14,14 +14,9 @@ RSpec.describe Mutations::Logout, type: :graphql do
   end
 
   it 'is successful' do
-    sign_in(create(:user))
+    result = execute_graphql(mutation, context: signed_in_user_context, variables: { input: {} })
 
-    result = execute_graphql(mutation, variables: { input: {} })
-
-    aggregate_failures do
-      expect(controller.session[:user_id]).to be_nil
-      expect(result['data']['logout']['success']).to eq true
-    end
+    expect(result['data']['logout']['success']).to eq true
   end
 
   it 'is not visible to signed out users' do

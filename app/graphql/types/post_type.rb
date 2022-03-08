@@ -7,7 +7,7 @@ module Types
     global_id_field :id
 
     def self.scope_items(items, context)
-      if context[:controller]&.current_user.blank?
+      if context.current_user.blank?
         items.published_desc
       else
         items.order(state: :asc, created_at: :desc)
@@ -16,6 +16,7 @@ module Types
 
     field :content, String, null: false
     field :created, String, null: false
+    field :meta, MetaType, null: false
     field :name, String, null: false
     field :slug, String, null: false
     field :state, PostStateType, null: false
@@ -24,11 +25,6 @@ module Types
     field :images, [Types::AttachmentType], null: false
     def images
       object.attachments.select(&:embed?)
-    end
-
-    field :meta, MetaType, null: false
-    def meta
-      object.meta(context[:controller])
     end
   end
 end

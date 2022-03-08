@@ -18,10 +18,13 @@ RSpec.describe Mutations::DestroyPost, type: :graphql do
   end
 
   it 'destroys post' do
-    sign_in(create(:user))
-
     post = create(:post)
-    result = execute_graphql(mutation, variables: { input: { slug: post.slug } })
+
+    result = execute_graphql(
+      mutation,
+      context: signed_in_user_context,
+      variables: { input: { slug: post.slug } },
+    )
 
     aggregate_failures do
       expect(Post.exists?(post.id)).to eq false

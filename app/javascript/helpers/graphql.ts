@@ -107,7 +107,6 @@ export type Meta = {
   description: Scalars['String'];
   title: Scalars['String'];
   type: Scalars['String'];
-  url: Scalars['String'];
 };
 
 export type Mutation = {
@@ -243,7 +242,7 @@ export type PostQuery = (
     & Pick<Post, 'id' | 'content' | 'created' | 'name' | 'state'>
     & { meta: (
       { __typename?: 'Meta' }
-      & Pick<Meta, 'description' | 'title' | 'type' | 'url'>
+      & Pick<Meta, 'description' | 'title' | 'type'>
     ) }
   )> }
 );
@@ -409,7 +408,6 @@ export const PostDocument = gql`
       description
       title
       type
-      url
     }
   }
 }

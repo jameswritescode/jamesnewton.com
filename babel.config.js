@@ -2,9 +2,13 @@ module.exports = function(api) {
   const isProductionEnv = api.env('production')
 
   return {
-    presets: ['./node_modules/@rails/webpacker/package/babel/preset.js'],
+    presets: [
+      '@babel/preset-env',
+      '@babel/preset-react',
+      '@babel/preset-typescript',
+    ],
     plugins: [
-      process.env.WEBPACK_DEV_SERVER && 'react-refresh/babel',
+      process.env.NODE_ENV === 'development' && 'react-refresh/babel',
       'babel-plugin-styled-components',
       isProductionEnv && [
         'babel-plugin-transform-react-remove-prop-types',
@@ -12,6 +16,7 @@ module.exports = function(api) {
           removeImport: true,
         },
       ],
+      '@babel/plugin-transform-runtime',
     ].filter(Boolean),
   }
 }

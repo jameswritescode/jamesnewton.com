@@ -1,21 +1,19 @@
 # frozen_string_literal: true
 
 module GraphQLHelpers
-  def controller
-    @controller ||= GraphqlController.new.tap do |obj|
-      obj.set_request! ActionDispatch::Request.new({})
-    end
-  end
-
   def execute_graphql(query, **kwargs)
     NewtonSchema.execute(
       query,
-      **{ context: { controller: controller } }.merge(kwargs),
+      **{ context: { session: {} } }.merge(kwargs),
     ).to_h
   end
 
-  def sign_in(user)
-    controller.session[:user_id] = user.id
+  def signed_in_user_context
+    { session: { user_id: signed_in_user.id } }
+  end
+
+  def signed_in_user
+    @signed_in_user ||= create(:user)
   end
 end
 

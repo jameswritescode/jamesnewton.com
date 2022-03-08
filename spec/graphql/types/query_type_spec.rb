@@ -19,9 +19,8 @@ RSpec.describe Types::QueryType, type: :graphql do
     end
 
     it 'is visible to signed in users' do
-      sign_in(user)
-
-      expect(execute_graphql(query)).not_to be_missing_graphql_field('Query', 'attachments')
+      expect(execute_graphql(query, context: signed_in_user_context))
+        .not_to be_missing_graphql_field('Query', 'attachments')
     end
   end
 
@@ -37,14 +36,10 @@ RSpec.describe Types::QueryType, type: :graphql do
     end
 
     it 'returns data for signed in user' do
-      user = create(:user)
-
-      sign_in(user)
-
-      expect(execute_graphql(query)).to match(
+      expect(execute_graphql(query, context: signed_in_user_context)).to match(
         'data' => {
           'me' => {
-            'id' => user.id.to_s,
+            'id' => signed_in_user.id.to_s,
           },
         },
       )
@@ -76,9 +71,7 @@ RSpec.describe Types::QueryType, type: :graphql do
     end
 
     it 'shows drafts to users' do
-      sign_in(user)
-
-      expect(execute_graphql(query)).to match(
+      expect(execute_graphql(query, context: signed_in_user_context)).to match(
         'data' => {
           'posts' => [
             { 'state' => 'draft' },

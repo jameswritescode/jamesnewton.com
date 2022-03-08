@@ -7,7 +7,7 @@ module Types
     global_id_field :id
 
     def self.scope_items(items, context)
-      if context[:controller]&.current_user.blank?
+      if context.current_user.blank?
         items.published_desc
       else
         items.order(state: :asc, created_at: :desc)

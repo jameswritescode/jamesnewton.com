@@ -19,12 +19,11 @@ RSpec.describe Mutations::CreateAttachment, type: :graphql do
   end
 
   it 'works for signed in users' do
-    sign_in(create(:user))
-
     file = ApolloUploadServer::Wrappers::UploadedFile.new(fixture_file_upload('kitten.jpg'))
 
     response = execute_graphql(
       mutation,
+      context: signed_in_user_context,
       variables: { input: { file: file } },
     )
 

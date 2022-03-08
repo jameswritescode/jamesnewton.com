@@ -5,7 +5,7 @@ module Mutations
     field :success, Boolean, null: false
 
     def resolve
-      context[:controller].session[:user_id] = nil
+      context[:session][:user_id] = nil
 
       { success: true }
     end

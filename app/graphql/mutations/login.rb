@@ -12,7 +12,7 @@ module Mutations
     def resolve(email:, password:)
       user = User.find_by(email: email)
       user = user&.authenticate(password)
-      context[:controller].session[:user_id] = user.id if user.present?
+      context[:session][:user_id] = user.id if user.present?
 
       { success: user.present? }
     end

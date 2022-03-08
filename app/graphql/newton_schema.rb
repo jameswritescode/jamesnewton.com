@@ -6,6 +6,14 @@ class NewtonSchema < GraphQL::Schema
   mutation Types::MutationType
   query Types::QueryType
 
+  class CustomContext < GraphQL::Query::Context
+    def current_user
+      @current_user ||= User.find_by(id: self[:session][:user_id])
+    end
+  end
+
+  context_class CustomContext
+
   OBJECT_FROM_ID_MAP = {
     'Post' => Post,
   }.freeze

@@ -10,14 +10,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_05_13_234837) do
-
+ActiveRecord::Schema[7.0].define(version: 2021_05_13_234837) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
   create_table "attachments", force: :cascade do |t|
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.text "file_data"
     t.bigint "post_id"
     t.index ["post_id"], name: "index_attachments_on_post_id"
@@ -27,18 +26,18 @@ ActiveRecord::Schema.define(version: 2021_05_13_234837) do
     t.string "name"
     t.string "slug"
     t.text "content"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.integer "state", default: 0
-    t.datetime "published_at"
+    t.datetime "published_at", precision: nil
     t.index ["slug"], name: "index_posts_on_slug", unique: true
   end
 
   create_table "users", force: :cascade do |t|
     t.string "email"
     t.string "password_digest"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   add_foreign_key "attachments", "posts"

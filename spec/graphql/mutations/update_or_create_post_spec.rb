@@ -18,8 +18,7 @@ RSpec.describe Mutations::UpdateOrCreatePost, type: :graphql do
   end
 
   it 'is visible to signed in users' do
-    sign_in(create(:user))
-
-    expect(execute_graphql(mutation)).not_to be_missing_graphql_field('Mutation', 'updateOrCreatePost')
+    expect(execute_graphql(mutation, context: signed_in_user_context))
+      .not_to be_missing_graphql_field('Mutation', 'updateOrCreatePost')
   end
 end

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import styled, { useTheme } from 'styled-components'
 
-import Head from 'helpers/Head'
+import Head from '~helpers/Head'
 import { Block } from '~ui/Elements'
 import { usePostsQuery, PostsQuery } from '~gql'
 

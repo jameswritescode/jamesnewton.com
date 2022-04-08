@@ -34,9 +34,10 @@ const StyledLink = styled(Link)`
     text-transform: uppercase;
 
     :before {
-      content: '« ';
+      content: '‹';
       position: relative;
       top: -1px;
+      left: -2px;
     }
 
     :after {

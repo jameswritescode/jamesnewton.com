@@ -14,6 +14,7 @@ const StyledFlex = styled(Flex)`
 `
 
 const PostLink = styled(Link)`
+  flex-grow: 1;
   overflow-x: hidden;
   text-overflow: ellipsis;
 `

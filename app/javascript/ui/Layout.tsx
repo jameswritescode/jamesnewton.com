@@ -152,13 +152,14 @@ const Container = styled.div`
   }
 
   a {
-    font-weight: bold;
+    font-weight: 600;
     text-decoration: none;
 
     :after {
-      content: " »";
+      content: "›";
       position: relative;
       top: -1px;
+      right: -2px;
     }
   }
 

@@ -1,17 +1,6 @@
 import * as React from 'react'
-import * as ReactMarkdown from 'react-markdown'
-import * as footnotes from 'remark-footnotes'
-import * as gfm from 'remark-gfm'
 import styled from 'styled-components'
-
-const REMARK_PLUGINS = [
-  footnotes,
-  gfm,
-]
-
-function Image(props) {
-  return <img loading="lazy" {...props} />
-}
+import Markdoc, { nodes, ConfigType, Tag } from '@markdoc/markdoc'
 
 const Badge = styled.code`
   && {
@@ -27,19 +16,24 @@ const Badge = styled.code`
   }
 `
 
-function Pre({ children }: { children: React.ReactNode }) {
-  const language = children[0].props.className
-  const badge = language && language.split('-')[1]
+function Fence({ children, ...rest }: { children: React.ReactNode, 'data-language': string }) {
+  const language = rest['data-language']
 
   return (
     <div className="markdown-code">
-      {badge && <Badge>{badge}</Badge>}
+      {language && <Badge>{language}</Badge>}
 
       <pre>
-        {children}
+        <code>
+          {children}
+        </code>
       </pre>
     </div>
   )
+}
+
+function Image(props: { src: string, alt: string }) {
+  return <img loading="lazy" {...props} />
 }
 
 function Table({ children }: { children: React.ReactNode }) {
@@ -52,20 +46,37 @@ function Table({ children }: { children: React.ReactNode }) {
   )
 }
 
-const RENDERERS = {
-  image: Image,
-  imageReference: Image,
-  pre: Pre,
-  table: Table,
+const config: ConfigType = {
+  nodes: {
+    fence: {
+      ...nodes.fence,
+      render: 'Fence',
+      transform(node, config) {
+        const base = nodes.fence.transform(node, config) as Tag
+
+        return new Tag('Fence', base.attributes, base.children)
+      },
+    },
+    image: {
+      ...nodes.image,
+      render: 'Image',
+    },
+    table: {
+      ...nodes.table,
+      render: 'Table',
+    },
+  },
+}
+
+const components = {
+  Fence,
+  Image,
+  Table,
 }
 
 export default function Markdown({ content }: { content: string }) {
-  return (
-    <ReactMarkdown
-      // eslint-disable-next-line react/no-children-prop
-      children={content}
-      components={RENDERERS}
-      remarkPlugins={REMARK_PLUGINS}
-    />
-  )
+  const ast = Markdoc.parse(content)
+  const inner = Markdoc.transform(ast, config)
+
+  return Markdoc.renderers.react(inner, React, { components })
 }

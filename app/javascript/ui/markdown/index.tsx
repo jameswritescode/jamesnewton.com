@@ -57,6 +57,32 @@ const config: ConfigType = {
         return new Tag('Fence', base.attributes, base.children)
       },
     },
+    heading: {
+      ...nodes.heading,
+      attributes: {
+        ...nodes.heading.attributes,
+        id: { type: String },
+      },
+      transform(node, config) {
+        const attributes = node.transformAttributes(config)
+        const children = node.transformChildren(config)
+
+        console.log(attributes, children)
+
+        const id = attributes.id ||
+          children
+            .join(' ')
+            .replace(/[?]/g, '')
+            .replace(/\s+/g, '-')
+            .toLowerCase()
+
+        return new Tag(
+          `h${node.attributes.level}`,
+          { ...attributes, id },
+          children,
+        )
+      },
+    },
     image: {
       ...nodes.image,
       render: 'Image',

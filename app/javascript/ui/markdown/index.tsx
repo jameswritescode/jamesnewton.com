@@ -67,8 +67,6 @@ const config: ConfigType = {
         const attributes = node.transformAttributes(config)
         const children = node.transformChildren(config)
 
-        console.log(attributes, children)
-
         const id = attributes.id ||
           children
             .join(' ')

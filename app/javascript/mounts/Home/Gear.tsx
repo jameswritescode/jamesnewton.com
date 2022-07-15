@@ -306,9 +306,9 @@ export default function Gear() {
           <h2>Desk</h2>
 
           <Item
-            href="https://www.autonomous.ai/office-chairs/ergonomic-chair"
+            href="https://www.hermanmiller.com/products/seating/office-chairs/embody-chairs/"
             src="/gear/chair.png"
-            text="ErgoChair 2"
+            text="Herman Miller Embody"
           />
 
           <Item

@@ -158,15 +158,9 @@ enum PostState {
 
 type Query {
   attachments: [Attachment]!
-  latestTweet: Tweet!
   me: User
   post(slug: String!): Post
   posts(limit: Int): [Post]!
-}
-
-type Tweet {
-  content: String!
-  created: String!
 }
 
 """

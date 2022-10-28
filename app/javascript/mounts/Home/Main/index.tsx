@@ -9,15 +9,6 @@ import { useHomeQuery, PostsDocument } from '~gql'
 import PostLine from '../PostLine'
 import { Header, Container } from '../styles'
 
-const Quote = styled.q`
-  display: block;
-  font-size: 1.3em;
-
-  @media (max-width: 52em) {
-    font-size: inherit;
-  }
-`
-
 const A = styled.a`
   margin-left: 1rem;
 `
@@ -27,7 +18,7 @@ export default function Main() {
 
   if (!data) return null
 
-  const { posts, latestTweet: { content, created } } = data
+  const { posts } = data
 
   return (
     <Container>
@@ -46,12 +37,6 @@ export default function Main() {
         I&lsquo;m a Software Engineer in Seattle, WA building{' '}
         <a href="https://www.shopify.com">Shopify</a>
       </p>
-
-      <blockquote>
-        <Quote dangerouslySetInnerHTML={{ __html: content }} />
-
-        <a href="https://twitter.com/jameswritescode">@jameswritescode</a> {created}
-      </blockquote>
 
       {!!posts.length && (
         <Flex mb="2rem" flexDirection="column">

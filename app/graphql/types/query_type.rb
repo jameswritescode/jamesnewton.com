@@ -7,11 +7,6 @@ module Types
       Attachment.all.order(created_at: :desc)
     end
 
-    field :latest_tweet, TweetType, null: false
-    def latest_tweet
-      TwitterService.new
-    end
-
     field :me, UserType, null: true
     def me
       context.current_user

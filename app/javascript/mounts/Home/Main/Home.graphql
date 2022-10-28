@@ -1,9 +1,4 @@
 query Home {
-  latestTweet {
-    content
-    created
-  }
-
   posts(limit: 3) {
     id
     created

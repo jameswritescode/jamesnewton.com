@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.0.1'
+ruby '3.1.2'
 
 gem 'rails', '~> 7.0'
 
@@ -14,6 +14,7 @@ gem 'bootsnap', '>= 1.4.2', require: false
 gem 'graphql', '~> 1.10', '>= 1.10.10'
 gem 'image_processing', '~> 1.2'
 gem 'jsbundling-rails', '~> 1.0.2'
+gem 'matrix'
 gem 'mini_mime', '~> 1.0', '>= 1.0.2'
 gem 'oauth', '~> 0.5.5'
 gem 'pg', '~> 1.2.3'

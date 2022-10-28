@@ -55,7 +55,7 @@ export default function Resume() {
         company="Shopify"
         period="2021 &mdash; Current"
         skills={['Rails', 'GraphQL', 'React']}
-        title="Developer"
+        title="Senior Developer"
       />
 
       <blockquote>
@@ -66,7 +66,9 @@ export default function Resume() {
       </blockquote>
 
       <p>
-        I recently joined the Revenue RnD team!
+        I work in Solutions RnD, part of Professional Services. My work is focused on planning and
+        implementing technical solutions for strategic projects brought on by partners and merchants that
+        touch various parts of the ecosystem.
       </p>
 
       <h2>What I&rsquo;ve done</h2>

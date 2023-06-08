@@ -129,14 +129,9 @@ export default function Gear() {
 
       <p>This is the equipment I use for work and play.</p>
 
-      <p>
-        Shared gear is available to both machines via a{' '}
-        <a href="https://www.amazon.com/gp/product/B07TS5JNT3/">USB Switch</a>
-      </p>
-
       <Container>
         <Flex flexDirection="column" width="50rem">
-          <h2>Shared</h2>
+          <h2>Audio</h2>
 
           <Item
             href="https://www.amazon.com/gp/product/B00018MSNI/"
@@ -178,17 +173,19 @@ export default function Gear() {
             src="/gear/boom.png"
             text="RODE PSA 1 Boom Arm"
           />
+        </Flex>
+
+        <Flex flexDirection="column" width="50rem">
+          <h2>Video</h2>
 
           <Item
-            href="https://www.amazon.com/Logitech-BRIO-Conferencing-Recording-Streaming/dp/B01N5UOYC4"
-            src="/gear/brio.png"
-            text="Logitech BRIO"
+            src="/gear/27gr95qe-b.png"
+            text="LG OLED QHD 27-Inch UltraGear Monitor"
           />
 
           <Item
-            href="https://www.amazon.com/gp/product/B06XKNZT1P/"
-            src="/gear/streamdeck.png"
-            text="Elgato Stream Deck"
+            src="/gear/27bl85u-w.png"
+            text="LG 4K UHD 27-Inch Monitor"
           />
         </Flex>
 
@@ -196,36 +193,9 @@ export default function Gear() {
           <h2>Development</h2>
 
           <Item
-            href="https://www.amazon.com/gp/product/B00PXYRMPE/"
-            line="bottom"
-            src="/gear/u3415w.png"
-            text="Dell UltraSharp 34-Inch Curved Monitor"
-          />
-
-          <Item
-            href="https://www.amazon.com/gp/product/B01J6KMNOK/"
-            line="bottom"
-            src="/gear/arms.png"
-            text="Monoprice Dual Monitor Desk Mount"
-          />
-
-          <Item
-            line="bottom"
-            src="/gear/27bl85u-w.png"
-            text="LG 4K UHD 27-Inch Monitor"
-          />
-
-          <Item
-            href="https://www.apple.com/macbook-pro-16/"
+            href="https://www.apple.com/macbook-pro-14-and-16/"
             src="/gear/macbook.png"
-            text="2x MacBook Pro (16-inch, 2019)"
-          />
-
-          <Item
-            href="https://www.bluemic.com/en-us/products/yeti/"
-            line="top"
-            src="/gear/yeti.png"
-            text="Yeti"
+            text="MacBook Pro (14-inch, 2021)"
           />
 
           <Item
@@ -249,12 +219,6 @@ export default function Gear() {
 
         <Flex flexDirection="column" width="50rem">
           <h2>Gaming</h2>
-
-          <Item
-            line="bottom"
-            src="/gear/p2715q.png"
-            text="Dell Ultra 4K 27-Inch Monitor"
-          />
 
           <Item
             line="bottom"
@@ -303,17 +267,34 @@ export default function Gear() {
         </Flex>
 
         <Flex flexDirection="column" width="50rem">
+          <h2>Accessories</h2>
+
+          <Item
+            href="https://www.amazon.com/Logitech-BRIO-Conferencing-Recording-Streaming/dp/B01N5UOYC4"
+            src="/gear/brio.png"
+            text="Logitech BRIO"
+          />
+
+          <Item
+            href="https://www.amazon.com/gp/product/B06XKNZT1P/"
+            src="/gear/streamdeck.png"
+            text="Elgato Stream Deck"
+          />
+        </Flex>
+
+        <Flex flexDirection="column" width="50rem">
           <h2>Desk</h2>
+
+          <Item
+            href="https://www.upliftdesk.com/uplift-v2-standing-desk-v2-or-v2-commercial/"
+            src="/gear/uplift.png"
+            text="UPLIFT Standing Desk V2-Commercial"
+          />
 
           <Item
             href="https://www.hermanmiller.com/products/seating/office-chairs/embody-chairs/"
             src="/gear/chair.png"
             text="Herman Miller Embody"
-          />
-
-          <Item
-            href="https://www.amazon.com/stores/FLEXISPOT/FLEXISPOT/page/DC73F9D6-1819-4EA6-A8A0-73BAF9007518"
-            text="2x Flexispot Adjustable Desk Frame"
           />
         </Flex>
 

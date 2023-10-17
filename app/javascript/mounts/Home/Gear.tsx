@@ -195,7 +195,7 @@ export default function Gear() {
           <Item
             href="https://www.apple.com/macbook-pro-14-and-16/"
             src="/gear/macbook.png"
-            text="MacBook Pro (14-inch, 2021)"
+            text="MacBook Pro (14-inch, 2023)"
           />
 
           <Item
@@ -302,9 +302,9 @@ export default function Gear() {
           <h2>EDC</h2>
 
           <Item
-            href="https://www.apple.com/shop/refurbished/iphone/iphone-x"
+            href="https://www.apple.com/shop/buy-iphone/iphone-14"
             src="/gear/iphone.png"
-            text="iPhone X"
+            text="iPhone 14"
           />
 
           <Item

@@ -54,14 +54,14 @@ export default function Resume() {
       <Heading
         company="Shopify"
         period="2021 &mdash; Current"
-        skills={['Rails', 'GraphQL', 'React']}
+        skills={['Rails', 'GraphQL', 'React', 'TypeScript']}
         title="Senior Developer"
       />
 
       <blockquote>
         <q>
-          Shopify is a platform with all the ecommerce and point of sale features you need to start, run, and
-          grow your business.
+          Shopify powers millions of businesses worldwide. The all-in-one commerce platform to start, run, and
+          grow a business.
         </q>
       </blockquote>
 

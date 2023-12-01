@@ -58,16 +58,16 @@ export default function Resume() {
         title="Senior Developer"
       />
 
-      <blockquote>
-        <q>
-          Shopify powers millions of businesses worldwide. The all-in-one commerce platform to start, run, and
-          grow a business.
-        </q>
-      </blockquote>
+      <p>
+        Making Commerce Better for Everyone. Shopify is supporting the next generation of entrepreneurs, the
+        world&rsquo;s biggest brands, and everyone in between.
+      </p>
+
+      <p>I work in Retail developing software that powers our Point of Sale offerings.</p>
 
       <p>
-        I work in Solutions RnD, part of Professional Services. My work is focused on planning and
-        implementing technical solutions for strategic projects brought on by partners and merchants that
+        Previously I worked in Solutions RnD, part of Professional Services. My work was focused on planning
+        and implementing technical solutions for strategic projects brought on by partners and merchants that
         touch various parts of the ecosystem.
       </p>
 

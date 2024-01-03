@@ -1,1 +1,3 @@
 Sitemap: https://jamesnewton.com/sitemap.xml.gz
+User-agent: GPTBot
+Disallow: /

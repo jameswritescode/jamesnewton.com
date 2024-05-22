@@ -54,7 +54,7 @@ export default function Resume() {
       <Heading
         company="Shopify"
         period="2021 &mdash; Current"
-        skills={['Rails', 'GraphQL', 'React', 'TypeScript']}
+        skills={['Rails', 'GraphQL', 'React', 'TypeScript', 'Rust']}
         title="Senior Developer"
       />
 

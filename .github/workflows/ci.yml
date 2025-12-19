@@ -25,7 +25,7 @@ jobs:
       - name: Set up Ruby
         uses: pnpm/action-setup@v4
         with:
-          bundler-cache: true
+          version: 10
       - name: Scan for security vulnerabilities in JavaScript dependencies
         run: pnpm audit
   lint:

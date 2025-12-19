@@ -1,0 +1,21 @@
+plugins:
+  - rubocop-capybara
+  - rubocop-i18n
+  - rubocop-minitest
+  - rubocop-performance
+  - rubocop-rails
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.4
+Metrics/BlockLength:
+  AllowedMethods:
+    # rails
+    - configure
+    # rake
+    - namespace # rake
+    - task # rake
+    # tests
+    - setup # tests
+    - test # tests
+Style/Documentation:
+  Enabled: false

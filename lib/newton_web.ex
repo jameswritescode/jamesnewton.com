@@ -86,6 +86,7 @@ defmodule NewtonWeb do
       import Phoenix.HTML
       # Core UI components
       import NewtonWeb.CoreComponents
+      import NewtonWeb.SiteComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

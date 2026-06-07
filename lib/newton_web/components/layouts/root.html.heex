@@ -4,33 +4,31 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Newton" suffix=" · Phoenix Framework">
-      {assigns[:page_title]}
-    </.live_title>
+    <meta name="theme-color" content="#aa4040" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151311" media="(prefers-color-scheme: dark)" />
+    <.live_title default="James Newton">{assigns[:page_title]}</.live_title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap"
+    />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
     <script>
       (() => {
-        const setTheme = (theme) => {
-          if (theme === "system") {
-            localStorage.removeItem("phx:theme");
-            document.documentElement.removeAttribute("data-theme");
-          } else {
-            localStorage.setItem("phx:theme", theme);
-            document.documentElement.setAttribute("data-theme", theme);
-          }
-        };
-        if (!document.documentElement.hasAttribute("data-theme")) {
-          setTheme(localStorage.getItem("phx:theme") || "system");
-        }
-        window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-        
-        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const applyScheme = (e) => document.documentElement.classList.toggle('dark', e.matches);
+        applyScheme(mq);
+        mq.addEventListener('change', applyScheme);
       })();
     </script>
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <canvas class="ripple-canvas" id="rippleCanvas" phx-hook="RippleCanvas" aria-hidden="true">
+    </canvas>
     {@inner_content}
   </body>
 </html>

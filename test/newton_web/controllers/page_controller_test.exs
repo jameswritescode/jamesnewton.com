@@ -1,8 +1,10 @@
 defmodule NewtonWeb.PageControllerTest do
   use NewtonWeb.ConnCase
 
-  test "GET /", %{conn: conn} do
-    conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Peace of mind from prototype to production"
+  test "GET /resume renders the résumé", %{conn: conn} do
+    conn = get(conn, ~p"/resume")
+    html = html_response(conn, 200)
+    assert html =~ "Mark OS"
+    assert html =~ "What I'm doing"
   end
 end

@@ -19,6 +19,8 @@ defmodule NewtonWeb.Router do
 
     get "/", PageController, :home
     get "/resume", PageController, :resume
+    get "/posts", PostController, :index
+    get "/posts/:slug", PostController, :show
   end
 
   # Other scopes may use custom stacks.

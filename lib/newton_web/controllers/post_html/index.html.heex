@@ -1,0 +1,14 @@
+<Layouts.app flash={@flash}>
+  <article class="post">
+    <header>
+      <h1 class="post-title">Posts</h1>
+    </header>
+
+    <.feed>
+      <.feed_item :for={post <- @posts} href={~p"/posts/#{post.slug}"} date={format_date(post.published_at)}>
+        <h2 class="feed-item-title">{post.title}</h2>
+        <p class="feed-item-excerpt">{post.excerpt}</p>
+      </.feed_item>
+    </.feed>
+  </article>
+</Layouts.app>

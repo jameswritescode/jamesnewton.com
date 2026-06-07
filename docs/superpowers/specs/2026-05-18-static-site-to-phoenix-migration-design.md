@@ -36,8 +36,8 @@ system, voice, and porting intent and govern this work.
   Résumé is a static HEEx template.
 - **Authoring:** deferred to a separate brainstorm. This pass seeds placeholder
   content; editing is via IEx/console. No auth, no admin, no upload UI yet.
-- **Database:** SQLite via `ecto_sqlite3` (swap out the scaffold's Postgres).
-  Single-node; DB file lives on the Fly.io volume.
+- **Database:** Postgres (the scaffold default, `postgrex`). No change to the
+  generated repo/config stack.
 - **Image storage:** local filesystem in both dev and prod (Fly.io volume).
   `Image` (libvips) is the intended future processing library; **no** Waffle/
   ExAws. This pass builds only the storage-agnostic key + URL resolver + a
@@ -66,7 +66,7 @@ Routes (all classic controllers + HEEx):
 
 Posts are addressed by `slug` for stable URLs.
 
-## Data model (SQLite, `Newton.Repo`)
+## Data model (Postgres, `Newton.Repo`)
 
 ### `posts` — `Newton.Blog`
 
@@ -221,6 +221,5 @@ needing a socket connection.
 - Authoring UI, authentication, admin surface (separate brainstorm).
 - Image upload + `Image`/libvips derivative pipeline (only key + resolver +
   `/media` plug now).
-- Postgres (revisit if/when single-node SQLite is outgrown).
 - `width`/`height` auto-population (hand-set in seeds for now).
 - Same-document (LiveView) view transitions.

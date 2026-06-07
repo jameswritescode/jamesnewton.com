@@ -4,9 +4,9 @@
 
 **Goal:** Migrate James Newton's static HTML/CSS/JS personal site into the `Newton` Phoenix app — DB-backed posts/reading/photos, server-rendered Markdown, and a pixel-faithful port of the warm typography-first design.
 
-**Architecture:** Classic Phoenix controllers + HEEx (dead views) so real `<a href>` navigation triggers native cross-document view transitions. Domain logic lives in contexts (`Newton.Blog`, `Newton.Reading`, `Newton.Gallery`, `Newton.Feed`). Posts store Markdown rendered to cached HTML on write via MDEx. SQLite (`ecto_sqlite3`) on a Fly volume; images served from a configurable local root via a `/media` static plug. Decorative JS (ripple canvas, photo masonry, lightbox) ports to LiveView Hooks that run on dead pages without a socket.
+**Architecture:** Classic Phoenix controllers + HEEx (dead views) so real `<a href>` navigation triggers native cross-document view transitions. Domain logic lives in contexts (`Newton.Blog`, `Newton.Reading`, `Newton.Gallery`, `Newton.Feed`). Posts store Markdown rendered to cached HTML on write via MDEx. Postgres (the scaffold default); images served from a configurable local root (Fly volume) via a `/media` static plug. Decorative JS (ripple canvas, photo masonry, lightbox) ports to LiveView Hooks that run on dead pages without a socket.
 
-**Tech Stack:** Phoenix 1.8, LiveView 1.1 (hooks only), Ecto + `ecto_sqlite3`, MDEx 0.12 (Lumis highlighter), Tailwind v4 + daisyUI (retained for future admin, unused publicly), esbuild, Lora (Google Fonts).
+**Tech Stack:** Phoenix 1.8, LiveView 1.1 (hooks only), Ecto + Postgres (`postgrex`, scaffold default), MDEx 0.12 (Lumis highlighter), Tailwind v4 + daisyUI (retained for future admin, unused publicly), esbuild, Lora (Google Fonts).
 
 **Spec:** `docs/superpowers/specs/2026-05-18-static-site-to-phoenix-migration-design.md`
 
@@ -17,10 +17,10 @@
 ## File Structure
 
 **Config / deps**
-- `mix.exs` — swap `postgrex` → `ecto_sqlite3`; add `mdex`.
+- `mix.exs` — add `mdex` (Postgres/`postgrex` stays as scaffolded).
 - `config/config.exs` — `:media` root, MDEx not configured here.
-- `config/dev.exs`, `config/test.exs`, `config/runtime.exs`, `config/prod.exs` — SQLite repo config; media root.
-- `lib/newton/repo.ex` — adapter → `Ecto.Adapters.SQLite3`.
+- `config/prod.exs` — media root override.
+- Repo/DB config is the unchanged Phoenix Postgres scaffold.
 
 **Contexts (`lib/newton/`)**
 - `blog.ex` — posts API + `Post` queries.
@@ -60,115 +60,32 @@
 
 ## Conventions for every task
 
-- Run tests with `mix test` (SQLite Sandbox does **not** support async — never add `async: true` to cases).
+- Run tests with `mix test`. Postgres + `Ecto.Adapters.SQL.Sandbox` supports async cases; the scaffold's `DataCase`/`ConnCase` already handle this.
 - After a green test, `mix precommit` (compile-warnings-as-errors, format, test) before committing where practical.
 - Commit messages end with the Co-Authored-By trailer this repo uses.
 - Browser-observable changes: verify by running `mix phx.server` and loading the page, not by asking the user.
 
 ---
 
-## Task 1: Swap Postgres → SQLite
+## Task 1: Verify the Postgres baseline
 
-**Files:**
-- Modify: `mix.exs` (deps)
-- Modify: `lib/newton/repo.ex`
-- Modify: `config/dev.exs`, `config/test.exs`, `config/runtime.exs`
-- Modify: `config/config.exs`
+The app keeps the Phoenix Postgres scaffold (`postgrex`, `Ecto.Adapters.Postgres`) unchanged. This task is a baseline check before feature work; no code changes.
 
-- [ ] **Step 1: Replace the Postgres dep**
+**Files:** none (verification only).
 
-In `mix.exs` `defp deps`, replace the line `{:postgrex, ">= 0.0.0"},` with:
-
-```elixir
-      {:ecto_sqlite3, "~> 0.24"},
-```
-
-- [ ] **Step 2: Point the Repo at the SQLite adapter**
-
-Rewrite `lib/newton/repo.ex`:
-
-```elixir
-defmodule Newton.Repo do
-  use Ecto.Repo,
-    otp_app: :newton,
-    adapter: Ecto.Adapters.SQLite3
-end
-```
-
-- [ ] **Step 3: Dev repo config**
-
-In `config/dev.exs`, replace the `config :newton, Newton.Repo, ...` block with:
-
-```elixir
-config :newton, Newton.Repo,
-  database: Path.expand("../newton_dev.db", __DIR__),
-  pool_size: 5,
-  journal_mode: :wal,
-  busy_timeout: 2000,
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true
-```
-
-- [ ] **Step 4: Test repo config**
-
-In `config/test.exs`, replace the `config :newton, Newton.Repo, ...` block with:
-
-```elixir
-config :newton, Newton.Repo,
-  database: Path.expand("../newton_test#{System.get_env("MIX_TEST_PARTITION")}.db", __DIR__),
-  pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 5,
-  journal_mode: :wal,
-  busy_timeout: 2000
-```
-
-- [ ] **Step 5: Prod runtime repo config**
-
-In `config/runtime.exs`, inside `if config_env() == :prod do`, replace the `database_url`/`maybe_ipv6`/`config :newton, Newton.Repo` block (the Postgres bits) with:
-
-```elixir
-  database_path =
-    System.get_env("DATABASE_PATH") ||
-      raise """
-      environment variable DATABASE_PATH is missing.
-      For example: /data/newton.db
-      """
-
-  config :newton, Newton.Repo,
-    database: database_path,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5"),
-    journal_mode: :wal,
-    busy_timeout: 2000
-```
-
-Leave the `secret_key_base`, `host`, `dns_cluster_query`, and Endpoint blocks below it untouched.
-
-- [ ] **Step 6: Add the .db files to .gitignore**
-
-Append to `.gitignore`:
-
-```
-# SQLite databases
-/*.db
-/*.db-*
-```
-
-- [ ] **Step 7: Fetch deps and create the database**
+- [ ] **Step 1: Fetch deps and create the database**
 
 Run: `mix deps.get && mix ecto.create`
-Expected: compiles; prints `The database for Newton.Repo has been created`.
+Expected: compiles; prints that the database for `Newton.Repo` was created (or already exists). Requires a running local Postgres reachable with the scaffold's dev credentials. If Postgres is not running/reachable, STOP and report BLOCKED with the exact error.
 
-- [ ] **Step 8: Verify the app boots and tests pass**
+- [ ] **Step 2: Verify the app boots and tests pass**
 
 Run: `mix test`
-Expected: the generic scaffold test(s) pass (e.g. `PageControllerTest` if present), no compile errors.
+Expected: the scaffold test(s) pass, no compile errors.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 3: No commit**
 
-```bash
-git add mix.exs mix.lock lib/newton/repo.ex config/ .gitignore
-git commit -m "Switch database from Postgres to SQLite"
-```
+Nothing changed; do not create a commit.
 
 ---
 
@@ -2673,7 +2590,7 @@ git commit -m "Final pass: full suite green and design parity verified"
 ## Notes & Risks
 
 - **MDEx highlighting markup (Task 11) is the main unknown.** The exact Lumis `:html_linked` class names and whether the language label survives drive the highlight CSS and the language-badge selectors. Task 11 captures real output in IEx before writing CSS — do not skip that step or guess class names.
-- **SQLite + Sandbox is non-async.** Never add `async: true` to `DataCase`/`ConnCase` or any test module touching the repo.
+- **Database is Postgres** (scaffold default, unchanged). `Ecto.Adapters.SQL.Sandbox` supports async test cases.
 - **`Plug.Static` media root uses `compile_env`.** Prod's `/data/images` is a compile-time default; this is fine because the Fly volume mount path is a fixed deploy constant. If you later need a runtime-configurable path, replace the endpoint plug with a small wrapper plug that reads `Application.get_env/2` at init.
 - **Raw HTML in post bodies is stripped** (`unsafe: false`). The prototype's `<figure>/<figcaption>` won't survive Markdown conversion; seed bodies use plain Markdown images. This matches the spec's safety-by-default decision.
 - **daisyUI/Tailwind remain installed but unused publicly** — kept for a future admin surface per the spec. Don't delete them.

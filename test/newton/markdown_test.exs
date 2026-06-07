@@ -36,6 +36,14 @@ defmodule Newton.MarkdownTest do
     assert String.ends_with?(excerpt, "…")
   end
 
+  test "excerpt handles non-ASCII first paragraphs without crashing" do
+    md = String.duplicate("café — résumé naïve ", 30)
+    excerpt = Markdown.excerpt(md)
+    assert String.valid?(excerpt)
+    assert String.ends_with?(excerpt, "…")
+    assert String.length(excerpt) <= 205
+  end
+
   test "reading_time returns whole minutes, minimum 1" do
     assert Markdown.reading_time("just a few words") == 1
     assert Markdown.reading_time(String.duplicate("word ", 400)) == 2

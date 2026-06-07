@@ -7,7 +7,7 @@ defmodule Newton.Markdown do
   """
 
   @words_per_minute 200
-  @excerpt_max 200
+  @excerpt_max_chars 200
 
   @extension [
     table: true,
@@ -31,7 +31,7 @@ defmodule Newton.Markdown do
     markdown
     |> first_paragraph()
     |> strip_markdown()
-    |> truncate(@excerpt_max)
+    |> truncate(@excerpt_max_chars)
   end
 
   @doc "Estimated reading time in whole minutes (minimum 1)."
@@ -59,12 +59,14 @@ defmodule Newton.Markdown do
     |> String.trim()
   end
 
-  defp truncate(text, max) when byte_size(text) <= max, do: text
-
   defp truncate(text, max) do
-    text
-    |> binary_part(0, max)
-    |> String.replace(~r/\s+\S*$/, "")
-    |> Kernel.<>("…")
+    if String.length(text) <= max do
+      text
+    else
+      text
+      |> String.slice(0, max)
+      |> String.replace(~r/\s+\S*$/, "")
+      |> Kernel.<>("…")
+    end
   end
 end

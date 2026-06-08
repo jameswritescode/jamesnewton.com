@@ -24,6 +24,14 @@ defmodule Newton.Blog.Post do
     |> render_derived_fields()
   end
 
+  @doc "Force re-render of derived fields (body_html, excerpt, reading_time) from existing body_markdown."
+  def rerender_changeset(%__MODULE__{} = post) do
+    post
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.force_change(:body_markdown, post.body_markdown)
+    |> render_derived_fields()
+  end
+
   defp render_derived_fields(%Ecto.Changeset{valid?: true} = changeset) do
     case fetch_change(changeset, :body_markdown) do
       {:ok, markdown} ->

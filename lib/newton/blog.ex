@@ -12,6 +12,10 @@ defmodule Newton.Blog do
     post |> Post.changeset(attrs) |> Repo.update()
   end
 
+  def rerender_post(%Post{} = post) do
+    post |> Post.rerender_changeset() |> Repo.update()
+  end
+
   def list_published_posts do
     Repo.all(published_query())
   end

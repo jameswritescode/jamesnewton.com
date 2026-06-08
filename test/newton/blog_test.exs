@@ -34,9 +34,15 @@ defmodule Newton.BlogTest do
 
   test "list_published_posts returns only past, published posts newest-first" do
     {:ok, _draft} = Blog.create_post(%{@valid | slug: "draft", published_at: nil})
-    {:ok, _future} = Blog.create_post(%{@valid | slug: "future", published_at: ~U[2999-01-01 00:00:00Z]})
-    {:ok, older} = Blog.create_post(%{@valid | slug: "older", published_at: ~U[2026-01-01 00:00:00Z]})
-    {:ok, newer} = Blog.create_post(%{@valid | slug: "newer", published_at: ~U[2026-02-01 00:00:00Z]})
+
+    {:ok, _future} =
+      Blog.create_post(%{@valid | slug: "future", published_at: ~U[2999-01-01 00:00:00Z]})
+
+    {:ok, _older} =
+      Blog.create_post(%{@valid | slug: "older", published_at: ~U[2026-01-01 00:00:00Z]})
+
+    {:ok, _newer} =
+      Blog.create_post(%{@valid | slug: "newer", published_at: ~U[2026-02-01 00:00:00Z]})
 
     slugs = Blog.list_published_posts() |> Enum.map(& &1.slug)
     assert slugs == ["newer", "older"]

@@ -700,3 +700,76 @@ a:focus-visible {
   outline-offset: 3px;
   border-radius: 2px;
 }
+
+/* === Syntax Highlighting === */
+
+/* Reset: ensure lumis pre/code don't fight the theme */
+.post-body pre.lumis {
+  background-color: rgba(var(--dot), 0.08);
+  padding: 1rem 1.25rem;
+}
+
+.post-body pre code {
+  color: inherit;
+  background: transparent;
+}
+
+/* lumis line wrappers — strip any stray layout */
+.post-body .line {
+  display: block;
+}
+
+/* Tier 1: Keywords, storage, control, meta
+   → buttery yellow-cream, bold */
+.post-body .keyword,
+.post-body .keyword-function,
+.post-body .keyword-return,
+.post-body .keyword-type,
+.post-body .keyword-import,
+.post-body .keyword-directive {
+  color: var(--syntax-keyword);
+  font-weight: 600;
+}
+
+/* Tier 2: Strings, symbols, regex, char literals
+   → link color (warm apricot) */
+.post-body .string,
+.post-body .string-special-symbol {
+  color: var(--link);
+}
+
+/* Tier 3: Numbers, booleans, constants, literals
+   → amber */
+.post-body .number,
+.post-body .boolean,
+.post-body .constant,
+.post-body .constant-builtin {
+  color: var(--syntax-amber);
+}
+
+/* Tier 4: Types, functions, classes, constructors, modules, builtins, members, properties
+   → rose, italic */
+.post-body .type,
+.post-body .type-builtin,
+.post-body .function,
+.post-body .function-builtin,
+.post-body .function-call,
+.post-body .function-method-call,
+.post-body .constructor,
+.post-body .module,
+.post-body .variable-member,
+.post-body .property {
+  color: var(--syntax-rose);
+  font-style: italic;
+}
+
+/* Tier 5: Comments, docstrings, quotes
+   → muted text, italic */
+.post-body .comment {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Everything else (operator, punctuation-bracket, punctuation-delimiter,
+   text, variable, variable-builtin, variable-parameter) inherits body
+   color — no explicit rule needed. */

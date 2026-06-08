@@ -1,0 +1,16 @@
+<Layouts.app flash={@flash}>
+  <article class="post">
+    <header>
+      <h1 class="post-title">Reading</h1>
+    </header>
+
+    <.feed>
+      <.feed_item :for={entry <- @entries} id={Newton.Slug.slugify(entry.title)} variant="book" date={format_date(entry.finished_at)}>
+        <p class="feed-item-book">
+          {verb(entry.status)} <cite>{entry.title}</cite> by {entry.author}
+        </p>
+        <p :if={entry.note} class="feed-item-book-caption">{entry.note}</p>
+      </.feed_item>
+    </.feed>
+  </article>
+</Layouts.app>

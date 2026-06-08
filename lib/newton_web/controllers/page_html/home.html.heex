@@ -1,3 +1,20 @@
 <Layouts.app flash={@flash}>
-  <h1>Home</h1>
+  <div class="page">
+    <section class="intro">
+      <h1 class="intro-heading">Hello, I'm James Newton.</h1>
+      <p>
+        I'm a software engineer at <a href="https://markos.ai">Mark OS</a> who thinks a lot
+        about how we build things and why. This is where I write about the craft — the tools,
+        the trade-offs, and the quiet decisions that shape what we make.
+      </p>
+    </section>
+
+    <.site_nav />
+
+    <.feed heading="Recent">
+      <%= for item <- @feed do %>
+        <.home_feed_item item={item} />
+      <% end %>
+    </.feed>
+  </div>
 </Layouts.app>

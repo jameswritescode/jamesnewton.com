@@ -25,12 +25,14 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/newton"
 import topbar from "../vendor/topbar"
 import {RippleCanvas} from "./hooks/ripple_canvas"
+import {PhotoMasonry} from "./hooks/photo_masonry"
+import {PhotoLightbox} from "./hooks/photo_lightbox"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, RippleCanvas},
+  hooks: {...colocatedHooks, RippleCanvas, PhotoMasonry, PhotoLightbox},
 })
 
 // Show progress bar on live navigation and form submits

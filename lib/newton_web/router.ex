@@ -22,6 +22,7 @@ defmodule NewtonWeb.Router do
     get "/posts", PostController, :index
     get "/posts/:slug", PostController, :show
     get "/reading", ReadingController, :index
+    get "/photos", PhotoController, :index
   end
 
   # Other scopes may use custom stacks.

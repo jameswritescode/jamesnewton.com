@@ -1,0 +1,44 @@
+<Layouts.app flash={@flash}>
+  <article class="post photos">
+    <header>
+      <h1 class="post-title">Photos</h1>
+    </header>
+
+    <section :for={group <- @groups} class="photo-group" id={group.slug}>
+      <header class="photo-group-header">
+        <time :if={group.taken_on} class="photo-group-date">{format_month(group.taken_on)}</time>
+        <h2 class="photo-group-title">{group.title}</h2>
+        <p :if={group.caption} class="photo-group-caption">{group.caption}</p>
+      </header>
+      <div class="photo-grid" phx-hook="PhotoMasonry" id={"grid-#{group.slug}"}>
+        <button
+          :for={photo <- group.photos}
+          type="button"
+          class="photo-button"
+          aria-label={"Enlarge: #{photo.alt}"}
+        >
+          <img
+            src={image_url(photo.image_key)}
+            loading="lazy"
+            decoding="async"
+            alt={photo.alt}
+            width={photo.width}
+            height={photo.height}
+          />
+        </button>
+      </div>
+    </section>
+  </article>
+  <div
+    class="photo-overlay"
+    id="photoOverlay"
+    phx-hook="PhotoLightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="photoOverlayImg"
+    tabindex="-1"
+    inert
+  >
+    <img class="photo-overlay-img" id="photoOverlayImg" alt="" />
+  </div>
+</Layouts.app>

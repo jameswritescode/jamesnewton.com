@@ -11,6 +11,8 @@ config :newton,
   ecto_repos: [Newton.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+config :newton, :media_root, Path.expand("../priv/media", __DIR__)
+
 # Configure the endpoint
 config :newton, NewtonWeb.Endpoint,
   url: [host: "localhost"],

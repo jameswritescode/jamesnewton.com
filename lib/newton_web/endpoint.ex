@@ -15,6 +15,12 @@ defmodule NewtonWeb.Endpoint do
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]
 
+  # User images (not fingerprinted assets) served from a configurable root.
+  plug Plug.Static,
+    at: "/media",
+    from: Application.compile_env(:newton, :media_root),
+    gzip: false
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # When code reloading is disabled (e.g., in production),

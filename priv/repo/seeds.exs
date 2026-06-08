@@ -202,16 +202,69 @@ Software engineering has always been about managing complexity with clarity. The
 
 # --- Reading ---
 reading = [
-  %{title: "A Philosophy of Software Design", author: "John Ousterhout", status: :read, finished_at: ~D[2026-04-18], note: "The argument for deep modules stuck with me. I don't fully agree, but I keep returning to it."},
-  %{title: "Working in Public", author: "Nadia Eghbal", status: :listened, finished_at: ~D[2026-04-13]},
-  %{title: "The Pragmatic Programmer", author: "Hunt and Thomas", status: :read, finished_at: ~D[2026-03-15]},
-  %{title: "Designing Data-Intensive Applications", author: "Martin Kleppmann", status: :read, finished_at: ~D[2026-02-22], note: "The kind of book you read a chapter at a time, put down, and notice it quietly reshaping how you think about the system you work on."},
-  %{title: "Four Thousand Weeks", author: "Oliver Burkeman", status: :read, finished_at: ~D[2026-01-18], note: "I don't know if I believed all of it. I kept putting it down to think."},
-  %{title: "The Mythical Man-Month", author: "Fred Brooks", status: :read, finished_at: ~D[2025-12-08]},
-  %{title: "The Creative Act", author: "Rick Rubin", status: :listened, finished_at: ~D[2025-11-10], note: "Rubin reads the audiobook himself, which is the right call. A good one for a long walk."},
+  %{
+    title: "A Philosophy of Software Design",
+    author: "John Ousterhout",
+    status: :read,
+    finished_at: ~D[2026-04-18],
+    note:
+      "The argument for deep modules stuck with me. I don't fully agree, but I keep returning to it."
+  },
+  %{
+    title: "Working in Public",
+    author: "Nadia Eghbal",
+    status: :listened,
+    finished_at: ~D[2026-04-13]
+  },
+  %{
+    title: "The Pragmatic Programmer",
+    author: "Hunt and Thomas",
+    status: :read,
+    finished_at: ~D[2026-03-15]
+  },
+  %{
+    title: "Designing Data-Intensive Applications",
+    author: "Martin Kleppmann",
+    status: :read,
+    finished_at: ~D[2026-02-22],
+    note:
+      "The kind of book you read a chapter at a time, put down, and notice it quietly reshaping how you think about the system you work on."
+  },
+  %{
+    title: "Four Thousand Weeks",
+    author: "Oliver Burkeman",
+    status: :read,
+    finished_at: ~D[2026-01-18],
+    note: "I don't know if I believed all of it. I kept putting it down to think."
+  },
+  %{
+    title: "The Mythical Man-Month",
+    author: "Fred Brooks",
+    status: :read,
+    finished_at: ~D[2025-12-08]
+  },
+  %{
+    title: "The Creative Act",
+    author: "Rick Rubin",
+    status: :listened,
+    finished_at: ~D[2025-11-10],
+    note:
+      "Rubin reads the audiobook himself, which is the right call. A good one for a long walk."
+  },
   %{title: "Atomic Habits", author: "James Clear", status: :read, finished_at: ~D[2025-10-03]},
-  %{title: "Shop Class as Soulcraft", author: "Matthew B. Crawford", status: :read, finished_at: ~D[2025-09-14]},
-  %{title: "Zen and the Art of Motorcycle Maintenance", author: "Robert Pirsig", status: :listened, finished_at: ~D[2025-08-06], note: "Most of it went past me. The pages about caring for a machine did not."}
+  %{
+    title: "Shop Class as Soulcraft",
+    author: "Matthew B. Crawford",
+    status: :read,
+    finished_at: ~D[2025-09-14]
+  },
+  %{
+    title: "Zen and the Art of Motorcycle Maintenance",
+    author: "Robert Pirsig",
+    status: :listened,
+    finished_at: ~D[2025-08-06],
+    note: "Most of it went past me. The pages about caring for a machine did not."
+  }
 ]
 
 Enum.each(reading, fn attrs -> {:ok, _} = Reading.create_entry(attrs) end)
@@ -219,43 +272,71 @@ Enum.each(reading, fn attrs -> {:ok, _} = Reading.create_entry(attrs) end)
 # --- Photos (dev uses remote URLs as image_key; image_url/1 passes them through) ---
 photo_groups = [
   %{
-    slug: "eastern-sierra", title: "Eastern Sierra", taken_on: ~D[2025-06-01],
-    caption: "Four days of granite and alpine water, on the route up from Onion Valley I'd been circling for a year.",
+    slug: "eastern-sierra",
+    title: "Eastern Sierra",
+    taken_on: ~D[2025-06-01],
+    caption:
+      "Four days of granite and alpine water, on the route up from Onion Valley I'd been circling for a year.",
     photos: [
-      {"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80", "Morning light breaking over a mountain ridge"},
-      {"https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=80", "Still alpine lake reflecting distant peaks"},
-      {"https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=800&q=80", "Stone cabin at the edge of a mountain lake"},
-      {"https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=800&q=80", "Snow-dusted peaks above a quiet lake"}
+      {"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+       "Morning light breaking over a mountain ridge"},
+      {"https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=80",
+       "Still alpine lake reflecting distant peaks"},
+      {"https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=800&q=80",
+       "Stone cabin at the edge of a mountain lake"},
+      {"https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=800&q=80",
+       "Snow-dusted peaks above a quiet lake"}
     ]
   },
   %{
-    slug: "olympic-coast", title: "Olympic Coast", taken_on: ~D[2025-03-01],
-    caption: "Fog kept rewriting the shoreline as overlapping silhouettes — which, it turns out, is the thing I came back for.",
+    slug: "olympic-coast",
+    title: "Olympic Coast",
+    taken_on: ~D[2025-03-01],
+    caption:
+      "Fog kept rewriting the shoreline as overlapping silhouettes — which, it turns out, is the thing I came back for.",
     photos: [
-      {"https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&q=80", "Fog rolling between forested ridgelines"},
-      {"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80", "Evergreen forest shrouded in morning mist"},
-      {"https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&q=80", "Tall pine trees catching afternoon light"},
-      {"https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=800&q=80", "Dense fog clinging to mountain slopes"}
+      {"https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&q=80",
+       "Fog rolling between forested ridgelines"},
+      {"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80",
+       "Evergreen forest shrouded in morning mist"},
+      {"https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&q=80",
+       "Tall pine trees catching afternoon light"},
+      {"https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=800&q=80",
+       "Dense fog clinging to mountain slopes"}
     ]
   },
   %{
-    slug: "julian-alps", title: "Julian Alps", taken_on: ~D[2025-01-01],
-    caption: "Lake Bled was still frozen at the edges. The trails around Triglav I kept cutting short for weather.",
+    slug: "julian-alps",
+    title: "Julian Alps",
+    taken_on: ~D[2025-01-01],
+    caption:
+      "Lake Bled was still frozen at the edges. The trails around Triglav I kept cutting short for weather.",
     photos: [
-      {"https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=800&q=80", "Winter forest, snow on every branch"},
-      {"https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80", "Night sky over a silhouetted mountain ridge"},
-      {"https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80", "Lake Bled at dusk with an island chapel"},
-      {"https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&q=80", "Suspension bridge over a pine-lined gorge"}
+      {"https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=800&q=80",
+       "Winter forest, snow on every branch"},
+      {"https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80",
+       "Night sky over a silhouetted mountain ridge"},
+      {"https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80",
+       "Lake Bled at dusk with an island chapel"},
+      {"https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&q=80",
+       "Suspension bridge over a pine-lined gorge"}
     ]
   },
   %{
-    slug: "dolomites", title: "Dolomites", taken_on: ~D[2024-09-01],
-    caption: "The via ferrata I came for was closed for weather. I spent the week walking between huts instead.",
+    slug: "dolomites",
+    title: "Dolomites",
+    taken_on: ~D[2024-09-01],
+    caption:
+      "The via ferrata I came for was closed for weather. I spent the week walking between huts instead.",
     photos: [
-      {"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80", "Snow-capped alpine peaks at sunrise"},
-      {"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80", "Sun setting behind layered mountain ridges"},
-      {"https://images.unsplash.com/photo-1443890923422-7819ed4101c0?w=800&q=80", "A lone tent pitched beneath a granite wall"},
-      {"https://images.unsplash.com/photo-1454372182658-c712e4c5a1db?w=800&q=80", "Narrow valley with a winding river"}
+      {"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
+       "Snow-capped alpine peaks at sunrise"},
+      {"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
+       "Sun setting behind layered mountain ridges"},
+      {"https://images.unsplash.com/photo-1443890923422-7819ed4101c0?w=800&q=80",
+       "A lone tent pitched beneath a granite wall"},
+      {"https://images.unsplash.com/photo-1454372182658-c712e4c5a1db?w=800&q=80",
+       "Narrow valley with a winding river"}
     ]
   }
 ]
@@ -270,4 +351,6 @@ Enum.each(photo_groups, fn %{photos: photos} = attrs ->
   end)
 end)
 
-IO.puts("Seeded #{Repo.aggregate(Post, :count)} posts, #{Repo.aggregate(Entry, :count)} reading entries, #{Repo.aggregate(PhotoGroup, :count)} photo groups.")
+IO.puts(
+  "Seeded #{Repo.aggregate(Post, :count)} posts, #{Repo.aggregate(Entry, :count)} reading entries, #{Repo.aggregate(PhotoGroup, :count)} photo groups."
+)

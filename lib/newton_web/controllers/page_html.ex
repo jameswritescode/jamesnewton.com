@@ -27,7 +27,11 @@ defmodule NewtonWeb.PageHTML do
 
   def home_feed_item(%{item: %{kind: :book}} = assigns) do
     ~H"""
-    <.feed_item href={~p"/reading##{Newton.Slug.slugify(@item.payload.title)}"} variant="book" date={format_date(@item.date)}>
+    <.feed_item
+      href={~p"/reading##{Newton.Slug.slugify(@item.payload.title)}"}
+      variant="book"
+      date={format_date(@item.date)}
+    >
       <p class="feed-item-book">
         {verb(@item.payload.status)} <cite>{@item.payload.title}</cite> by {@item.payload.author}
       </p>

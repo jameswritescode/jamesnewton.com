@@ -11,7 +11,13 @@ defmodule Newton.GalleryTest do
   end
 
   test "list_groups returns groups newest-first with ordered photos preloaded" do
-    {:ok, g} = Gallery.create_group(%{slug: "eastern-sierra", title: "Eastern Sierra", taken_on: ~D[2025-06-01]})
+    {:ok, g} =
+      Gallery.create_group(%{
+        slug: "eastern-sierra",
+        title: "Eastern Sierra",
+        taken_on: ~D[2025-06-01]
+      })
+
     {:ok, _} = Gallery.add_photo(g, %{image_key: "b.jpg", alt: "B", position: 2})
     {:ok, _} = Gallery.add_photo(g, %{image_key: "a.jpg", alt: "A", position: 1})
 

@@ -5,7 +5,12 @@
     </header>
 
     <.feed>
-      <.feed_item :for={entry <- @entries} id={Newton.Slug.slugify(entry.title)} variant="book" date={format_date(entry.finished_at)}>
+      <.feed_item
+        :for={entry <- @entries}
+        id={Newton.Slug.slugify(entry.title)}
+        variant="book"
+        date={format_date(entry.finished_at)}
+      >
         <p class="feed-item-book">
           {verb(entry.status)} <cite>{entry.title}</cite> by {entry.author}
         </p>

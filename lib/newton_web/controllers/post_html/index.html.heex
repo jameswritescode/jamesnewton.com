@@ -5,7 +5,11 @@
     </header>
 
     <.feed>
-      <.feed_item :for={post <- @posts} href={~p"/posts/#{post.slug}"} date={format_date(post.published_at)}>
+      <.feed_item
+        :for={post <- @posts}
+        href={~p"/posts/#{post.slug}"}
+        date={format_date(post.published_at)}
+      >
         <h2 class="feed-item-title">{post.title}</h2>
         <p class="feed-item-excerpt">{post.excerpt}</p>
       </.feed_item>

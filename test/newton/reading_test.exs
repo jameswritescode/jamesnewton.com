@@ -8,8 +8,22 @@ defmodule Newton.ReadingTest do
   end
 
   test "list_entries orders by finished_at desc" do
-    {:ok, _a} = Reading.create_entry(%{title: "Old", author: "A", status: :read, finished_at: ~D[2025-01-01]})
-    {:ok, _b} = Reading.create_entry(%{title: "New", author: "B", status: :read, finished_at: ~D[2026-01-01]})
+    {:ok, _a} =
+      Reading.create_entry(%{
+        title: "Old",
+        author: "A",
+        status: :read,
+        finished_at: ~D[2025-01-01]
+      })
+
+    {:ok, _b} =
+      Reading.create_entry(%{
+        title: "New",
+        author: "B",
+        status: :read,
+        finished_at: ~D[2026-01-01]
+      })
+
     assert Reading.list_entries() |> Enum.map(& &1.title) == ["New", "Old"]
   end
 

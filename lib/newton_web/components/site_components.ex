@@ -42,7 +42,8 @@ defmodule NewtonWeb.SiteComponents do
   slot :inner_block, required: true
 
   def feed_item(assigns) do
-    assigns = assign(assigns, :class, ["feed-item", assigns.variant && "feed-item--#{assigns.variant}"])
+    assigns =
+      assign(assigns, :class, ["feed-item", assigns.variant && "feed-item--#{assigns.variant}"])
 
     ~H"""
     <a :if={@href} href={@href} id={@id} class={@class} {@rest}>

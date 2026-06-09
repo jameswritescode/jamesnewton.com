@@ -84,21 +84,21 @@
   }
 }
 
-/* === Page Transitions === */
-@view-transition {
-  navigation: auto;
+/* === Page Transitions (Swup) === */
+/* Swup swaps only #main, so the fixed dot-field canvas stays continuous while
+   the content cross-fades. The .transition-fade element lives on #main. */
+html.is-changing .transition-fade {
+  transition: opacity var(--dur-default) ease;
+  opacity: 1;
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: var(--dur-default);
-  animation-timing-function: ease;
+html.is-animating .transition-fade {
+  opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
+  html.is-changing .transition-fade {
+    transition: none;
   }
 }
 

@@ -29,7 +29,7 @@ defmodule NewtonWeb.Layouts do
   def app(assigns) do
     ~H"""
     <.site_header />
-    <main id="main">
+    <main id="main" class="transition-fade">
       {render_slot(@inner_block)}
     </main>
     <.flash_group flash={@flash} />

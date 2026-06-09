@@ -10,7 +10,7 @@
         <h2 class="photo-group-title">{group.title}</h2>
         <p :if={group.caption} class="photo-group-caption">{group.caption}</p>
       </header>
-      <div class="photo-grid" phx-hook="PhotoMasonry" id={"grid-#{group.slug}"}>
+      <div class="photo-grid" id={"grid-#{group.slug}"}>
         <button
           :for={photo <- group.photos}
           type="button"
@@ -32,7 +32,6 @@
   <div
     class="photo-overlay"
     id="photoOverlay"
-    phx-hook="PhotoLightbox"
     role="dialog"
     aria-modal="true"
     aria-labelledby="photoOverlayImg"

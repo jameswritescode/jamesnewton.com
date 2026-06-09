@@ -24,16 +24,36 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/newton"
 import topbar from "../vendor/topbar"
+import Swup from "../vendor/swup"
 import {RippleCanvas} from "./hooks/ripple_canvas"
-import {PhotoMasonry} from "./hooks/photo_masonry"
-import {PhotoLightbox} from "./hooks/photo_lightbox"
+import {initPhotos, teardownPhotos} from "./photos"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, RippleCanvas, PhotoMasonry, PhotoLightbox},
+  hooks: {...colocatedHooks, RippleCanvas},
 })
+
+// Swup handles same-document page navigation: it swaps only the #main content,
+// so the fixed ripple canvas (outside #main) persists across pages and the
+// content cross-fades smoothly. Works in Chrome, Safari, and Firefox.
+const scrollToHash = () => {
+  if (!location.hash) return
+  const el = document.querySelector(location.hash)
+  if (el) el.scrollIntoView()
+}
+
+const swup = new Swup({containers: ["#main"]})
+// Page-specific JS (photo masonry + lightbox) re-runs on every swap.
+swup.hooks.on("visit:start", teardownPhotos)
+swup.hooks.on("content:replace", () => {
+  initPhotos()
+  scrollToHash()
+})
+// Initial page load (Swup doesn't fire content:replace for the first page).
+initPhotos()
+scrollToHash()
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})

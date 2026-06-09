@@ -148,6 +148,14 @@ Things we reach for:
 
 `<canvas class="ripple-canvas">` is fixed-positioned at `z-index: 0`, pointer-events none. It uses `--dot` (RGB tuple) and `--dot-base-opacity` / `--ripple-peak-opacity` for the dot matrix and interaction highlights. Keep content containers at `z-index: 1` to layer above it.
 
+## Page transitions
+
+Page-to-page navigation cross-fades the content while the ripple canvas stays put. [Swup](https://swup.js.org) intercepts same-origin link clicks and swaps only `#main` (the content container), leaving everything outside it — the fixed canvas and the site header — untouched. Because the canvas is never destroyed and re-created, it animates continuously across navigations instead of flickering.
+
+The fade lives on the `.transition-fade` class (applied to `#main`): Swup toggles `html.is-changing` / `html.is-animating`, which drive an `opacity` transition at `--dur-default` (0.3s). `prefers-reduced-motion: reduce` drops the transition. This works in Chrome, Safari, and Firefox.
+
+We deliberately avoided the CSS-only cross-document approach (`@view-transition { navigation: auto }`): it re-creates the canvas on every navigation (causing the flicker this design exists to prevent) and isn't supported in Firefox. Page-specific JS that touches swapped content — the photo masonry and lightbox — is re-run on each Swup swap rather than mounted once.
+
 ## Special content treatments
 
 - **Code fences**: `pre:has(code.language-xxx)::before` drops a small uppercase language badge in the top-right (pinned, doesn't scroll with horizontal overflow). Extending to a new language is one `::before` rule.

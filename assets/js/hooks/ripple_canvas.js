@@ -119,17 +119,60 @@ export const RippleCanvas = {
         konamiProgress = key === KONAMI_SEQUENCE[0] ? 1 : 0;
       }
     };
-    this._onResize = resize;
+    // Paint the dot matrix once, with no ripple and no animation loop.
+    const renderStatic = () => {
+      const style = getComputedStyle(document.documentElement);
+      const bg = style.getPropertyValue("--bg").trim();
+      const dot = style.getPropertyValue("--dot").trim();
+      const baseOpacity =
+        parseFloat(style.getPropertyValue("--dot-base-opacity").trim()) || BASE_OPACITY;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          ctx.beginPath();
+          ctx.arc(col * DOT_SPACING, row * DOT_SPACING, DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${dot}, ${baseOpacity})`;
+          ctx.fill();
+        }
+      }
+    };
+
+    const startAnimation = () => {
+      cancelAnimationFrame(this._raf);
+      this._raf = requestAnimationFrame(draw);
+    };
+    const stopAnimation = () => {
+      cancelAnimationFrame(this._raf);
+      this._raf = null;
+      renderStatic();
+    };
+
+    // Honor prefers-reduced-motion: keep the dot matrix, drop the motion.
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const applyMotionPreference = () =>
+      reduceMotion.matches ? stopAnimation() : startAnimation();
+
+    this._reduceMotion = reduceMotion;
+    this._onMotionChange = applyMotionPreference;
+    this._onResize = () => {
+      resize();
+      if (reduceMotion.matches) renderStatic();
+    };
 
     window.addEventListener("resize", this._onResize);
     window.addEventListener("keydown", this._onKonami);
+    reduceMotion.addEventListener("change", this._onMotionChange);
     resize();
-    this._raf = requestAnimationFrame(draw);
+    applyMotionPreference();
   },
 
   destroyed() {
     cancelAnimationFrame(this._raf);
     window.removeEventListener("resize", this._onResize);
     window.removeEventListener("keydown", this._onKonami);
+    this._reduceMotion.removeEventListener("change", this._onMotionChange);
   },
 };

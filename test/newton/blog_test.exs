@@ -53,4 +53,27 @@ defmodule Newton.BlogTest do
     assert Blog.get_published_post!("hello-world").id == post.id
     assert_raise Ecto.NoResultsError, fn -> Blog.get_published_post!("nope") end
   end
+
+  test "list_published_posts/0 returns summaries without the body columns" do
+    {:ok, _} = Blog.create_post(@valid)
+    [post] = Blog.list_published_posts()
+
+    assert post.title == "Hello World"
+    assert is_nil(post.body_html)
+    assert is_nil(post.body_markdown)
+  end
+
+  test "list_published_posts/1 returns only the most recent N" do
+    for i <- 1..3 do
+      {:ok, _} =
+        Blog.create_post(%{
+          @valid
+          | slug: "p#{i}",
+            published_at: DateTime.add(~U[2026-01-01 00:00:00Z], i, :day)
+        })
+    end
+
+    posts = Blog.list_published_posts(2)
+    assert Enum.map(posts, & &1.slug) == ["p3", "p2"]
+  end
 end

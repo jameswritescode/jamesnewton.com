@@ -25,4 +25,13 @@ defmodule Newton.GalleryTest do
     assert group.slug == "eastern-sierra"
     assert Enum.map(group.photos, & &1.image_key) == ["a.jpg", "b.jpg"]
   end
+
+  test "recent_groups/1 excludes undated groups, newest first, limited" do
+    {:ok, _} = Gallery.create_group(%{slug: "undated", title: "Undated", taken_on: nil})
+    {:ok, _} = Gallery.create_group(%{slug: "older", title: "Older", taken_on: ~D[2024-01-01]})
+    {:ok, _} = Gallery.create_group(%{slug: "newer", title: "Newer", taken_on: ~D[2025-01-01]})
+
+    assert Gallery.recent_groups(5) |> Enum.map(& &1.slug) == ["newer", "older"]
+    assert Gallery.recent_groups(1) |> Enum.map(& &1.slug) == ["newer"]
+  end
 end

@@ -1,8 +1,8 @@
 defmodule Newton.Gallery do
   @moduledoc "Photo groups and photos; resolves image keys to URLs."
   import Ecto.Query, warn: false
+  alias Newton.Gallery.{Photo, PhotoGroup}
   alias Newton.Repo
-  alias Newton.Gallery.{PhotoGroup, Photo}
 
   def create_group(attrs) do
     %PhotoGroup{} |> PhotoGroup.changeset(attrs) |> Repo.insert()
@@ -15,6 +15,17 @@ defmodule Newton.Gallery do
 
   def list_groups do
     Repo.all(from g in PhotoGroup, order_by: [desc: g.taken_on], preload: [:photos])
+  end
+
+  @doc "Most recent dated photo groups, newest first, limited; photos preloaded."
+  def recent_groups(limit) do
+    Repo.all(
+      from g in PhotoGroup,
+        where: not is_nil(g.taken_on),
+        order_by: [desc: g.taken_on],
+        limit: ^limit,
+        preload: [:photos]
+    )
   end
 
   @doc "Resolve an image_key to a URL. Absolute URLs pass through; keys map to /media."

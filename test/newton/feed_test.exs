@@ -1,6 +1,6 @@
 defmodule Newton.FeedTest do
   use Newton.DataCase
-  alias Newton.{Blog, Reading, Gallery, Feed}
+  alias Newton.{Blog, Feed, Gallery, Reading}
 
   test "recent/1 merges posts, reading, and photo groups newest-first" do
     {:ok, _post} =
@@ -33,5 +33,19 @@ defmodule Newton.FeedTest do
       Blog.create_post(%{slug: "d", title: "Draft", body_markdown: "B.", published_at: nil})
 
     assert Feed.recent(10) == []
+  end
+
+  test "recent/1 caps the number of items at the limit" do
+    for i <- 1..5 do
+      {:ok, _} =
+        Blog.create_post(%{
+          slug: "p#{i}",
+          title: "P#{i}",
+          body_markdown: "B.",
+          published_at: DateTime.add(~U[2026-01-01 00:00:00Z], i, :day)
+        })
+    end
+
+    assert length(Feed.recent(3)) == 3
   end
 end

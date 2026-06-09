@@ -33,4 +33,33 @@ defmodule Newton.ReadingTest do
     assert Reading.verb(:listened) == "Listened to"
     assert Reading.verb(:listening) == "Listening to"
   end
+
+  test "recent_finished/1 excludes in-progress entries and limits to N" do
+    {:ok, _} =
+      Reading.create_entry(%{
+        title: "In progress",
+        author: "X",
+        status: :reading,
+        finished_at: nil
+      })
+
+    {:ok, _} =
+      Reading.create_entry(%{
+        title: "Old",
+        author: "A",
+        status: :read,
+        finished_at: ~D[2025-01-01]
+      })
+
+    {:ok, _} =
+      Reading.create_entry(%{
+        title: "New",
+        author: "B",
+        status: :read,
+        finished_at: ~D[2026-01-01]
+      })
+
+    assert Reading.recent_finished(5) |> Enum.map(& &1.title) == ["New", "Old"]
+    assert Reading.recent_finished(1) |> Enum.map(& &1.title) == ["New"]
+  end
 end

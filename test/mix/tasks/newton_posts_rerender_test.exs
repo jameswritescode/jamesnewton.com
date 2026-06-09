@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.Newton.Posts.RerenderTest do
   use Newton.DataCase
+  alias Mix.Tasks.Newton.Posts.Rerender
   alias Newton.{Blog, Repo}
   alias Newton.Blog.Post
 
@@ -15,7 +16,7 @@ defmodule Mix.Tasks.Newton.Posts.RerenderTest do
     Repo.update_all(Post, set: [body_html: "STALE"])
     assert Repo.get!(Post, post.id).body_html == "STALE"
 
-    Mix.Tasks.Newton.Posts.Rerender.run([])
+    Rerender.run([])
 
     assert Repo.get!(Post, post.id).body_html =~ "<h2"
   end

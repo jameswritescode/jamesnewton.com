@@ -1,8 +1,9 @@
 defmodule Mix.Tasks.Newton.Posts.Rerender do
   @shortdoc "Re-renders all posts' cached HTML/excerpt/reading_time from Markdown"
   use Mix.Task
-  alias Newton.{Repo, Blog}
+  alias Newton.Blog
   alias Newton.Blog.Post
+  alias Newton.Repo
 
   @impl Mix.Task
   def run(_args) do

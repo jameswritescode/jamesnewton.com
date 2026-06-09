@@ -11,7 +11,10 @@ defmodule Newton.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      # precommit runs in :test, so Dialyzer also sees the mix task and the
+      # ExUnit-based test support files — add both apps to the PLT.
+      dialyzer: [plt_add_apps: [:mix, :ex_unit]]
     ]
   end
 
@@ -68,7 +71,7 @@ defmodule Newton.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -91,7 +94,15 @@ defmodule Newton.MixProject do
         "esbuild newton --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: [
+        "compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "format",
+        "credo --strict",
+        "test",
+        "cmd --cd assets pnpm test",
+        "dialyzer"
+      ]
     ]
   end
 end

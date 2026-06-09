@@ -89,8 +89,8 @@ defmodule NewtonWeb do
       import NewtonWeb.SiteComponents
 
       # Common modules used in templates
-      alias Phoenix.LiveView.JS
       alias NewtonWeb.Layouts
+      alias Phoenix.LiveView.JS
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())

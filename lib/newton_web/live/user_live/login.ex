@@ -1,8 +1,6 @@
 defmodule NewtonWeb.UserLive.Login do
   use NewtonWeb, :live_view
 
-  alias Newton.Accounts
-
   @impl true
   def render(assigns) do
     ~H"""
@@ -15,11 +13,7 @@ defmodule NewtonWeb.UserLive.Login do
               <%= if @current_scope do %>
                 You need to reauthenticate to perform sensitive actions on your account.
               <% else %>
-                Don't have an account? <.link
-                  navigate={~p"/users/register"}
-                  class="font-semibold text-brand hover:underline"
-                  phx-no-format
-                >Sign up</.link> for an account now.
+                Sign in to manage the site.
               <% end %>
             </:subtitle>
           </.header>
@@ -38,30 +32,6 @@ defmodule NewtonWeb.UserLive.Login do
         <.form
           :let={f}
           for={@form}
-          id="login_form_magic"
-          action={~p"/users/log-in"}
-          phx-submit="submit_magic"
-        >
-          <.input
-            readonly={!!@current_scope}
-            field={f[:email]}
-            type="email"
-            label="Email"
-            autocomplete="username"
-            spellcheck="false"
-            required
-            phx-mounted={JS.focus()}
-          />
-          <.button class="btn btn-primary w-full">
-            Log in with email <span aria-hidden="true">→</span>
-          </.button>
-        </.form>
-
-        <div class="divider">or</div>
-
-        <.form
-          :let={f}
-          for={@form}
           id="login_form_password"
           action={~p"/users/log-in"}
           phx-submit="submit_password"
@@ -75,6 +45,7 @@ defmodule NewtonWeb.UserLive.Login do
             autocomplete="username"
             spellcheck="false"
             required
+            phx-mounted={JS.focus()}
           />
           <.input
             field={@form[:password]}
@@ -109,23 +80,6 @@ defmodule NewtonWeb.UserLive.Login do
   @impl true
   def handle_event("submit_password", _params, socket) do
     {:noreply, assign(socket, :trigger_submit, true)}
-  end
-
-  def handle_event("submit_magic", %{"user" => %{"email" => email}}, socket) do
-    if user = Accounts.get_user_by_email(email) do
-      Accounts.deliver_login_instructions(
-        user,
-        &url(~p"/users/log-in/#{&1}")
-      )
-    end
-
-    info =
-      "If your email is in our system, you will receive instructions for logging in shortly."
-
-    {:noreply,
-     socket
-     |> put_flash(:info, info)
-     |> push_navigate(to: ~p"/users/log-in")}
   end
 
   defp local_mail_adapter? do

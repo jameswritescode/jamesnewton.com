@@ -25,9 +25,9 @@ defmodule NewtonWeb.Admin.Layouts do
     assigns = assign(assigns, sections: @sections, built: @built)
 
     ~H"""
-    <div class="flex min-h-screen bg-base-200 text-base-content">
-      <aside class="w-56 shrink-0 bg-base-300 px-3 py-5">
-        <div class="px-2 pb-4 text-lg font-semibold tracking-tight">newton</div>
+    <div class="flex min-h-screen bg-zinc-100 text-zinc-900">
+      <aside class="w-56 shrink-0 bg-zinc-900 px-3 py-5 text-zinc-100">
+        <div class="px-2 pb-4 text-lg font-semibold tracking-tight text-white">newton</div>
         <nav class="flex flex-col gap-1">
           <.nav_item
             :for={section <- @sections}
@@ -52,7 +52,7 @@ defmodule NewtonWeb.Admin.Layouts do
 
   defp nav_item(%{built: false} = assigns) do
     ~H"""
-    <span class="cursor-default rounded-lg px-3 py-2 text-sm text-base-content/40">
+    <span class="cursor-default rounded-lg px-3 py-2 text-sm text-zinc-500">
       {@section.label}
     </span>
     """
@@ -63,9 +63,9 @@ defmodule NewtonWeb.Admin.Layouts do
     <.link
       navigate={@section.path}
       class={[
-        "rounded-lg px-3 py-2 text-sm transition-colors",
-        @section.key == @current && "bg-primary text-primary-content",
-        @section.key != @current && "hover:bg-base-100"
+        "rounded-lg px-3 py-2 text-sm no-underline transition-colors",
+        @section.key == @current && "bg-indigo-600 text-white",
+        @section.key != @current && "text-zinc-300 hover:bg-zinc-800"
       ]}
     >
       {@section.label}

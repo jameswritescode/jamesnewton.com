@@ -63,13 +63,13 @@ defmodule NewtonWeb.Admin.DashboardLive do
 
   defp card(assigns) do
     ~H"""
-    <section id={@id} class="rounded-2xl bg-base-100 p-5 shadow-sm">
-      <div class="text-sm font-medium text-base-content/60">{@title}</div>
-      <div class="mt-1 text-3xl font-semibold tabular-nums">{@primary}</div>
-      <div class="mt-1 text-sm text-base-content/60">{render_slot(@inner_block)}</div>
+    <section id={@id} class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div class="text-sm font-medium text-zinc-500">{@title}</div>
+      <div class="mt-1 text-3xl font-semibold tabular-nums text-zinc-900">{@primary}</div>
+      <div class="mt-1 text-sm text-zinc-500">{render_slot(@inner_block)}</div>
       <.link
         navigate={@path}
-        class="mt-4 inline-block text-sm font-medium text-primary hover:underline"
+        class="mt-4 inline-block text-sm font-medium text-indigo-600 no-underline hover:underline"
       >
         {@action} →
       </.link>

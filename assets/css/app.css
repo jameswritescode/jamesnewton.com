@@ -1,9 +1,11 @@
-@import "./site.css";
-
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss" source(none);
+/* The public design system. Imported into Tailwind's `components` layer so it
+   still overrides preflight on the public site, while Tailwind *utilities*
+   (used by the neutral admin) reliably win over it. */
+@import "./site.css" layer(components);
 @source "../css";
 @source "../js";
 @source "../../lib/newton_web";

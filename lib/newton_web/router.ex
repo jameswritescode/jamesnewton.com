@@ -32,7 +32,8 @@ defmodule NewtonWeb.Router do
     pipe_through [:browser, :require_authenticated_user]
 
     live_session :admin,
-      on_mount: [{NewtonWeb.UserAuth, :require_authenticated}] do
+      on_mount: [{NewtonWeb.UserAuth, :require_authenticated}],
+      root_layout: {NewtonWeb.Layouts, :admin_root} do
       live "/", DashboardLive, :index
     end
   end

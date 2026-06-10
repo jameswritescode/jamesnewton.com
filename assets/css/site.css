@@ -203,6 +203,13 @@ strong {
   outline-offset: 2px;
 }
 
+/* #main is focused programmatically after a Swup swap for focus management;
+   it's not a user-tabbable control, so suppress the container outline.
+   (The route announcer is visually hidden with Tailwind's `sr-only` utility.) */
+#main:focus {
+  outline: none;
+}
+
 /* === Site Header === */
 .site-header {
   position: relative;

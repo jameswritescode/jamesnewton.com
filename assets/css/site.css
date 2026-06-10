@@ -1,24 +1,21 @@
-/* === Design Tokens === */
 :root {
-  /* Light palette (default) */
   --bg: #aa4040;
   --text: #ffe8d6;
-  --text-subdued: #fde4ca;      /* body-adjacent, slightly dimmed — passes 4.5:1 */
-  --text-muted: #fce0c3;        /* labels, meta, dates — passes 4.5:1 */
+  --text-subdued: #fde4ca;
+  --text-muted: #fce0c3;
   --link: #ffc89c;
   --strong: #fff5e8;
-  --syntax-keyword: #fff0c8;    /* buttery yellow cream for keywords — passes 6.3:1 */
-  --syntax-amber: #ffd089;      /* numbers, literals — passes 4.7:1 */
-  --syntax-rose: #ffc6b5;       /* types, function/class names — passes 4.5:1 */
-  --dot: 255, 232, 214; /* RGB for canvas rgba() */
+  --syntax-keyword: #fff0c8;
+  --syntax-amber: #ffd089;
+  --syntax-rose: #ffc6b5;
+  --dot: 255, 232, 214;
   --dot-base-opacity: 0.06;
   --ripple-peak-opacity: 0.3;
   --feed-hover: rgba(255, 232, 214, 0.08);
 
-  /* Dark palette (referenced by both dark triggers below) */
   --bg-dark: #151311;
   --text-dark: #eed3ba;
-  --text-subdued-dark: #c3ac98; /* similar perceptual drop, passes AAA */
+  --text-subdued-dark: #c3ac98;
   --text-muted-dark: #ad9987;
   --link-dark: #e8a87c;
   --strong-dark: #f5e4cc;
@@ -29,27 +26,22 @@
   --dot-base-opacity-dark: 0.04;
   --feed-hover-dark: rgba(238, 211, 186, 0.06);
 
-  /* Layout */
   --container-width: 720px;
   --container-width-wide: 1040px;
   --container-pad-x: 24px;
   --container-pad-top: 40px;
   --container-pad-bottom: 80px;
 
-  /* Radii */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
 
-  /* Typography */
   --label-tracking: 0.08em;
 
-  /* Opacity scale (remaining — muted/subdued moved to color tokens above) */
-  --opacity-dim: 0.93;       /* body-ish prose slightly dimmed, hover */
+  --opacity-dim: 0.93;
 
-  /* Motion */
-  --dur-fast: 0.22s;         /* modal / lightbox transitions */
-  --dur-default: 0.3s;       /* hover affordances, page transitions */
+  --dur-fast: 0.22s;
+  --dur-default: 0.3s;
 }
 
 :root.dark {
@@ -84,9 +76,6 @@
   }
 }
 
-/* === Page Transitions (Swup) === */
-/* Swup swaps only #main, so the fixed dot-field canvas stays continuous while
-   the content cross-fades. The .transition-fade element lives on #main. */
 html.is-changing .transition-fade {
   transition: opacity var(--dur-default) ease;
   opacity: 1;
@@ -102,7 +91,6 @@ html.is-animating .transition-fade {
   }
 }
 
-/* === Scrollbars === */
 html {
   scrollbar-gutter: stable;
 }
@@ -135,7 +123,6 @@ html,
   background-color: rgba(var(--dot), 0.4);
 }
 
-/* === Reset === */
 *,
 *::before,
 *::after {
@@ -144,7 +131,6 @@ html,
   box-sizing: border-box;
 }
 
-/* === Base === */
 body {
   background-color: var(--bg);
   color: var(--text);
@@ -166,7 +152,6 @@ strong {
   color: var(--strong);
 }
 
-/* === Canvas Background === */
 .ripple-canvas {
   position: fixed;
   top: 0;
@@ -177,7 +162,6 @@ strong {
   pointer-events: none;
 }
 
-/* === Skip Link === */
 .skip-link {
   position: absolute;
   width: 1px;
@@ -203,14 +187,10 @@ strong {
   outline-offset: 2px;
 }
 
-/* #main is focused programmatically after a Swup swap for focus management;
-   it's not a user-tabbable control, so suppress the container outline.
-   (The route announcer is visually hidden with Tailwind's `sr-only` utility.) */
 #main:focus {
   outline: none;
 }
 
-/* === Site Header === */
 .site-header {
   position: relative;
   z-index: 1;
@@ -232,7 +212,6 @@ strong {
   opacity: var(--opacity-dim);
 }
 
-/* === Content Container === */
 .page,
 .post {
   position: relative;
@@ -242,7 +221,6 @@ strong {
   padding: var(--container-pad-top) var(--container-pad-x) var(--container-pad-bottom);
 }
 
-/* === Typography === */
 .post-title {
   font-size: 2.4rem;
   font-weight: normal;
@@ -263,9 +241,6 @@ strong {
   margin-bottom: 1rem;
 }
 
-/* When an h2 is the very first child of .post-body (e.g. resume "What I'm
-   doing"), suppress its margin-top so it doesn't collapse with the page
-   title's margin-bottom and break the uniform header→content gap. */
 .post-body > h2:first-child {
   margin-top: 0;
 }
@@ -412,12 +387,10 @@ strong {
   font-size: inherit;
 }
 
-/* === Homepage === */
 .intro {
   margin-bottom: 2.5rem;
 }
 
-/* === Site Nav === */
 .site-nav {
   display: flex;
   flex-wrap: wrap;
@@ -455,7 +428,6 @@ strong {
   max-width: 600px;
 }
 
-/* === Feed === */
 .feed-heading {
   font-size: 1rem;
   font-weight: normal;
@@ -504,7 +476,6 @@ strong {
   margin-top: 1rem;
 }
 
-/* Book variant */
 .feed-item-book {
   font-size: 1.05rem;
   line-height: 1.5;
@@ -524,14 +495,12 @@ strong {
   max-width: 60ch;
 }
 
-/* Photo variant */
 .feed-item-photo {
   display: block;
   width: 100%;
   border-radius: var(--radius-md);
 }
 
-/* === Photos === */
 .post.photos {
   max-width: var(--container-width-wide);
 }
@@ -611,12 +580,10 @@ body:has(.post.photos) .site-header {
   outline-offset: 3px;
 }
 
-/* No-JS fallback: stack vertically until the script builds columns */
 .photo-grid:not(:has(.photo-column)) {
   flex-direction: column;
 }
 
-/* === Photo lightbox === */
 .photo-overlay {
   position: fixed;
   inset: 0;
@@ -695,7 +662,6 @@ body:has(.post.photos) .site-header {
   }
 }
 
-/* === Resume === */
 .resume-job {
   margin-bottom: 2.5rem;
 }
@@ -718,7 +684,6 @@ body:has(.post.photos) .site-header {
   margin-top: 2.5rem;
 }
 
-/* === Links === */
 a {
   color: var(--link);
   text-decoration: underline;
@@ -737,9 +702,6 @@ a:focus-visible {
   border-radius: 2px;
 }
 
-/* === Syntax Highlighting === */
-
-/* Reset: ensure lumis pre/code don't fight the theme */
 .post-body pre.lumis {
   background-color: rgba(var(--dot), 0.08);
   padding: 1rem 1.25rem;
@@ -750,13 +712,10 @@ a:focus-visible {
   background: transparent;
 }
 
-/* lumis line wrappers — strip any stray layout */
 .post-body .line {
   display: block;
 }
 
-/* Tier 1: Keywords, storage, control, meta
-   → buttery yellow-cream, bold */
 .post-body .keyword,
 .post-body .keyword-function,
 .post-body .keyword-return,
@@ -767,15 +726,11 @@ a:focus-visible {
   font-weight: 600;
 }
 
-/* Tier 2: Strings, symbols, regex, char literals
-   → link color (warm apricot) */
 .post-body .string,
 .post-body .string-special-symbol {
   color: var(--link);
 }
 
-/* Tier 3: Numbers, booleans, constants, literals
-   → amber */
 .post-body .number,
 .post-body .boolean,
 .post-body .constant,
@@ -783,8 +738,6 @@ a:focus-visible {
   color: var(--syntax-amber);
 }
 
-/* Tier 4: Types, functions, classes, constructors, modules, builtins, members, properties
-   → rose, italic */
 .post-body .type,
 .post-body .type-builtin,
 .post-body .function,
@@ -799,13 +752,8 @@ a:focus-visible {
   font-style: italic;
 }
 
-/* Tier 5: Comments, docstrings, quotes
-   → muted text, italic */
 .post-body .comment {
   color: var(--text-muted);
   font-style: italic;
 }
 
-/* Everything else (operator, punctuation-bracket, punctuation-delimiter,
-   text, variable, variable-builtin, variable-parameter) inherits body
-   color — no explicit rule needed. */

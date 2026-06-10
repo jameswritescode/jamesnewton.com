@@ -148,6 +148,8 @@ Things we reach for:
 
 `<canvas class="ripple-canvas">` is fixed-positioned at `z-index: 0`, pointer-events none. It uses `--dot` (RGB tuple) and `--dot-base-opacity` / `--ripple-peak-opacity` for the dot matrix and interaction highlights. Keep content containers at `z-index: 1` to layer above it.
 
+Under `prefers-reduced-motion: reduce`, the canvas paints the dot matrix once and skips the animation loop — the matrix stays, the motion doesn't. It re-evaluates live if the preference is toggled.
+
 ## Page transitions
 
 Page-to-page navigation cross-fades the content while the ripple canvas stays put. [Swup](https://swup.js.org) intercepts same-origin link clicks and swaps only `#main` (the content container), leaving everything outside it — the fixed canvas and the site header — untouched. Because the canvas is never destroyed and re-created, it animates continuously across navigations instead of flickering.

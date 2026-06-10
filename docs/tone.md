@@ -70,7 +70,7 @@ Book entries use `<cite>` for the title and `var(--strong)` via CSS. "Read" or "
 
 ### Nav and section labels
 
-Uppercase, muted. Single word when possible: POSTS, BOOKS, PHOTOS, RESUME, RECENT. No sentence case, no em dashes, no additional framing. The letter-spacing and the muted color tier (`--text-muted`) do the work of making these feel like labels rather than links.
+Uppercase, muted. Single word when possible: POSTS, PHOTOS, READING, RESUME, RECENT. No sentence case, no em dashes, no additional framing. The letter-spacing and the muted color tier (`--text-muted`) do the work of making these feel like labels rather than links.
 
 ## When a sentence feels wrong
 

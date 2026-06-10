@@ -28,6 +28,15 @@ defmodule NewtonWeb.Router do
     get "/photos", PhotoController, :index
   end
 
+  scope "/admin", NewtonWeb.Admin do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :admin,
+      on_mount: [{NewtonWeb.UserAuth, :require_authenticated}] do
+      live "/", DashboardLive, :index
+    end
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", NewtonWeb do
   #   pipe_through :api

@@ -31,4 +31,20 @@ defmodule NewtonWeb.PageControllerTest do
     assert html =~ "Listened to"
     assert html =~ "<cite>Working in Public</cite>"
   end
+
+  test "the home feed shows at most 5 items", %{conn: conn} do
+    for i <- 1..6 do
+      {:ok, _} =
+        Newton.Blog.create_post(%{
+          slug: "p#{i}",
+          title: "P#{i}",
+          body_markdown: "B.",
+          published_at: DateTime.add(~U[2026-01-01 00:00:00Z], i, :day)
+        })
+    end
+
+    html = conn |> get(~p"/") |> html_response(200)
+    feed_items = html |> String.split("feed-item-date") |> length() |> Kernel.-(1)
+    assert feed_items == 5
+  end
 end

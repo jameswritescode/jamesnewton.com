@@ -2,7 +2,7 @@ defmodule NewtonWeb.PageController do
   use NewtonWeb, :controller
 
   def home(conn, _params) do
-    render(conn, :home, page_title: nil, feed: Newton.Feed.recent(10))
+    render(conn, :home, page_title: nil, feed: Newton.Feed.recent(5))
   end
 
   def resume(conn, _params) do

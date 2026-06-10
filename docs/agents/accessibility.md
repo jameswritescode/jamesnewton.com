@@ -12,7 +12,7 @@ Target WCAG 2.2 AA as the baseline. Go past it when the fix is cheap and the imp
 
 ## Approach
 
-1. Read every page you're auditing, not just `styles.css`. Accessibility lives in the HTML.
+1. Read every page you're auditing, not just `assets/css/site.css`. Accessibility lives in the HTML — here, the Phoenix HEEx templates under `lib/newton_web/`.
 2. Compute contrast ratios numerically for the specific color pairs in the stylesheet. Don't eyeball.
 3. Walk the site as a keyboard user. For every interaction — can you reach it? Activate it? Does focus go where it should?
 4. Open each modal/overlay. Is focus trapped? Is it restored on close? Is it hidden from AT when closed?
@@ -39,18 +39,18 @@ End with a **"what's already right"** list. The site uses `inert`, `loading="laz
 
 When auditing this site, keep in mind:
 
-- **`ripple.js` canvas is purely decorative.** `aria-hidden="true"` is correct; don't recommend adding labels or roles.
+- **The ripple canvas is purely decorative.** It's a LiveView hook (`assets/js/hooks/ripple_canvas.js`); `aria-hidden="true"` is correct — don't recommend labels or roles. It already honors `prefers-reduced-motion` (paints a static dot matrix, no animation loop), so don't flag that as missing.
 - **Dark mode contrast is high (~12.9:1).** Light mode is the palette that usually needs attention. Audit both, but expect findings to cluster on light.
 - **Tier-shift is mostly via pre-mixed color tokens, not opacity.** `--text-subdued` and `--text-muted` are designed to clear 4.5:1 against `--bg` in both palettes; if a label/meta/byline fails contrast, fix the token in `:root` or `:root.dark`, not per-rule. The remaining opacity surface is `--opacity-dim: 0.93` and the `0.6` badge fade on `.post-body pre::before`.
-- **The `--syntax-*` family** (`--syntax-keyword`, `--syntax-amber`, `--syntax-rose`) is part of the audit surface inside `<pre>` blocks. All three pass 4.5:1 against `--bg` in both palettes by design — verify if you change any of them.
-- **View transitions are cross-document** via `@view-transition: navigation: auto`. `prefers-reduced-motion` should disable them; verify that still holds after changes.
-- **The photo lightbox is a custom `<div>` with `role="dialog"` and `aria-modal="true"`.** Audit it as a modal: focus trap, Esc, scroll lock, focus restore, `inert` when closed.
-- **The photo grid is script-rendered** into `.photo-column` divs. Images stay in the DOM across relayout — event handlers persist. Don't flag DOM replacement as breaking listeners without checking.
-- **No client-side routing.** Every navigation is a real page load, so there are no focus-restore-after-route problems to worry about.
+- **The `--syntax-*` family** (`--syntax-keyword`, `--syntax-amber`, `--syntax-rose`) is part of the audit surface inside `<pre>` blocks. Compute their ratios numerically and **don't trust the "passes" comments in `site.css`** — a June 2026 audit found that in **light mode** `--syntax-rose` (~3.98:1) and `--syntax-amber` (~4.16:1) fall just below 4.5:1, as does `--link` (~3.98:1). This is a known, deliberately-deferred palette issue; dark mode passes comfortably.
+- **Page navigation is same-document via Swup** (`assets/js/app.js` swaps `#main`), not cross-document `@view-transition`. The fade lives on the `.transition-fade` class; `prefers-reduced-motion` disables it in `site.css` — verify that still holds.
+- **The photo lightbox is a custom `<div>`** (`#photoOverlay` in `lib/newton_web/controllers/photo_html/index.html.heex`, behavior in `assets/js/photos.js`) with `role="dialog"` / `aria-modal="true"`. Audit it as a modal: focus trap, a keyboard-operable close control, Esc, scroll lock, focus restore, `inert` when closed.
+- **The photo grid is script-rendered** into `.photo-column` divs by `assets/js/photos.js` (re-run on each Swup navigation, torn down before each). Within a page the same button/image elements are reused across relayout. Don't flag DOM replacement as breaking listeners without checking.
+- **Navigation is client-side (Swup), not full page loads.** After each swap, `assets/js/navigation.js` moves focus into the new content (the hash target if present, else `#main`) and announces the new page title via the `#route-announcer` live region. Audit that focus management still holds after changes — the old "real page load, no focus concerns" assumption no longer applies.
 
 ## Contrast math, quickly
 
-The two palettes in `styles.css`:
+The two palettes in `assets/css/site.css`:
 
 - Light: `--bg: #aa4040` on `--text: #ffe8d6` (~6.5:1).
 - Dark: `--bg: #151311` on `--text: #eed3ba` (~12.9:1).

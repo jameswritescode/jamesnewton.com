@@ -45,6 +45,7 @@ function initLightbox() {
   const overlay = document.getElementById("photoOverlay");
   if (!overlay) return;
   const full = overlay.querySelector(".photo-overlay-img");
+  const closeButton = overlay.querySelector(".photo-overlay-close");
   let lastFocus = null;
 
   const open = (img) => {
@@ -54,7 +55,9 @@ function initLightbox() {
     document.body.style.overflow = "hidden";
     overlay.removeAttribute("inert");
     overlay.classList.add("is-open");
-    overlay.focus();
+    // Focus the close button so there's a keyboard-operable control in the
+    // dialog (Enter/Space activates it; Esc and backdrop-click also close).
+    (closeButton || overlay).focus();
   };
   const close = () => {
     if (!overlay.classList.contains("is-open")) return;
@@ -75,8 +78,10 @@ function initLightbox() {
     if (!overlay.classList.contains("is-open")) return;
     if (e.key === "Escape") return close();
     if (e.key === "Tab") {
+      // Only the close button is focusable inside the dialog, so keep focus on
+      // it — this traps focus without letting it escape to the page behind.
       e.preventDefault();
-      overlay.focus();
+      (closeButton || overlay).focus();
     }
   };
 

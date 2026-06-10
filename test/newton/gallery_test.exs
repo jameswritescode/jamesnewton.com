@@ -34,4 +34,13 @@ defmodule Newton.GalleryTest do
     assert Gallery.recent_groups(5) |> Enum.map(& &1.slug) == ["newer", "older"]
     assert Gallery.recent_groups(1) |> Enum.map(& &1.slug) == ["newer"]
   end
+
+  test "count_groups/0 and count_photos/0" do
+    {:ok, g} = Gallery.create_group(%{slug: "walk", title: "Walk"})
+    {:ok, _} = Gallery.add_photo(g, %{image_key: "a.jpg", alt: "A", position: 0})
+    {:ok, _} = Gallery.add_photo(g, %{image_key: "b.jpg", alt: "B", position: 1})
+
+    assert Gallery.count_groups() == 1
+    assert Gallery.count_photos() == 2
+  end
 end

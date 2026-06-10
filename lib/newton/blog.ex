@@ -45,6 +45,14 @@ defmodule Newton.Blog do
 
   def list_posts, do: Repo.all(from p in Post, order_by: [desc: p.published_at])
 
+  @doc "Total number of posts."
+  def count_posts, do: Repo.aggregate(Post, :count)
+
+  @doc "Number of draft posts (no publish date set)."
+  def count_drafts do
+    Repo.aggregate(from(p in Post, where: is_nil(p.published_at)), :count)
+  end
+
   defp published_query do
     now = DateTime.utc_now()
 

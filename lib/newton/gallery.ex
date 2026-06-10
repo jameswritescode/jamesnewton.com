@@ -17,6 +17,12 @@ defmodule Newton.Gallery do
     Repo.all(from g in PhotoGroup, order_by: [desc: g.taken_on], preload: [:photos])
   end
 
+  @doc "Total number of photo groups."
+  def count_groups, do: Repo.aggregate(PhotoGroup, :count)
+
+  @doc "Total number of photos across all groups."
+  def count_photos, do: Repo.aggregate(Photo, :count)
+
   @doc "Most recent dated photo groups, newest first, limited; photos preloaded."
   def recent_groups(limit) do
     Repo.all(

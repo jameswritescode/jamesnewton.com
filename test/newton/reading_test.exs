@@ -62,4 +62,13 @@ defmodule Newton.ReadingTest do
     assert Reading.recent_finished(5) |> Enum.map(& &1.title) == ["New", "Old"]
     assert Reading.recent_finished(1) |> Enum.map(& &1.title) == ["New"]
   end
+
+  test "count_entries/0 counts all; count_in_progress/0 counts reading + listening" do
+    {:ok, _} = Reading.create_entry(%{title: "A", author: "x", status: :read})
+    {:ok, _} = Reading.create_entry(%{title: "B", author: "y", status: :reading})
+    {:ok, _} = Reading.create_entry(%{title: "C", author: "z", status: :listening})
+
+    assert Reading.count_entries() == 3
+    assert Reading.count_in_progress() == 2
+  end
 end

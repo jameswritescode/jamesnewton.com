@@ -12,6 +12,14 @@ defmodule Newton.Reading do
     Repo.all(from e in Entry, order_by: [desc: e.finished_at])
   end
 
+  @doc "Total number of reading entries."
+  def count_entries, do: Repo.aggregate(Entry, :count)
+
+  @doc "Number of in-progress entries (currently reading or listening)."
+  def count_in_progress do
+    Repo.aggregate(from(e in Entry, where: e.status in [:reading, :listening]), :count)
+  end
+
   @doc "Most recently finished entries (excluding in-progress), newest first, limited."
   def recent_finished(limit) do
     Repo.all(

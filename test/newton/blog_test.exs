@@ -76,4 +76,12 @@ defmodule Newton.BlogTest do
     posts = Blog.list_published_posts(2)
     assert Enum.map(posts, & &1.slug) == ["p3", "p2"]
   end
+
+  test "count_posts/0 counts all; count_drafts/0 counts those without published_at" do
+    {:ok, _} = Blog.create_post(@valid)
+    {:ok, _} = Blog.create_post(%{@valid | slug: "draft", published_at: nil})
+
+    assert Blog.count_posts() == 2
+    assert Blog.count_drafts() == 1
+  end
 end

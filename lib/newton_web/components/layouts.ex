@@ -24,6 +24,7 @@ defmodule NewtonWeb.Layouts do
   The app layout. Wraps page content; `inner_block` is rendered inside `<main>`.
   """
   attr :flash, :map, default: %{}
+  attr :current_scope, :any, default: nil, doc: "accepted from auth LiveViews; unused by the public layout"
   slot :inner_block, required: true
 
   def app(assigns) do

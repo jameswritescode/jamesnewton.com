@@ -36,5 +36,4 @@ defmodule Newton.Accounts.UserNotifier do
     ==============================
     """)
   end
-
 end

@@ -92,7 +92,6 @@ defmodule Newton.Accounts.UserToken do
      }}
   end
 
-
   @doc """
   Checks if the token is valid and returns its underlying lookup query.
 

@@ -6,7 +6,7 @@ defmodule Newton.Accounts do
   import Ecto.Query, warn: false
   alias Newton.Repo
 
-  alias Newton.Accounts.{User, UserToken, UserNotifier}
+  alias Newton.Accounts.{User, UserNotifier, UserToken}
 
   ## Database getters
 

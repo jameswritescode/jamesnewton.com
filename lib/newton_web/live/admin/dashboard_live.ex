@@ -22,7 +22,13 @@ defmodule NewtonWeb.Admin.DashboardLive do
       <h1 class="mb-6 text-2xl font-semibold">Dashboard</h1>
 
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <.card id="card-posts" title="Posts" primary={@posts_total} action="New post" path="/admin/posts">
+        <.card
+          id="card-posts"
+          title="Posts"
+          primary={@posts_total}
+          action="New post"
+          path="/admin/posts"
+        >
           {@posts_drafts} draft{if @posts_drafts == 1, do: "", else: "s"}
         </.card>
         <.card
@@ -61,7 +67,10 @@ defmodule NewtonWeb.Admin.DashboardLive do
       <div class="text-sm font-medium text-base-content/60">{@title}</div>
       <div class="mt-1 text-3xl font-semibold tabular-nums">{@primary}</div>
       <div class="mt-1 text-sm text-base-content/60">{render_slot(@inner_block)}</div>
-      <.link navigate={@path} class="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+      <.link
+        navigate={@path}
+        class="mt-4 inline-block text-sm font-medium text-primary hover:underline"
+      >
         {@action} →
       </.link>
     </section>

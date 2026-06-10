@@ -1,10 +1,10 @@
 defmodule NewtonWeb.UserAuthTest do
   use NewtonWeb.ConnCase, async: true
 
-  alias Phoenix.LiveView
   alias Newton.Accounts
   alias Newton.Accounts.Scope
   alias NewtonWeb.UserAuth
+  alias Phoenix.LiveView
 
   import Newton.AccountsFixtures
 

@@ -38,3 +38,6 @@ npm-debug.log
 
 # claude local settings
 .claude/settings.local.json
+
+# Visual brainstorming companion mockups
+.superpowers/

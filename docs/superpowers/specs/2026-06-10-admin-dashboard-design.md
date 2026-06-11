@@ -87,9 +87,11 @@ fetch. The public index query is unchanged.
 
 ### Build / assets
 
-- **Milkdown** (editor) is **vendored and lazy-loaded on the admin only** via a
-  dynamic `import()` inside the editor's LiveView hook, so the public `app.js`
-  bundle is not bloated by the editor for visitors who never see it.
+- **Milkdown** (editor) is bundled into a **separate `admin.js` esbuild entry**
+  loaded only by the admin root layout, so the public `app.js` bundle is not
+  bloated by the editor for visitors who never see it. (Implemented as a second
+  bundle rather than a dynamic `import()` split — same goal, no ESM/code-split
+  migration of the shared bundle.)
 - Milkdown's theme CSS is scoped to the admin editor container; the editor canvas
   **reuses the public post typography** (Lora serif, heading scale, spacing,
   blockquote/list rhythm) but in **neutral admin colors**.

@@ -38,6 +38,9 @@ defmodule NewtonWeb.Router do
       live "/posts", PostLive.Index, :index
       live "/posts/new", PostLive.Editor, :new
       live "/posts/:id/edit", PostLive.Editor, :edit
+      live "/reading", ReadingLive.Index, :index
+      live "/reading/new", ReadingLive.Index, :new
+      live "/reading/:id/edit", ReadingLive.Index, :edit
     end
   end
 

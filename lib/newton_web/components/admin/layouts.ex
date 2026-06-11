@@ -16,7 +16,7 @@ defmodule NewtonWeb.Admin.Layouts do
 
   # Sections whose routes exist today render as links; the rest are inert
   # placeholders until their own plans land.
-  @built [:dashboard, :posts]
+  @built [:dashboard, :posts, :reading]
 
   attr :flash, :map, default: %{}
   attr :current, :atom, required: true, doc: "the active section key"
@@ -102,6 +102,22 @@ defmodule NewtonWeb.Admin.Layouts do
       "rounded-full px-2 py-0.5 text-[0.7rem] font-medium",
       @status == :draft && "border border-(--admin-border-strong) text-(--admin-text-subtle)",
       @status != :draft && "bg-(--admin-accent-soft) text-(--admin-accent)"
+    ]}>
+      {@status}
+    </span>
+    """
+  end
+
+  @doc "A pill badge for a reading entry's status."
+  attr :status, :atom, required: true
+
+  def reading_badge(assigns) do
+    ~H"""
+    <span class={[
+      "rounded-full px-2 py-0.5 text-[0.7rem] font-medium",
+      @status in [:reading, :listening] && "bg-(--admin-accent-soft) text-(--admin-accent)",
+      @status in [:read, :listened] &&
+        "border border-(--admin-border-strong) text-(--admin-text-subtle)"
     ]}>
       {@status}
     </span>

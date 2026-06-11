@@ -44,4 +44,21 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     assert html =~ "can&#39;t be blank"
   end
+
+  test "loads an existing post and updates it", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{title: "Original", slug: "original", body_markdown: "old body"})
+
+    {:ok, view, html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    assert html =~ "Original"
+
+    view
+    |> form("#post-form", post: %{title: "Updated", slug: "original", body_markdown: "new body"})
+    |> render_submit()
+    |> follow_redirect(conn, ~p"/admin/posts")
+
+    updated = Newton.Blog.get_post!(post.id)
+    assert updated.title == "Updated"
+    assert updated.body_html =~ "new body"
+  end
 end

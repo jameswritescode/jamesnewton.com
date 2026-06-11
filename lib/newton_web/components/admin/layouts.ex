@@ -92,4 +92,19 @@ defmodule NewtonWeb.Admin.Layouts do
     </.link>
     """
   end
+
+  @doc "A pill badge for a post's publish status (:draft / :published / :scheduled)."
+  attr :status, :atom, required: true
+
+  def status_badge(assigns) do
+    ~H"""
+    <span class={[
+      "rounded-full px-2 py-0.5 text-[0.7rem] font-medium",
+      @status == :draft && "border border-(--admin-border-strong) text-(--admin-text-subtle)",
+      @status != :draft && "bg-(--admin-accent-soft) text-(--admin-accent)"
+    ]}>
+      {@status}
+    </span>
+    """
+  end
 end

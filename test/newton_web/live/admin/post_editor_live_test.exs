@@ -8,19 +8,18 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     %{conn: log_in_user(conn, user_fixture())}
   end
 
-  test "creates a post and redirects to the list", %{conn: conn} do
+  test "creates a post and stays in the editor on its edit URL", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-    {:ok, _index, html} =
-      view
-      |> form("#post-form",
-        post: %{title: "Hello Admin", slug: "hello-admin", body_markdown: "Body text."}
-      )
-      |> render_submit()
-      |> follow_redirect(conn, ~p"/admin/posts")
+    view
+    |> form("#post-form",
+      post: %{title: "Hello Admin", slug: "hello-admin", body_markdown: "Body text."}
+    )
+    |> render_submit()
 
-    assert html =~ "Hello Admin"
-    assert Newton.Blog.get_post_by_slug!("hello-admin").body_html =~ "Body text."
+    post = Newton.Blog.get_post_by_slug!("hello-admin")
+    assert_patch(view, ~p"/admin/posts/#{post.id}/edit")
+    assert post.body_html =~ "Body text."
   end
 
   test "auto-fills the slug from the title while the slug is blank", %{conn: conn} do
@@ -55,7 +54,6 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     view
     |> form("#post-form", post: %{title: "Updated", slug: "original", body_markdown: "new body"})
     |> render_submit()
-    |> follow_redirect(conn, ~p"/admin/posts")
 
     updated = Newton.Blog.get_post!(post.id)
     assert updated.title == "Updated"
@@ -70,25 +68,24 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     view
     |> form("#post-form", post: %{title: "Pub", slug: "pub-now", body_markdown: "body"})
     |> render_submit()
-    |> follow_redirect(conn, ~p"/admin/posts")
 
     status = Newton.Blog.publish_status(Newton.Blog.get_post_by_slug!("pub-now").published_at)
     assert status == :published
   end
 
-  test "scheduling a future date marks the post as scheduled on save", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+  test "an already-published post hides Publish now and offers Move to draft", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "live",
+        body_markdown: "b",
+        published_at: ~U[2026-01-01 00:00:00Z]
+      })
 
-    future = Date.utc_today() |> Date.add(7) |> Date.to_iso8601()
-    view |> element("#schedule-date") |> render_change(%{"value" => future})
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
 
-    view
-    |> form("#post-form", post: %{title: "Sched", slug: "sched", body_markdown: "body"})
-    |> render_submit()
-    |> follow_redirect(conn, ~p"/admin/posts")
-
-    status = Newton.Blog.publish_status(Newton.Blog.get_post_by_slug!("sched").published_at)
-    assert status == :scheduled
+    refute has_element?(view, "button", "Publish now")
+    assert has_element?(view, "button", "Move to draft")
   end
 
   test "delete removes the post and redirects to the list", %{conn: conn} do

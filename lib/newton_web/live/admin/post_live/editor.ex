@@ -6,29 +6,32 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias NewtonWeb.Admin.Layouts
 
   @impl true
-  def mount(params, _session, socket) do
-    {:ok, load(socket, socket.assigns.live_action, params)}
+  def mount(_params, _session, socket) do
+    {:ok, assign(socket, :drawer_open, false)}
   end
 
-  defp load(socket, :new, _params) do
+  @impl true
+  def handle_params(params, _uri, socket) do
+    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :new, _params) do
     post = %Post{}
 
     socket
     |> assign(:page_title, "New post")
     |> assign(:post, post)
     |> assign(:published_at, nil)
-    |> assign(:drawer_open, false)
     |> assign(:form, to_form(Blog.change_post(post)))
   end
 
-  defp load(socket, :edit, %{"id" => id}) do
+  defp apply_action(socket, :edit, %{"id" => id}) do
     post = Blog.get_post!(id)
 
     socket
     |> assign(:page_title, "Edit post")
     |> assign(:post, post)
     |> assign(:published_at, post.published_at)
-    |> assign(:drawer_open, false)
     |> assign(:form, to_form(Blog.change_post(post)))
   end
 
@@ -62,20 +65,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:noreply, assign(socket, :published_at, nil)}
   end
 
-  def handle_event("schedule", %{"value" => ""}, socket) do
-    {:noreply, assign(socket, :published_at, nil)}
-  end
-
-  def handle_event("schedule", %{"value" => date_string}, socket) do
-    published_at =
-      case Date.from_iso8601(date_string) do
-        {:ok, date} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
-        _ -> socket.assigns.published_at
-      end
-
-    {:noreply, assign(socket, :published_at, published_at)}
-  end
-
   def handle_event("delete", _params, socket) do
     {:ok, _} = Blog.delete_post(socket.assigns.post)
 
@@ -99,11 +88,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp save(socket, %Post{id: nil}, params) do
     case Blog.create_post(params) do
-      {:ok, _post} ->
+      {:ok, post} ->
+        # Stay in the editor: patch to the new post's edit URL so subsequent
+        # saves update it and a refresh works.
         {:noreply,
          socket
          |> put_flash(:info, "Post created")
-         |> push_navigate(to: ~p"/admin/posts")}
+         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -112,11 +103,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp save(socket, %Post{} = post, params) do
     case Blog.update_post(post, params) do
-      {:ok, _post} ->
+      {:ok, post} ->
         {:noreply,
          socket
          |> put_flash(:info, "Post saved")
-         |> push_navigate(to: ~p"/admin/posts")}
+         |> assign(:post, post)
+         |> assign(:published_at, post.published_at)
+         |> assign(:form, to_form(Blog.change_post(post)))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -136,15 +129,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             ← Posts
           </.link>
           <div class="flex-1"></div>
-          <span class="text-[0.78rem] text-(--admin-text-subtle)">
-            {Blog.publish_status(@published_at)}
-          </span>
+          <Layouts.status_badge status={Blog.publish_status(@published_at)} />
           <button
             type="button"
             phx-click="toggle_drawer"
             class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.8rem] text-(--admin-text) hover:bg-(--admin-accent-soft)"
           >
-            Publish settings
+            Settings
           </button>
           <button
             type="submit"
@@ -212,6 +203,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
         <div class="flex gap-2">
           <button
+            :if={Blog.publish_status(@published_at) != :published}
             type="button"
             phx-click="publish_now"
             class="flex-1 rounded-md bg-(--admin-accent) px-2 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
@@ -219,6 +211,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             Publish now
           </button>
           <button
+            :if={Blog.publish_status(@published_at) != :draft}
             type="button"
             phx-click="unpublish"
             class="flex-1 rounded-md border border-(--admin-border) px-2 py-1.5 text-[0.78rem] hover:bg-(--admin-accent-soft)"
@@ -226,17 +219,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             Move to draft
           </button>
         </div>
-
-        <label class="block text-[0.78rem]">
-          <span class="mb-1 block text-(--admin-text-muted)">Schedule for</span>
-          <input
-            id="schedule-date"
-            type="date"
-            value={schedule_value(@published_at)}
-            phx-change="schedule"
-            class="w-full rounded-md border border-(--admin-border) bg-(--admin-surface) px-2 py-1 text-(--admin-text)"
-          />
-        </label>
 
         <div class="text-[0.78rem] text-(--admin-text-subtle)">
           Reading time: {@post.reading_time || "—"} min
@@ -266,7 +248,4 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     </Layouts.admin>
     """
   end
-
-  defp schedule_value(nil), do: ""
-  defp schedule_value(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d")
 end

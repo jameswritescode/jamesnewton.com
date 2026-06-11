@@ -48,7 +48,7 @@ defmodule NewtonWeb.Admin.PostLive.Index do
           >
             {post.title}
           </.link>
-          <.status_badge status={Newton.Blog.publish_status(post.published_at)} />
+          <Layouts.status_badge status={Newton.Blog.publish_status(post.published_at)} />
           <span class="w-28 text-right text-[0.78rem] text-(--admin-text-subtle)">
             {format_date(post.published_at)}
           </span>
@@ -64,21 +64,6 @@ defmodule NewtonWeb.Admin.PostLive.Index do
         </div>
       </div>
     </Layouts.admin>
-    """
-  end
-
-  attr :status, :atom, required: true
-
-  defp status_badge(assigns) do
-    ~H"""
-    <span class={[
-      "rounded-full px-2 py-0.5 text-[0.7rem] font-medium",
-      @status == :published && "bg-(--admin-accent-soft) text-(--admin-accent)",
-      @status == :draft && "border border-(--admin-border-strong) text-(--admin-text-subtle)",
-      @status == :scheduled && "bg-(--admin-accent-soft) text-(--admin-accent)"
-    ]}>
-      {@status}
-    </span>
     """
   end
 

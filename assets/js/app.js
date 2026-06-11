@@ -26,6 +26,7 @@ import {hooks as colocatedHooks} from "phoenix-colocated/newton"
 import topbar from "../vendor/topbar"
 import Swup from "../vendor/swup"
 import {RippleCanvas} from "./hooks/ripple_canvas"
+import {AdminTheme} from "./hooks/admin_theme"
 import {initPhotos, teardownPhotos} from "./photos"
 import {focusAfterNavigation} from "./navigation"
 
@@ -33,7 +34,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, RippleCanvas},
+  hooks: {...colocatedHooks, RippleCanvas, AdminTheme},
 })
 
 // Swup handles same-document page navigation: it swaps only the #main content,

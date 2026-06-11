@@ -19,9 +19,9 @@ defmodule NewtonWeb.Admin.DashboardLive do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:dashboard}>
-      <h1 class="mb-6 text-2xl font-semibold">Dashboard</h1>
+      <h1 class="admin-page-title">Dashboard</h1>
 
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="admin-cards">
         <.card
           id="card-posts"
           title="Posts"
@@ -63,15 +63,12 @@ defmodule NewtonWeb.Admin.DashboardLive do
 
   defp card(assigns) do
     ~H"""
-    <section id={@id} class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div class="text-sm font-medium text-zinc-500">{@title}</div>
-      <div class="mt-1 text-3xl font-semibold tabular-nums text-zinc-900">{@primary}</div>
-      <div class="mt-1 text-sm text-zinc-500">{render_slot(@inner_block)}</div>
-      <.link
-        navigate={@path}
-        class="mt-4 inline-block text-sm font-medium text-indigo-600 no-underline hover:underline"
-      >
-        {@action} →
+    <section id={@id} class="admin-card">
+      <div class="admin-card-label">{@title}</div>
+      <div class="admin-card-value">{@primary}</div>
+      <div class="admin-card-meta">{render_slot(@inner_block)}</div>
+      <.link navigate={@path} class="admin-card-action">
+        {@action} <span aria-hidden="true">→</span>
       </.link>
     </section>
     """

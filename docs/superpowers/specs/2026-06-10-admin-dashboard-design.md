@@ -9,10 +9,14 @@
 A back-office admin for jamesnewton.com that lets the site owner manage the
 three content types — **Posts**, **Reading** entries, and **Photo galleries** —
 through a focused, modern interface. The admin is a separate surface from the
-public site: it does **not** inherit the public warm/terracotta design language.
-Instead it uses a neutral, functional **Tailwind + daisyUI** chrome, and is built
-**end-to-end in LiveView** (the public site remains classic controllers / dead
-views).
+public site with its own design language: a **Linear-inspired, token-driven
+theme** (`assets/css/admin.css`) built on stepped shades of a warm-neutral base,
+high contrast, hairline borders, and a **warm terracotta/peach accent** that ties
+back to the public palette without copying its layout. It supports **light and
+dark themes** — following the OS preference by default, with a sidebar toggle
+that overrides and remembers the choice (`data-admin-theme` on `<html>`, set
+before first paint to avoid a flash). The admin is built **end-to-end in
+LiveView** (the public site remains classic controllers / dead views).
 
 ### Goals
 
@@ -35,8 +39,8 @@ views).
 
 | Surface | Tech | Layout |
 | --- | --- | --- |
-| Public site | Classic controllers + HEEx dead views (unchanged) | `Layouts.app` (warm palette) |
-| Admin | LiveView | New neutral `Admin.Layouts` (Tailwind + daisyUI) |
+| Public site | Classic controllers + HEEx dead views (unchanged) | `Layouts.app` (warm palette), public `root` layout |
+| Admin | LiveView | `Admin.Layouts` shell + dedicated `admin_root` layout (no ripple canvas/public chrome), token-driven theme in `admin.css` |
 
 - **Routing:** all admin lives under a single `scope "/admin", NewtonWeb.Admin`
   with a dedicated `live_session` gated by an authentication `on_mount`. The
@@ -89,13 +93,18 @@ fetch. The public index query is unchanged.
 - Milkdown's theme CSS is scoped to the admin editor container; the editor canvas
   **reuses the public post typography** (Lora serif, heading scale, spacing,
   blockquote/list rhythm) but in **neutral admin colors**.
-- Admin chrome uses Tailwind + daisyUI. Per project rules, everything stays in
-  the single `app.css` / `app.js` bundle pair (no external `<script src>`).
+- Admin chrome is driven by a scoped `admin.css` design-token system (semantic
+  `.admin-*` classes over CSS custom properties), with a small theme-toggle hook
+  in `app.js`. `site.css` is imported into Tailwind's `components` layer so admin
+  utilities can win over it while the public site is unaffected. Per project
+  rules, everything stays in the single `app.css` / `app.js` bundle pair (no
+  external `<script src>`).
 
 ## Navigation shell
 
-A **persistent left sidebar** (neutral dark rail) with entries: **Dashboard**,
-**Posts**, **Reading**, **Photos**. The **Dashboard** entry is a landing hub.
+A **persistent left sidebar** with entries: **Dashboard**, **Posts**,
+**Reading**, **Photos**, and a light/dark theme toggle in the footer. The
+**Dashboard** entry is a landing hub.
 
 ### Dashboard hub
 
@@ -181,7 +190,8 @@ Each is independently understandable and testable:
 
 - `Newton.Accounts` (+ `users` table) — generated, trimmed to email+password.
 - `Newton.Release.create_admin/2` — console admin creation.
-- `NewtonWeb.Admin.Layouts` — neutral Tailwind/daisyUI admin shell + sidebar.
+- `NewtonWeb.Admin.Layouts` + `admin_root` layout — Linear-style admin shell,
+  sidebar, and theme toggle, styled by `assets/css/admin.css`.
 - `NewtonWeb.Admin.DashboardLive` — hub cards + recently-updated.
 - `NewtonWeb.Admin.PostLive.{Index, Editor}` — list + Milkdown editor + publish
   drawer.

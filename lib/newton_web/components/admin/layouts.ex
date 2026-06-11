@@ -1,8 +1,9 @@
 defmodule NewtonWeb.Admin.Layouts do
   @moduledoc """
   Neutral admin shell. Wrap admin LiveView content with `<Admin.Layouts.admin>`.
-  Distinct from the public `NewtonWeb.Layouts` (warm palette) — the admin uses
-  Tailwind + daisyUI in functional, neutral colors.
+  Distinct from the public `NewtonWeb.Layouts` (warm palette) — the admin is a
+  Linear-inspired, token-driven surface (see `assets/css/admin.css`) with light
+  and dark themes.
   """
   use NewtonWeb, :html
 
@@ -25,10 +26,13 @@ defmodule NewtonWeb.Admin.Layouts do
     assigns = assign(assigns, sections: @sections, built: @built)
 
     ~H"""
-    <div class="flex min-h-screen bg-zinc-100 text-zinc-900">
-      <aside class="w-56 shrink-0 bg-zinc-900 px-3 py-5 text-zinc-100">
-        <div class="px-2 pb-4 text-lg font-semibold tracking-tight text-white">newton</div>
-        <nav class="flex flex-col gap-1">
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="admin-brand">
+          <span class="admin-brand-dot"></span> newton
+        </div>
+
+        <nav class="admin-nav">
           <.nav_item
             :for={section <- @sections}
             section={section}
@@ -36,9 +40,24 @@ defmodule NewtonWeb.Admin.Layouts do
             built={section.key in @built}
           />
         </nav>
+
+        <div class="admin-sidebar-footer">
+          <button
+            id="admin-theme-toggle"
+            type="button"
+            class="admin-theme-toggle"
+            phx-hook="AdminTheme"
+            aria-label="Toggle light or dark theme"
+          >
+            <.icon name="hero-sun-mini" class="admin-when-light size-4" />
+            <.icon name="hero-moon-mini" class="admin-when-dark size-4" />
+            <span class="admin-when-light">Light</span>
+            <span class="admin-when-dark">Dark</span>
+          </button>
+        </div>
       </aside>
 
-      <main id="admin-main" class="flex-1 px-8 py-6">
+      <main id="admin-main" class="admin-main">
         <Layouts.flash_group flash={@flash} />
         {render_slot(@inner_block)}
       </main>
@@ -52,9 +71,7 @@ defmodule NewtonWeb.Admin.Layouts do
 
   defp nav_item(%{built: false} = assigns) do
     ~H"""
-    <span class="cursor-default rounded-lg px-3 py-2 text-sm text-zinc-500">
-      {@section.label}
-    </span>
+    <span class="admin-nav-link is-disabled">{@section.label}</span>
     """
   end
 
@@ -62,11 +79,7 @@ defmodule NewtonWeb.Admin.Layouts do
     ~H"""
     <.link
       navigate={@section.path}
-      class={[
-        "rounded-lg px-3 py-2 text-sm no-underline transition-colors",
-        @section.key == @current && "bg-indigo-600 text-white",
-        @section.key != @current && "text-zinc-300 hover:bg-zinc-800"
-      ]}
+      class={["admin-nav-link", @section.key == @current && "is-active"]}
     >
       {@section.label}
     </.link>

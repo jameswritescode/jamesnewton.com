@@ -1,0 +1,227 @@
+/* Admin design system — Linear-inspired, high-contrast, token-driven.
+   Light and dark are stepped shades of a warm-neutral base, with a warm
+   terracotta/peach accent that ties back to the public site. Scoped to
+   `[data-admin-theme]` (set on <html> only by the admin root layout) and the
+   `.admin-*` classes, so none of this touches the public site. */
+
+[data-admin-theme] {
+  --admin-bg: #f7f6f4;
+  --admin-surface: #ffffff;
+  --admin-sidebar: #f1efec;
+  --admin-border: #e6e3df;
+  --admin-border-strong: #d6d1cb;
+  --admin-text: #1a1714;
+  --admin-text-muted: #6b645d;
+  --admin-text-subtle: #9c948c;
+  --admin-accent: #b54a2b;
+  --admin-accent-hover: #9b3e22;
+  --admin-accent-contrast: #ffffff;
+  --admin-accent-soft: rgba(181, 74, 43, 0.1);
+  --admin-shadow: 0 1px 2px rgba(26, 23, 20, 0.04);
+}
+
+[data-admin-theme="dark"] {
+  --admin-bg: #0c0b0a;
+  --admin-surface: #161311;
+  --admin-sidebar: #100e0d;
+  --admin-border: #272320;
+  --admin-border-strong: #39322b;
+  --admin-text: #f6f3ef;
+  --admin-text-muted: #a39a90;
+  --admin-text-subtle: #6f665d;
+  --admin-accent: #ea8a63;
+  --admin-accent-hover: #f2a07e;
+  --admin-accent-contrast: #1a1109;
+  --admin-accent-soft: rgba(234, 138, 99, 0.14);
+  --admin-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.admin-body {
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-sidebar {
+  width: 15rem;
+  flex-shrink: 0;
+  background: var(--admin-sidebar);
+  border-right: 1px solid var(--admin-border);
+  padding: 1.1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.6rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--admin-text);
+}
+
+.admin-brand-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--admin-accent);
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  font-size: 0.825rem;
+  color: var(--admin-text-muted);
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.admin-nav-link:hover {
+  background: var(--admin-accent-soft);
+  color: var(--admin-text);
+}
+
+.admin-nav-link.is-active {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  font-weight: 500;
+}
+
+.admin-nav-link.is-disabled,
+.admin-nav-link.is-disabled:hover {
+  color: var(--admin-text-subtle);
+  background: transparent;
+  cursor: default;
+}
+
+.admin-sidebar-footer {
+  padding-top: 0.6rem;
+  margin-top: 0.6rem;
+  border-top: 1px solid var(--admin-border);
+}
+
+.admin-theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.admin-theme-toggle:hover {
+  background: var(--admin-accent-soft);
+  color: var(--admin-text);
+}
+
+.admin-theme-toggle .admin-when-dark {
+  display: none;
+}
+
+[data-admin-theme="dark"] .admin-theme-toggle .admin-when-light {
+  display: none;
+}
+
+[data-admin-theme="dark"] .admin-theme-toggle .admin-when-dark {
+  display: inline-flex;
+}
+
+.admin-main {
+  flex: 1;
+  padding: 2rem 2.5rem;
+  max-width: 72rem;
+}
+
+.admin-page-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--admin-text);
+  margin-bottom: 1.5rem;
+}
+
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 720px) {
+  .admin-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 0.7rem;
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--admin-shadow);
+  transition: border-color 0.12s ease;
+}
+
+.admin-card:hover {
+  border-color: var(--admin-border-strong);
+}
+
+.admin-card-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+}
+
+.admin-card-value {
+  margin-top: 0.15rem;
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text);
+}
+
+.admin-card-meta {
+  margin-top: 0.1rem;
+  font-size: 0.8rem;
+  color: var(--admin-text-subtle);
+}
+
+.admin-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--admin-accent);
+  text-decoration: none;
+}
+
+.admin-card-action:hover {
+  color: var(--admin-accent-hover);
+}

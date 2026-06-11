@@ -7,6 +7,7 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/newton"
 import topbar from "../vendor/topbar"
 import {AdminTheme} from "./hooks/admin_theme"
+import {MilkdownEditor} from "./hooks/milkdown_editor"
 // Crepe's base styles + a frame theme. esbuild extracts these into admin.css.
 import "@milkdown/crepe/theme/common/style.css"
 import "@milkdown/crepe/theme/frame.css"
@@ -15,7 +16,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AdminTheme},
+  hooks: {...colocatedHooks, AdminTheme, MilkdownEditor},
 })
 
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})

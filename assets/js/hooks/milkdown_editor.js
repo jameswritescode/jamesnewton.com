@@ -22,7 +22,12 @@ export const MilkdownEditor = {
     const input = document.getElementById(this.el.dataset.inputId)
     const initial = input ? input.value : ""
 
-    this.crepe = new Crepe({root: this.el, defaultValue: initial})
+    this.crepe = new Crepe({
+      root: this.el,
+      defaultValue: initial,
+      // Disable the block handle (the ⠿ drag grip + "+" add-block button).
+      features: {"block-edit": false},
+    })
     this.crepe.editor.use(listener)
     this.crepe.editor.config((ctx) => {
       ctx.get(listenerCtx).markdownUpdated((_ctx, markdown) => {

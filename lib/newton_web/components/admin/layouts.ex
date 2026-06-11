@@ -27,7 +27,7 @@ defmodule NewtonWeb.Admin.Layouts do
 
     ~H"""
     <div class="flex min-h-screen">
-      <aside class="flex w-56 shrink-0 flex-col border-r border-(--admin-border) bg-(--admin-sidebar) px-3 py-[1.1rem]">
+      <aside class="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-(--admin-border) bg-(--admin-sidebar) px-3 py-[1.1rem]">
         <div class="flex items-center gap-2 px-[0.6rem] pb-[1.1rem] text-[0.95rem] font-semibold tracking-tight">
           <span class="size-2 rounded-full bg-(--admin-accent)"></span> newton
         </div>

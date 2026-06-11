@@ -22,4 +22,26 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert html =~ "Hello Admin"
     assert Newton.Blog.get_post_by_slug!("hello-admin").body_html =~ "Body text."
   end
+
+  test "auto-fills the slug from the title while the slug is blank", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    html =
+      view
+      |> form("#post-form", post: %{title: "My First Post!", slug: "", body_markdown: "x"})
+      |> render_change()
+
+    assert html =~ ~s(value="my-first-post")
+  end
+
+  test "shows validation errors on invalid submit", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    html =
+      view
+      |> form("#post-form", post: %{title: "", slug: "", body_markdown: ""})
+      |> render_submit()
+
+    assert html =~ "can&#39;t be blank"
+  end
 end

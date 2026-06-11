@@ -33,10 +33,34 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   @impl true
+  def handle_event("validate", %{"post" => params}, socket) do
+    params = maybe_autofill_slug(params)
+
+    form =
+      socket.assigns.post
+      |> Blog.change_post(params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, :form, form)}
+  end
+
   def handle_event("save", %{"post" => params}, socket) do
     params = Map.put(params, "published_at", socket.assigns.published_at)
     save(socket, socket.assigns.post, params)
   end
+
+  # Auto-fill the slug from the title only while the slug field is still blank,
+  # so manual slug edits are never clobbered.
+  defp maybe_autofill_slug(%{"slug" => slug} = params) when slug != "" do
+    params
+  end
+
+  defp maybe_autofill_slug(%{"title" => title} = params) do
+    Map.put(params, "slug", Newton.Slug.slugify(title))
+  end
+
+  defp maybe_autofill_slug(params), do: params
 
   defp save(socket, %Post{id: nil}, params) do
     case Blog.create_post(params) do

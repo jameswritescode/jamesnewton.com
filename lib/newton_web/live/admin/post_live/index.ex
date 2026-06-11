@@ -9,6 +9,13 @@ defmodule NewtonWeb.Admin.PostLive.Index do
   end
 
   @impl true
+  def handle_event("delete", %{"id" => id}, socket) do
+    post = Newton.Blog.get_post!(id)
+    {:ok, _} = Newton.Blog.delete_post(post)
+    {:noreply, stream_delete(socket, :posts, post)}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:posts}>
@@ -30,18 +37,31 @@ defmodule NewtonWeb.Admin.PostLive.Index do
         <div id="posts-empty" class="hidden p-5 text-[0.85rem] text-(--admin-text-subtle) only:block">
           No posts yet.
         </div>
-        <.link
+        <div
           :for={{id, post} <- @streams.posts}
           id={id}
-          navigate={~p"/admin/posts/#{post.id}/edit"}
-          class="flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 no-underline last:border-b-0 hover:bg-(--admin-accent-soft)"
+          class="flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
         >
-          <span class="flex-1 text-[0.9rem] font-medium text-(--admin-text)">{post.title}</span>
+          <.link
+            navigate={~p"/admin/posts/#{post.id}/edit"}
+            class="flex-1 text-[0.9rem] font-medium text-(--admin-text) no-underline"
+          >
+            {post.title}
+          </.link>
           <.status_badge status={Newton.Blog.publish_status(post.published_at)} />
           <span class="w-28 text-right text-[0.78rem] text-(--admin-text-subtle)">
             {format_date(post.published_at)}
           </span>
-        </.link>
+          <button
+            type="button"
+            phx-click="delete"
+            phx-value-id={post.id}
+            data-confirm="Delete this post?"
+            class="rounded-md px-2 py-1 text-[0.75rem] text-(--admin-text-subtle) hover:text-(--admin-accent)"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </Layouts.admin>
     """

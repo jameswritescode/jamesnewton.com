@@ -45,6 +45,25 @@ defmodule Newton.Blog do
 
   def list_posts, do: Repo.all(from p in Post, order_by: [desc: p.published_at])
 
+  @doc "Fetch any post by id (admin), regardless of publish status."
+  def get_post!(id), do: Repo.get!(Post, id)
+
+  @doc "Fetch any post by slug (admin), regardless of publish status."
+  def get_post_by_slug!(slug), do: Repo.get_by!(Post, slug: slug)
+
+  @doc "Delete a post."
+  def delete_post(%Post{} = post), do: Repo.delete(post)
+
+  @doc "Build a post changeset for forms."
+  def change_post(%Post{} = post, attrs \\ %{}), do: Post.changeset(post, attrs)
+
+  @doc "Derive publish status from a `published_at` value (or nil)."
+  def publish_status(nil), do: :draft
+
+  def publish_status(%DateTime{} = at) do
+    if DateTime.compare(at, DateTime.utc_now()) == :gt, do: :scheduled, else: :published
+  end
+
   @doc "Total number of posts."
   def count_posts, do: Repo.aggregate(Post, :count)
 

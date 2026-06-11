@@ -84,4 +84,34 @@ defmodule Newton.BlogTest do
     assert Blog.count_posts() == 2
     assert Blog.count_drafts() == 1
   end
+
+  test "get_post!/1 fetches any post by id, including drafts" do
+    {:ok, draft} = Blog.create_post(%{@valid | slug: "d", published_at: nil})
+    assert Blog.get_post!(draft.id).id == draft.id
+  end
+
+  test "get_post_by_slug!/1 fetches any post by slug, including drafts" do
+    {:ok, draft} = Blog.create_post(%{@valid | slug: "draft-slug", published_at: nil})
+    assert Blog.get_post_by_slug!("draft-slug").id == draft.id
+    assert_raise Ecto.NoResultsError, fn -> Blog.get_post_by_slug!("missing") end
+  end
+
+  test "delete_post/1 removes the post" do
+    {:ok, post} = Blog.create_post(@valid)
+    {:ok, _} = Blog.delete_post(post)
+    assert_raise Ecto.NoResultsError, fn -> Blog.get_post!(post.id) end
+  end
+
+  test "change_post/2 returns a changeset" do
+    {:ok, post} = Blog.create_post(@valid)
+    assert %Ecto.Changeset{} = Blog.change_post(post, %{title: "New"})
+  end
+
+  test "publish_status/1 derives draft/scheduled/published from a datetime" do
+    future = DateTime.add(DateTime.utc_now(), 60, :minute)
+    past = DateTime.add(DateTime.utc_now(), -60, :minute)
+    assert Blog.publish_status(nil) == :draft
+    assert Blog.publish_status(future) == :scheduled
+    assert Blog.publish_status(past) == :published
+  end
 end

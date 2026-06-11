@@ -26,13 +26,13 @@ defmodule NewtonWeb.Admin.Layouts do
     assigns = assign(assigns, sections: @sections, built: @built)
 
     ~H"""
-    <div class="admin-shell">
-      <aside class="admin-sidebar">
-        <div class="admin-brand">
-          <span class="admin-brand-dot"></span> newton
+    <div class="flex min-h-screen">
+      <aside class="flex w-56 shrink-0 flex-col border-r border-(--admin-border) bg-(--admin-sidebar) px-3 py-[1.1rem]">
+        <div class="flex items-center gap-2 px-[0.6rem] pb-[1.1rem] text-[0.95rem] font-semibold tracking-tight">
+          <span class="size-2 rounded-full bg-(--admin-accent)"></span> newton
         </div>
 
-        <nav class="admin-nav">
+        <nav class="flex flex-1 flex-col gap-0.5">
           <.nav_item
             :for={section <- @sections}
             section={section}
@@ -41,23 +41,23 @@ defmodule NewtonWeb.Admin.Layouts do
           />
         </nav>
 
-        <div class="admin-sidebar-footer">
+        <div class="mt-[0.6rem] border-t border-(--admin-border) pt-[0.6rem]">
           <button
             id="admin-theme-toggle"
             type="button"
-            class="admin-theme-toggle"
+            class="flex w-full items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
             phx-hook="AdminTheme"
             aria-label="Toggle light or dark theme"
           >
-            <.icon name="hero-sun-mini" class="admin-when-light size-4" />
-            <.icon name="hero-moon-mini" class="admin-when-dark size-4" />
-            <span class="admin-when-light">Light</span>
-            <span class="admin-when-dark">Dark</span>
+            <.icon name="hero-sun-mini" class="size-4 admin-dark:hidden" />
+            <.icon name="hero-moon-mini" class="hidden size-4 admin-dark:inline-flex" />
+            <span class="admin-dark:hidden">Light</span>
+            <span class="hidden admin-dark:inline">Dark</span>
           </button>
         </div>
       </aside>
 
-      <main id="admin-main" class="admin-main">
+      <main id="admin-main" class="max-w-6xl flex-1 px-10 py-8">
         <Layouts.flash_group flash={@flash} />
         {render_slot(@inner_block)}
       </main>
@@ -71,7 +71,9 @@ defmodule NewtonWeb.Admin.Layouts do
 
   defp nav_item(%{built: false} = assigns) do
     ~H"""
-    <span class="admin-nav-link is-disabled">{@section.label}</span>
+    <span class="rounded-md px-[0.6rem] py-[0.4rem] text-[0.825rem] text-(--admin-text-subtle)">
+      {@section.label}
+    </span>
     """
   end
 
@@ -79,7 +81,12 @@ defmodule NewtonWeb.Admin.Layouts do
     ~H"""
     <.link
       navigate={@section.path}
-      class={["admin-nav-link", @section.key == @current && "is-active"]}
+      class={[
+        "flex items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.825rem] no-underline transition-colors",
+        @section.key == @current && "bg-(--admin-accent-soft) font-medium text-(--admin-accent)",
+        @section.key != @current &&
+          "text-(--admin-text-muted) hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+      ]}
     >
       {@section.label}
     </.link>

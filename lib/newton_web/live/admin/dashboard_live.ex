@@ -19,9 +19,9 @@ defmodule NewtonWeb.Admin.DashboardLive do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:dashboard}>
-      <h1 class="admin-page-title">Dashboard</h1>
+      <h1 class="mb-6 text-[1.35rem] font-semibold tracking-tight">Dashboard</h1>
 
-      <div class="admin-cards">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <.card
           id="card-posts"
           title="Posts"
@@ -63,11 +63,17 @@ defmodule NewtonWeb.Admin.DashboardLive do
 
   defp card(assigns) do
     ~H"""
-    <section id={@id} class="admin-card">
-      <div class="admin-card-label">{@title}</div>
-      <div class="admin-card-value">{@primary}</div>
-      <div class="admin-card-meta">{render_slot(@inner_block)}</div>
-      <.link navigate={@path} class="admin-card-action">
+    <section
+      id={@id}
+      class="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-5 shadow-sm transition-colors hover:border-(--admin-border-strong)"
+    >
+      <div class="text-[0.78rem] font-medium text-(--admin-text-muted)">{@title}</div>
+      <div class="mt-0.5 text-3xl font-semibold tracking-tight tabular-nums">{@primary}</div>
+      <div class="mt-0.5 text-[0.8rem] text-(--admin-text-subtle)">{render_slot(@inner_block)}</div>
+      <.link
+        navigate={@path}
+        class="mt-4 inline-flex items-center gap-1 whitespace-nowrap text-[0.8rem] font-medium text-(--admin-accent) no-underline hover:text-(--admin-accent-hover)"
+      >
         {@action} <span aria-hidden="true">→</span>
       </.link>
     </section>

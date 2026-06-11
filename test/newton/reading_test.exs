@@ -71,4 +71,35 @@ defmodule Newton.ReadingTest do
     assert Reading.count_entries() == 3
     assert Reading.count_in_progress() == 2
   end
+
+  test "get_entry!/1 returns the entry with the given id" do
+    {:ok, entry} = Reading.create_entry(%{title: "T", author: "A", status: :read})
+    assert Reading.get_entry!(entry.id).id == entry.id
+  end
+
+  test "update_entry/2 updates the given fields" do
+    {:ok, entry} = Reading.create_entry(%{title: "T", author: "A", status: :reading})
+    {:ok, updated} = Reading.update_entry(entry, %{title: "T2", status: :read})
+    assert updated.title == "T2"
+    assert updated.status == :read
+  end
+
+  test "delete_entry/1 removes the entry" do
+    {:ok, entry} = Reading.create_entry(%{title: "T", author: "A", status: :read})
+    {:ok, _} = Reading.delete_entry(entry)
+    assert_raise Ecto.NoResultsError, fn -> Reading.get_entry!(entry.id) end
+  end
+
+  test "change_entry/1 returns a changeset" do
+    {:ok, entry} = Reading.create_entry(%{title: "T", author: "A", status: :read})
+    assert %Ecto.Changeset{} = Reading.change_entry(entry)
+  end
+
+  test "status_counts/0 returns a count per status, zero-filled" do
+    {:ok, _} = Reading.create_entry(%{title: "A", author: "x", status: :read})
+    {:ok, _} = Reading.create_entry(%{title: "B", author: "y", status: :read})
+    {:ok, _} = Reading.create_entry(%{title: "C", author: "z", status: :reading})
+
+    assert Reading.status_counts() == %{read: 2, reading: 1, listened: 0, listening: 0}
+  end
 end

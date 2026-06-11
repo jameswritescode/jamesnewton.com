@@ -8,6 +8,31 @@ defmodule Newton.Reading do
     %Entry{} |> Entry.changeset(attrs) |> Repo.insert()
   end
 
+  def get_entry!(id), do: Repo.get!(Entry, id)
+
+  def update_entry(%Entry{} = entry, attrs) do
+    entry |> Entry.changeset(attrs) |> Repo.update()
+  end
+
+  def delete_entry(%Entry{} = entry), do: Repo.delete(entry)
+
+  def change_entry(%Entry{} = entry, attrs \\ %{}) do
+    Entry.changeset(entry, attrs)
+  end
+
+  @statuses [:reading, :read, :listening, :listened]
+
+  def status_counts do
+    counted =
+      Entry
+      |> group_by([e], e.status)
+      |> select([e], {e.status, count(e.id)})
+      |> Repo.all()
+      |> Map.new()
+
+    Map.new(@statuses, fn status -> {status, Map.get(counted, status, 0)} end)
+  end
+
   def list_entries do
     Repo.all(from e in Entry, order_by: [desc: e.finished_at])
   end

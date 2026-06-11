@@ -8,6 +8,16 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     %{conn: log_in_user(conn, user_fixture())}
   end
 
+  test "Escape closes the publish drawer", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    view |> element("button", "Settings") |> render_click()
+    assert has_element?(view, "#publish-drawer.translate-x-0")
+
+    view |> element("#publish-drawer") |> render_keydown(%{"key" => "Escape"})
+    refute has_element?(view, "#publish-drawer.translate-x-0")
+  end
+
   test "creates a post and stays in the editor on its edit URL", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 

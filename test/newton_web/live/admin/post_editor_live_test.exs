@@ -43,6 +43,61 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert html =~ ~s(value="my-first-post")
   end
 
+  test "slug keeps following the full title across keystrokes", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    # First keystroke: slug becomes "h".
+    view |> form("#post-form", post: %{title: "h", slug: ""}) |> render_change()
+
+    # Later keystroke sends the slug rendered so far ("h"); it must re-derive
+    # from the full title rather than freezing at "h".
+    html = view |> form("#post-form", post: %{title: "hello", slug: "h"}) |> render_change()
+    assert html =~ ~s(value="hello")
+  end
+
+  test "a manual slug edit stops the slug from following the title", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    view |> form("#post-form", post: %{title: "hello", slug: ""}) |> render_change()
+    # User types a custom slug (differs from the auto value).
+    view |> form("#post-form", post: %{title: "hello", slug: "custom"}) |> render_change()
+    # Changing the title no longer touches the slug.
+    html =
+      view |> form("#post-form", post: %{title: "hello world", slug: "custom"}) |> render_change()
+
+    assert html =~ ~s(value="custom")
+  end
+
+  test "excerpt follows the body until the author edits it", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    html =
+      view
+      |> form("#post-form",
+        post: %{title: "T", body_markdown: "The first paragraph of the body."}
+      )
+      |> render_change()
+
+    assert html =~ "The first paragraph of the body."
+
+    # Editing the excerpt locks it; further body changes leave it alone.
+    view
+    |> form("#post-form",
+      post: %{body_markdown: "Different body now.", excerpt: "My custom excerpt"}
+    )
+    |> render_change()
+
+    html =
+      view
+      |> form("#post-form",
+        post: %{body_markdown: "Changed again.", excerpt: "My custom excerpt"}
+      )
+      |> render_change()
+
+    assert html =~ "My custom excerpt"
+    refute html =~ "Changed again."
+  end
+
   test "shows validation errors on invalid submit", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 

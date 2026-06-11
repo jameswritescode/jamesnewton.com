@@ -254,6 +254,15 @@ strong {
   margin: 0 0 1.5rem 1.4rem;
 }
 
+/* Tailwind's preflight resets list markers to none; restore them for posts. */
+.post-body ul {
+  list-style: disc;
+}
+
+.post-body ol {
+  list-style: decimal;
+}
+
 .post-body li {
   margin-bottom: 0.4rem;
 }

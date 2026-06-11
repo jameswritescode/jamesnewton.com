@@ -22,22 +22,62 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:page_title, "New post")
     |> assign(:post, post)
     |> assign(:published_at, nil)
+    |> assign(:slug_locked, false)
+    |> assign(:slug_auto, "")
+    |> assign(:excerpt_locked, false)
+    |> assign(:excerpt_auto, "")
     |> assign(:form, to_form(Blog.change_post(post)))
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
     post = Blog.get_post!(id)
 
+    # The slug auto-follows the title only for unpublished posts whose slug still
+    # matches the title (i.e. never hand-edited). Published posts lock the slug so
+    # links/SEO don't break. The excerpt auto-follows the body unless it differs
+    # from what the body would derive (i.e. the author wrote a custom one).
+    slug_locked = not is_nil(post.published_at) or post.slug != Newton.Slug.slugify(post.title)
+    excerpt_locked = (post.excerpt || "") != Newton.Markdown.excerpt(post.body_markdown || "")
+
     socket
     |> assign(:page_title, "Edit post")
     |> assign(:post, post)
     |> assign(:published_at, post.published_at)
+    |> assign(:slug_locked, slug_locked)
+    |> assign(:slug_auto, post.slug)
+    |> assign(:excerpt_locked, excerpt_locked)
+    |> assign(:excerpt_auto, post.excerpt || "")
     |> assign(:form, to_form(Blog.change_post(post)))
   end
 
   @impl true
   def handle_event("validate", %{"post" => params}, socket) do
-    params = maybe_autofill_slug(params)
+    published? = not is_nil(socket.assigns.published_at)
+
+    # Slug: derive from the *full* title until the author edits the slug field
+    # (or the post is published — then it's manual-only for SEO).
+    slug_locked =
+      socket.assigns.slug_locked or published? or params["slug"] != socket.assigns.slug_auto
+
+    {params, slug_auto} =
+      if slug_locked do
+        {params, socket.assigns.slug_auto}
+      else
+        slug = Newton.Slug.slugify(params["title"] || "")
+        {Map.put(params, "slug", slug), slug}
+      end
+
+    # Excerpt: derive from the *full* body until the author edits the excerpt.
+    excerpt_locked =
+      socket.assigns.excerpt_locked or params["excerpt"] != socket.assigns.excerpt_auto
+
+    {params, excerpt_auto} =
+      if excerpt_locked do
+        {params, socket.assigns.excerpt_auto}
+      else
+        excerpt = Newton.Markdown.excerpt(params["body_markdown"] || "")
+        {Map.put(params, "excerpt", excerpt), excerpt}
+      end
 
     form =
       socket.assigns.post
@@ -45,7 +85,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       |> Map.put(:action, :validate)
       |> to_form()
 
-    {:noreply, assign(socket, :form, form)}
+    {:noreply,
+     socket
+     |> assign(:form, form)
+     |> assign(:slug_locked, slug_locked)
+     |> assign(:slug_auto, slug_auto)
+     |> assign(:excerpt_locked, excerpt_locked)
+     |> assign(:excerpt_auto, excerpt_auto)}
   end
 
   def handle_event("save", %{"post" => params}, socket) do
@@ -77,18 +123,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> put_flash(:info, "Post deleted")
      |> push_navigate(to: ~p"/admin/posts")}
   end
-
-  # Auto-fill the slug from the title only while the slug field is still blank,
-  # so manual slug edits are never clobbered.
-  defp maybe_autofill_slug(%{"slug" => slug} = params) when slug != "" do
-    params
-  end
-
-  defp maybe_autofill_slug(%{"title" => title} = params) do
-    Map.put(params, "slug", Newton.Slug.slugify(title))
-  end
-
-  defp maybe_autofill_slug(params), do: params
 
   defp save(socket, %Post{id: nil}, params) do
     case Blog.create_post(params) do
@@ -177,7 +211,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         <.input
           field={@form[:excerpt]}
           type="textarea"
-          label="Excerpt (optional — auto-derived from the body when blank)"
+          label="Excerpt (auto-derived from the body until you edit it)"
           rows="2"
           class="mt-4 w-full rounded-lg border border-(--admin-border) bg-(--admin-surface) p-3 text-[0.85rem] text-(--admin-text) focus:outline-none"
         />

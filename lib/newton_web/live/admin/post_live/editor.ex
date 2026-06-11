@@ -206,7 +206,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         </div>
 
         <div class="text-[0.78rem] text-(--admin-text-muted)">
-          Status: <span class="font-medium text-(--admin-text)">{Blog.publish_status(@published_at)}</span>
+          Status:
+          <span class="font-medium text-(--admin-text)">{Blog.publish_status(@published_at)}</span>
         </div>
 
         <div class="flex gap-2">

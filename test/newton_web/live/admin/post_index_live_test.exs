@@ -10,9 +10,7 @@ defmodule NewtonWeb.Admin.PostIndexLiveTest do
 
   defp post_fixture(attrs) do
     {:ok, post} =
-      Newton.Blog.create_post(
-        Map.merge(%{title: "T", slug: "t", body_markdown: "body"}, attrs)
-      )
+      Newton.Blog.create_post(Map.merge(%{title: "T", slug: "t", body_markdown: "body"}, attrs))
 
     post
   end

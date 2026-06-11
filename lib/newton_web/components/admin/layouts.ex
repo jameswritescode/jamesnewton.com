@@ -16,7 +16,7 @@ defmodule NewtonWeb.Admin.Layouts do
 
   # Sections whose routes exist today render as links; the rest are inert
   # placeholders until their own plans land.
-  @built [:dashboard]
+  @built [:dashboard, :posts]
 
   attr :flash, :map, default: %{}
   attr :current, :atom, required: true, doc: "the active section key"

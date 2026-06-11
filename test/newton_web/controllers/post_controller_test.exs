@@ -29,4 +29,33 @@ defmodule NewtonWeb.PostControllerTest do
   test "GET /posts/:slug 404s on unknown slug", %{conn: conn} do
     assert_error_sent 404, fn -> get(conn, ~p"/posts/does-not-exist") end
   end
+
+  describe "draft visibility" do
+    setup do
+      {:ok, draft} =
+        Blog.create_post(%{
+          slug: "secret-draft",
+          title: "Secret Draft",
+          body_markdown: "Hidden body.",
+          published_at: nil
+        })
+
+      %{draft: draft}
+    end
+
+    test "anonymous visitors get 404 for a draft", %{conn: conn, draft: draft} do
+      assert_error_sent 404, fn -> get(conn, ~p"/posts/#{draft.slug}") end
+    end
+
+    test "a signed-in admin can preview a draft at its real URL", %{conn: conn, draft: draft} do
+      {:ok, user} = Newton.Release.create_admin("preview@example.com", "supersecret123")
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> get(~p"/posts/#{draft.slug}")
+
+      assert html_response(conn, 200) =~ "Secret Draft"
+    end
+  end
 end

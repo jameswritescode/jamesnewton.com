@@ -134,9 +134,11 @@ admin.
 - **List = the hub.** Each row shows title, **status** (draft / published /
   scheduled), and date; click to open the editor. A quick status control may live
   on the row.
-- **Editor:** a single, focused **Milkdown (Crepe + GFM preset)** editor with
-  inline live rendering (type `## ` → heading, `- ` → bullet). One writing
-  surface, no split preview.
+- **Editor:** a single, focused **Milkdown (`commonmark` + `gfm` presets)**
+  editor with inline live rendering (type `## ` → heading, `- ` → bullet). One
+  writing surface, no split preview. (Built from the plain presets rather than
+  the Crepe bundle so code blocks are native ProseMirror nodes — no CodeMirror,
+  Backspace/undo behave normally, and the admin bundle stays small.)
   - **`body_markdown` stays the single source of truth.** Milkdown serializes to
     a CommonMark + GFM markdown string on change/save; **MDEx renders
     `body_html` server-side on save, unchanged.** Milkdown's HTML is never

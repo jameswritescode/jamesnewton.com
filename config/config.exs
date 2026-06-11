@@ -51,7 +51,7 @@ config :esbuild,
   version: "0.25.4",
   newton: [
     args:
-      ~w(js/app.js js/admin.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --external:*.woff --external:*.woff2 --external:*.ttf --alias:@=.),
+      ~w(js/app.js js/admin.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
   ]

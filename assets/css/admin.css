@@ -34,56 +34,108 @@
   --admin-accent-soft: rgba(234, 138, 99, 0.14);
 }
 
-/* Tone the Milkdown (Crepe) editor to the admin palette by remapping Crepe's
-   color variables to the --admin-* tokens, so the editor follows light/dark. */
+/* The plain Milkdown editor (commonmark + gfm). Style its prose to read like a
+   published post (Lora typography, see site.css) in neutral admin colors.
+   Code blocks are native <pre><code> — the published page highlights via MDEx. */
 #milkdown-editor .milkdown {
-  --crepe-color-background: var(--admin-surface);
-  --crepe-color-on-background: var(--admin-text);
-  --crepe-color-surface: var(--admin-surface);
-  --crepe-color-surface-low: var(--admin-bg);
-  --crepe-color-on-surface: var(--admin-text);
-  --crepe-color-on-surface-variant: var(--admin-text-muted);
-  --crepe-color-outline: var(--admin-border);
-  --crepe-color-primary: var(--admin-accent);
-  --crepe-color-secondary: var(--admin-text-muted);
-  --crepe-color-hover: var(--admin-accent-soft);
-  --crepe-color-selected: var(--admin-accent-soft);
-  --crepe-color-inline-code: var(--admin-accent);
-  --crepe-color-inline-area: var(--admin-accent-soft);
-  --crepe-color-inverse: var(--admin-text);
-  --crepe-color-on-inverse: var(--admin-bg);
   background: var(--admin-surface);
   color: var(--admin-text);
+  border-radius: 0.5rem;
 }
 
 #milkdown-editor .ProseMirror {
   min-height: 24rem;
-  padding: 1.25rem 1.5rem;
-  /* Match the published post typography (see site.css). */
+  padding: 1.5rem 1.75rem;
   font-family: "Lora", Georgia, "Times New Roman", serif;
-}
-
-#milkdown-editor .ProseMirror code,
-#milkdown-editor .milkdown-code-block .cm-editor {
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-}
-
-#milkdown-editor .ProseMirror:focus {
+  font-size: 1rem;
+  line-height: 1.7;
   outline: none;
 }
 
-/* Simplify code blocks: drop CodeMirror's tools bar (language picker, copy /
-   preview buttons) and the line-number gutter for a plain code box. The
-   published page still highlights via MDEx. */
-#milkdown-editor .milkdown-code-block .tools {
-  display: none;
+#milkdown-editor .ProseMirror > * + * {
+  margin-top: 0.9rem;
 }
 
-#milkdown-editor .milkdown-code-block .cm-gutters {
-  display: none;
+#milkdown-editor .ProseMirror h1 {
+  font-size: 1.7rem;
+  font-weight: 600;
+  margin-top: 1.6rem;
 }
 
-#milkdown-editor .milkdown-code-block .cm-editor {
+#milkdown-editor .ProseMirror h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 1.4rem;
+}
+
+#milkdown-editor .ProseMirror h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1.2rem;
+}
+
+#milkdown-editor .ProseMirror a {
+  color: var(--admin-accent);
+}
+
+#milkdown-editor .ProseMirror strong {
+  font-weight: 600;
+}
+
+#milkdown-editor .ProseMirror blockquote {
+  border-left: 3px solid var(--admin-border-strong);
+  padding-left: 1rem;
+  color: var(--admin-text-muted);
+  font-style: italic;
+}
+
+#milkdown-editor .ProseMirror ul,
+#milkdown-editor .ProseMirror ol {
+  padding-left: 1.5rem;
+}
+
+#milkdown-editor .ProseMirror li {
+  margin-top: 0.25rem;
+}
+
+#milkdown-editor .ProseMirror code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+}
+
+#milkdown-editor .ProseMirror pre {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
   background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  overflow-x: auto;
+}
+
+#milkdown-editor .ProseMirror pre code {
+  background: none;
+  color: var(--admin-text);
+  padding: 0;
+}
+
+#milkdown-editor .ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#milkdown-editor .ProseMirror th,
+#milkdown-editor .ProseMirror td {
+  border: 1px solid var(--admin-border);
+  padding: 0.4rem 0.6rem;
+}
+
+#milkdown-editor .ProseMirror img {
+  max-width: 100%;
   border-radius: 0.5rem;
 }

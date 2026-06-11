@@ -8,39 +8,44 @@ export function syncMarkdown(input, markdown) {
   input.dispatchEvent(new Event("input", {bubbles: true}))
 }
 
-// phx-hook on a container that also holds a hidden `post[body_markdown]` input.
-// The container is wrapped in phx-update="ignore" so LiveView never patches the
-// editor's DOM after mount. Crepe is loaded via dynamic import so this module is
-// safe to import in tests.
+// phx-hook on a container that also holds a hidden `post[body_markdown]`
+// textarea. The container is wrapped in phx-update="ignore" so LiveView never
+// patches the editor's DOM after mount.
+//
+// We build a plain Milkdown editor (commonmark + gfm) rather than Crepe: code
+// blocks are native ProseMirror nodes (no CodeMirror), so Backspace/undo behave
+// normally and the bundle stays small. Milkdown is loaded via dynamic import so
+// this module is safe to import in tests.
 export const MilkdownEditor = {
   async mounted() {
-    const [{Crepe}, {listener, listenerCtx}] = await Promise.all([
-      import("@milkdown/crepe"),
-      import("@milkdown/plugin-listener"),
-    ])
+    const [{Editor, rootCtx, defaultValueCtx}, {commonmark}, {gfm}, {listener, listenerCtx}, {history}] =
+      await Promise.all([
+        import("@milkdown/kit/core"),
+        import("@milkdown/kit/preset/commonmark"),
+        import("@milkdown/kit/preset/gfm"),
+        import("@milkdown/kit/plugin/listener"),
+        import("@milkdown/kit/plugin/history"),
+      ])
 
     const input = document.getElementById(this.el.dataset.inputId)
     const initial = input ? input.value : ""
 
-    this.crepe = new Crepe({
-      root: this.el,
-      defaultValue: initial,
-      // Disable the block handle (the ⠿ drag grip + "+" add-block button).
-      // Code blocks keep the CodeMirror feature (it provides the code-block
-      // node), but its chrome is simplified via CSS in admin.css.
-      features: {"block-edit": false},
-    })
-    this.crepe.editor.use(listener)
-    this.crepe.editor.config((ctx) => {
-      ctx.get(listenerCtx).markdownUpdated((_ctx, markdown) => {
-        if (input) syncMarkdown(input, markdown)
+    this.editor = await Editor.make()
+      .config((ctx) => {
+        ctx.set(rootCtx, this.el)
+        ctx.set(defaultValueCtx, initial)
+        ctx.get(listenerCtx).markdownUpdated((_ctx, markdown) => {
+          if (input) syncMarkdown(input, markdown)
+        })
       })
-    })
-
-    await this.crepe.create()
+      .use(listener)
+      .use(commonmark)
+      .use(gfm)
+      .use(history)
+      .create()
   },
 
   destroyed() {
-    this.crepe?.destroy()
+    this.editor?.destroy()
   },
 }

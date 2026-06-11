@@ -17,11 +17,11 @@ const PLACEHOLDER_TEXT = "Write your post in markdown…"
 export const MarkdownEditor = {
   async mounted() {
     const [
-      {EditorView, keymap, placeholder, lineNumbers},
-      {EditorState},
+      {EditorView, keymap, placeholder, Decoration, ViewPlugin},
+      {EditorState, RangeSetBuilder},
       {markdown, markdownLanguage},
       {languages},
-      {HighlightStyle, syntaxHighlighting, indentOnInput},
+      {HighlightStyle, syntaxHighlighting, indentOnInput, syntaxTree},
       {tags: t},
       {history, defaultKeymap, historyKeymap, indentWithTab},
     ] = await Promise.all([
@@ -50,7 +50,7 @@ export const MarkdownEditor = {
       {tag: t.strikethrough, textDecoration: "line-through"},
       {tag: t.link, color: "var(--admin-accent)"},
       {tag: t.url, color: "var(--admin-text-subtle)"},
-      {tag: t.monospace, color: "var(--admin-accent)"},
+      {tag: t.monospace, color: "var(--admin-accent)", fontFamily: "ui-monospace, monospace"},
       {tag: t.quote, color: "var(--admin-text-muted)", fontStyle: "italic"},
       {tag: t.list, color: "var(--admin-text-muted)"},
       // Markdown markers (#, *, `, fences, >): dimmed but visible.
@@ -64,6 +64,44 @@ export const MarkdownEditor = {
       {tag: [t.typeName, t.className], color: "var(--ed-syntax-function)"},
       {tag: [t.bool, t.null, t.atom], color: "var(--ed-syntax-keyword)"},
     ])
+
+    // Give whole fenced/indented code-block lines a monospace, boxed look
+    // (per-token styling alone leaves untokenized text in Lora serif).
+    const codeLine = Decoration.line({class: "cm-code-line"})
+    const codeBlockLines = ViewPlugin.fromClass(
+      class {
+        constructor(view) {
+          this.decorations = this.build(view)
+        }
+
+        update(update) {
+          if (update.docChanged || update.viewportChanged) {
+            this.decorations = this.build(update.view)
+          }
+        }
+
+        build(view) {
+          const builder = new RangeSetBuilder()
+          for (const {from, to} of view.visibleRanges) {
+            syntaxTree(view.state).iterate({
+              from,
+              to,
+              enter: (node) => {
+                if (node.name !== "FencedCode" && node.name !== "CodeBlock") return
+                let pos = node.from
+                while (pos <= node.to) {
+                  const line = view.state.doc.lineAt(pos)
+                  builder.add(line.from, line.from, codeLine)
+                  pos = line.to + 1
+                }
+              },
+            })
+          }
+          return builder.finish()
+        }
+      },
+      {decorations: (plugin) => plugin.decorations}
+    )
 
     const theme = EditorView.theme({
       "&": {
@@ -85,7 +123,11 @@ export const MarkdownEditor = {
         backgroundColor: "var(--admin-accent-soft)",
       },
       ".cm-placeholder": {color: "var(--admin-text-subtle)", fontStyle: "normal"},
-      ".cm-monospace, .cm-line .ͼ1, .tok-monospace": {fontFamily: "ui-monospace, monospace"},
+      ".cm-code-line": {
+        fontFamily: "ui-monospace, monospace",
+        fontSize: "0.85em",
+        backgroundColor: "var(--admin-bg)",
+      },
     })
 
     this.view = new EditorView({
@@ -99,6 +141,7 @@ export const MarkdownEditor = {
           EditorView.lineWrapping,
           markdown({base: markdownLanguage, codeLanguages: languages}),
           syntaxHighlighting(highlight),
+          codeBlockLines,
           theme,
           placeholder(PLACEHOLDER_TEXT),
           EditorView.updateListener.of((update) => {

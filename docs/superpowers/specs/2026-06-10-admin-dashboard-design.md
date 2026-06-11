@@ -134,27 +134,26 @@ admin.
 - **List = the hub.** Each row shows title, **status** (draft / published /
   scheduled), and date; click to open the editor. A quick status control may live
   on the row.
-- **Editor:** a single, focused **Milkdown (`commonmark` + `gfm` presets)**
-  editor with inline live rendering (type `## ` → heading, `- ` → bullet). One
-  writing surface, no split preview. (Built from the plain presets rather than
-  the Crepe bundle so code blocks are native ProseMirror nodes — no CodeMirror,
-  Backspace/undo behave normally, and the admin bundle stays small.)
-  - **`body_markdown` stays the single source of truth.** Milkdown serializes to
-    a CommonMark + GFM markdown string on change/save; **MDEx renders
-    `body_html` server-side on save, unchanged.** Milkdown's HTML is never
-    published.
-  - **GFM coverage:** Milkdown's GFM preset covers all five extensions our MDEx
-    pipeline enables — tables, strikethrough, task lists, footnotes (dedicated
-    nodes) and autolink (remark layer). Authoring and render feature sets are
-    aligned. The editor capability set must remain a superset of MDEx's enabled
-    extensions so nothing is lost on round-trip.
-  - **Fidelity:** the editor matches the published page's **typography**, not its
-    color. In-editor code highlighting uses Milkdown's own highlighter themed to
-    a neutral palette; exact token classification (Lumis vs Milkdown) may differ.
-    For guaranteed fidelity, **"View on site"** opens `/posts/:slug` (the true
-    MDEx render — see draft visibility above).
-  - **Integration:** Milkdown runs as a LiveView `phx-hook` with
-    `phx-update="ignore"`, pushing the markdown string back to the server.
+- **Editor:** a single, focused **CodeMirror 6 styled-markdown-source** editor
+  (Obsidian "Live Preview" / Discord-composer style): the markdown source stays
+  visible (`##`, backticks, `[text](url)`) but is styled in place, and everything
+  — including links — is directly editable as text. One writing surface, no split
+  preview. (We tried Milkdown WYSIWYG first; the rendered-as-you-type model hid
+  the markers and made links/code awkward to edit, so we moved to styled source.)
+  - **`body_markdown` stays the single source of truth.** The editor's content
+    *is* the markdown (no serialization layer); on change it syncs to a hidden
+    field and **MDEx renders `body_html` server-side on save, unchanged.**
+  - **In-editor code highlighting** comes from CodeMirror's markdown nested code
+    languages (`@codemirror/language-data`); the published page highlights
+    canonically via MDEx/Lumis. GFM (tables, strikethrough, task lists) is just
+    markdown the author writes, rendered by MDEx on the published page.
+  - **Fidelity:** the editor matches the published page's **typography** (Lora),
+    not its color (neutral admin palette). For the exact published render,
+    **"View on site"** opens `/posts/:slug` (the true MDEx render — see draft
+    visibility above).
+  - **Integration:** the editor runs as a LiveView `phx-hook` with
+    `phx-update="ignore"`, mirroring the markdown into a hidden field that drives
+    the form's change/save.
 - **Publish drawer:** a toolbar gear/"Publish" button slides in a panel with:
   - **Status** (draft ↔ published) — toggling sets/clears `published_at`.
   - **Slug** (auto from title, editable), **publish date** (a future date =

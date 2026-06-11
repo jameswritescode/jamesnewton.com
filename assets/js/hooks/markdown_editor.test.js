@@ -1,5 +1,5 @@
 import {describe, it, expect, vi} from "vitest"
-import {syncMarkdown} from "./milkdown_editor"
+import {syncMarkdown} from "./markdown_editor"
 
 // The body field is a hidden <textarea> (not <input>) because an <input>
 // strips newlines from its value, which would corrupt multi-line markdown.

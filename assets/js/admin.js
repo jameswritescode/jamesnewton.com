@@ -7,13 +7,13 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/newton"
 import topbar from "../vendor/topbar"
 import {AdminTheme} from "./hooks/admin_theme"
-import {MilkdownEditor} from "./hooks/milkdown_editor"
+import {MarkdownEditor} from "./hooks/markdown_editor"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AdminTheme, MilkdownEditor},
+  hooks: {...colocatedHooks, AdminTheme, MarkdownEditor},
 })
 
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})

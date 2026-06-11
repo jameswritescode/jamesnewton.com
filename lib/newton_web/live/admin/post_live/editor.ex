@@ -166,10 +166,10 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         <div id="body-editor" phx-update="ignore">
           <textarea id="post_body_markdown" name="post[body_markdown]" class="hidden"><%= Phoenix.HTML.Form.normalize_value("textarea", @form[:body_markdown].value) %></textarea>
           <div
-            id="milkdown-editor"
-            phx-hook="MilkdownEditor"
+            id="markdown-editor"
+            phx-hook="MarkdownEditor"
             data-input-id="post_body_markdown"
-            class="rounded-lg border border-(--admin-border) bg-(--admin-surface)"
+            class="overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-surface)"
           >
           </div>
         </div>

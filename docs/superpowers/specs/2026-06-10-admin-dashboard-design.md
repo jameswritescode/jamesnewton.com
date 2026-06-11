@@ -164,11 +164,17 @@ admin.
 
 ### Reading
 
+- A **finished-vs-in-progress summary** at the top: two server-rendered stacked
+  bars — Books (read vs reading) and Audio (listened vs listening) — built from
+  grouped status counts (`Reading.status_counts/0`). No JS charting library, per
+  the asset rules; the bars are pure HTML/CSS and follow the admin theme.
 - A clean list with **status badges** (reading / read / listening / listened) and
   finished date.
-- **Add / edit via the slide-over drawer** (consistent with Posts). The drawer
-  form covers title, author, link, status, finished date, and the multi-line
-  note.
+- **Add / edit via the slide-over drawer** (consistent with Posts), with the
+  drawer's open state **URL-backed** (`/admin/reading/new`, `/admin/reading/:id/edit`)
+  so it survives refresh and is linkable. The drawer form covers title, author,
+  link, status, finished date, and the multi-line note; editing an entry also
+  offers **Delete**. Status is changed inside the drawer (no inline row toggle).
 
 ### Photos
 

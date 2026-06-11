@@ -18,6 +18,10 @@
   --admin-accent: #b54a2b;
   --admin-accent-hover: #9b3e22;
   --admin-accent-soft: rgba(181, 74, 43, 0.1);
+  --ed-syntax-keyword: #b8472b;
+  --ed-syntax-string: #4f7a3a;
+  --ed-syntax-function: #9a6a00;
+  --ed-syntax-number: #8a5a2b;
 }
 
 [data-admin-theme="dark"] {
@@ -32,6 +36,10 @@
   --admin-accent: #ea8a63;
   --admin-accent-hover: #f2a07e;
   --admin-accent-soft: rgba(234, 138, 99, 0.14);
+  --ed-syntax-keyword: #ea8a63;
+  --ed-syntax-string: #a3c585;
+  --ed-syntax-function: #e0b878;
+  --ed-syntax-number: #d4a373;
 }
 
 /* The plain Milkdown editor (commonmark + gfm). Style its prose to read like a
@@ -137,6 +145,49 @@
   background: none;
   color: var(--admin-text);
   padding: 0;
+}
+
+/* Prism syntax tokens, warm and theme-adaptive (the published page highlights
+   with MDEx/Lumis; this is the in-editor approximation). */
+#milkdown-editor .ProseMirror pre .token.comment,
+#milkdown-editor .ProseMirror pre .token.prolog,
+#milkdown-editor .ProseMirror pre .token.doctype,
+#milkdown-editor .ProseMirror pre .token.cdata {
+  color: var(--admin-text-subtle);
+  font-style: italic;
+}
+
+#milkdown-editor .ProseMirror pre .token.keyword,
+#milkdown-editor .ProseMirror pre .token.operator,
+#milkdown-editor .ProseMirror pre .token.boolean,
+#milkdown-editor .ProseMirror pre .token.atrule,
+#milkdown-editor .ProseMirror pre .token.important {
+  color: var(--ed-syntax-keyword);
+}
+
+#milkdown-editor .ProseMirror pre .token.string,
+#milkdown-editor .ProseMirror pre .token.char,
+#milkdown-editor .ProseMirror pre .token.attr-value,
+#milkdown-editor .ProseMirror pre .token.regex {
+  color: var(--ed-syntax-string);
+}
+
+#milkdown-editor .ProseMirror pre .token.function,
+#milkdown-editor .ProseMirror pre .token.class-name,
+#milkdown-editor .ProseMirror pre .token.tag,
+#milkdown-editor .ProseMirror pre .token.selector,
+#milkdown-editor .ProseMirror pre .token.attr-name {
+  color: var(--ed-syntax-function);
+}
+
+#milkdown-editor .ProseMirror pre .token.number,
+#milkdown-editor .ProseMirror pre .token.constant,
+#milkdown-editor .ProseMirror pre .token.symbol {
+  color: var(--ed-syntax-number);
+}
+
+#milkdown-editor .ProseMirror pre .token.punctuation {
+  color: var(--admin-text-muted);
 }
 
 #milkdown-editor .ProseMirror table {

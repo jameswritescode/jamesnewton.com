@@ -9,6 +9,8 @@
     "vitest": "^2.1.8"
   },
   "dependencies": {
-    "@milkdown/kit": "^7.21.2"
+    "@milkdown/kit": "^7.21.2",
+    "@milkdown/plugin-prism": "^7.21.2",
+    "refractor": "^5.0.0"
   }
 }

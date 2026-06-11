@@ -7,6 +7,9 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/newton"
 import topbar from "../vendor/topbar"
 import {AdminTheme} from "./hooks/admin_theme"
+// Crepe's base styles + a frame theme. esbuild extracts these into admin.css.
+import "@milkdown/crepe/theme/common/style.css"
+import "@milkdown/crepe/theme/frame.css"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {

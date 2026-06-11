@@ -159,13 +159,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           class="mb-4 w-full border-none bg-transparent font-mono text-[0.8rem] text-(--admin-text-subtle) focus:outline-none"
         />
 
-        <.input
-          field={@form[:body_markdown]}
-          type="textarea"
-          placeholder="Write your post in markdown…"
-          rows="22"
-          class="w-full rounded-lg border border-(--admin-border) bg-(--admin-surface) p-4 font-mono text-[0.9rem] text-(--admin-text) focus:outline-none"
-        />
+        <div id="body-editor" phx-update="ignore">
+          <textarea id="post_body_markdown" name="post[body_markdown]" class="hidden"><%= Phoenix.HTML.Form.normalize_value("textarea", @form[:body_markdown].value) %></textarea>
+          <div
+            id="milkdown-editor"
+            phx-hook="MilkdownEditor"
+            data-input-id="post_body_markdown"
+            class="rounded-lg border border-(--admin-border) bg-(--admin-surface)"
+          >
+          </div>
+        </div>
 
         <.input
           field={@form[:excerpt]}

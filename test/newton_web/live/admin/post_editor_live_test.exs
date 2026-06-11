@@ -88,6 +88,17 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert has_element?(view, "button", "Move to draft")
   end
 
+  test "the editor renders a Milkdown container seeded from the post body", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{title: "MD", slug: "md", body_markdown: "# Seeded body"})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    assert has_element?(view, "#milkdown-editor[phx-hook='MilkdownEditor']")
+    assert has_element?(view, "textarea#post_body_markdown")
+    assert render(view) =~ "# Seeded body"
+  end
+
   test "delete removes the post and redirects to the list", %{conn: conn} do
     {:ok, post} = Newton.Blog.create_post(%{title: "Kill", slug: "kill", body_markdown: "b"})
 

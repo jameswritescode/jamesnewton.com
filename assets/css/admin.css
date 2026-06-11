@@ -65,3 +65,19 @@
 #milkdown-editor .ProseMirror:focus {
   outline: none;
 }
+
+/* Simplify code blocks: drop CodeMirror's tools bar (language picker, copy /
+   preview buttons) and the line-number gutter for a plain code box. The
+   published page still highlights via MDEx. */
+#milkdown-editor .milkdown-code-block .tools {
+  display: none;
+}
+
+#milkdown-editor .milkdown-code-block .cm-gutters {
+  display: none;
+}
+
+#milkdown-editor .milkdown-code-block .cm-editor {
+  background: var(--admin-bg);
+  border-radius: 0.5rem;
+}

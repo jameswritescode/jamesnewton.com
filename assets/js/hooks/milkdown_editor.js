@@ -26,6 +26,8 @@ export const MilkdownEditor = {
       root: this.el,
       defaultValue: initial,
       // Disable the block handle (the ⠿ drag grip + "+" add-block button).
+      // Code blocks keep the CodeMirror feature (it provides the code-block
+      // node), but its chrome is simplified via CSS in admin.css.
       features: {"block-edit": false},
     })
     this.crepe.editor.use(listener)

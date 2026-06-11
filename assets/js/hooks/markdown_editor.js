@@ -41,10 +41,12 @@ export const MarkdownEditor = {
     // the common code tokens inside fenced blocks. Colors reference admin tokens
     // so the editor follows light/dark.
     const highlight = HighlightStyle.define([
-      {tag: t.heading1, fontSize: "1.6em", fontWeight: "600"},
-      {tag: t.heading2, fontSize: "1.35em", fontWeight: "600"},
-      {tag: t.heading3, fontSize: "1.15em", fontWeight: "600"},
-      {tag: [t.heading4, t.heading5, t.heading6], fontWeight: "600"},
+      // Published posts use normal-weight serif headings sized for hierarchy
+      // (see site.css); only bold (`**`) is heavier.
+      {tag: t.heading1, fontSize: "1.7em", fontWeight: "400"},
+      {tag: t.heading2, fontSize: "1.4em", fontWeight: "400"},
+      {tag: t.heading3, fontSize: "1.2em", fontWeight: "400"},
+      {tag: [t.heading4, t.heading5, t.heading6], fontWeight: "400"},
       {tag: t.strong, fontWeight: "600"},
       {tag: t.emphasis, fontStyle: "italic"},
       {tag: t.strikethrough, textDecoration: "line-through"},

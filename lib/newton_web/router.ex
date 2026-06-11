@@ -35,6 +35,7 @@ defmodule NewtonWeb.Router do
       on_mount: [{NewtonWeb.UserAuth, :require_authenticated}],
       root_layout: {NewtonWeb.Layouts, :admin_root} do
       live "/", DashboardLive, :index
+      live "/posts", PostLive.Index, :index
     end
   end
 

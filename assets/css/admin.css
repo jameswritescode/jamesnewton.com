@@ -59,7 +59,13 @@
 #milkdown-editor .ProseMirror {
   min-height: 24rem;
   padding: 1.25rem 1.5rem;
-  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Match the published post typography (see site.css). */
+  font-family: "Lora", Georgia, "Times New Roman", serif;
+}
+
+#milkdown-editor .ProseMirror code,
+#milkdown-editor .milkdown-code-block .cm-editor {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 #milkdown-editor .ProseMirror:focus {

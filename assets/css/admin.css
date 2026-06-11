@@ -33,3 +33,35 @@
   --admin-accent-hover: #f2a07e;
   --admin-accent-soft: rgba(234, 138, 99, 0.14);
 }
+
+/* Tone the Milkdown (Crepe) editor to the admin palette by remapping Crepe's
+   color variables to the --admin-* tokens, so the editor follows light/dark. */
+#milkdown-editor .milkdown {
+  --crepe-color-background: var(--admin-surface);
+  --crepe-color-on-background: var(--admin-text);
+  --crepe-color-surface: var(--admin-surface);
+  --crepe-color-surface-low: var(--admin-bg);
+  --crepe-color-on-surface: var(--admin-text);
+  --crepe-color-on-surface-variant: var(--admin-text-muted);
+  --crepe-color-outline: var(--admin-border);
+  --crepe-color-primary: var(--admin-accent);
+  --crepe-color-secondary: var(--admin-text-muted);
+  --crepe-color-hover: var(--admin-accent-soft);
+  --crepe-color-selected: var(--admin-accent-soft);
+  --crepe-color-inline-code: var(--admin-accent);
+  --crepe-color-inline-area: var(--admin-accent-soft);
+  --crepe-color-inverse: var(--admin-text);
+  --crepe-color-on-inverse: var(--admin-bg);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+}
+
+#milkdown-editor .ProseMirror {
+  min-height: 24rem;
+  padding: 1.25rem 1.5rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+#milkdown-editor .ProseMirror:focus {
+  outline: none;
+}

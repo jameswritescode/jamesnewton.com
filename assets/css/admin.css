@@ -37,6 +37,12 @@
 /* The plain Milkdown editor (commonmark + gfm). Style its prose to read like a
    published post (Lora typography, see site.css) in neutral admin colors.
    Code blocks are native <pre><code> — the published page highlights via MDEx. */
+/* The post title input shares the published-post serif (the body editor below
+   is Lora too), so the editor reads as one cohesive piece. */
+#post_title {
+  font-family: "Lora", Georgia, "Times New Roman", serif;
+}
+
 #milkdown-editor .milkdown {
   background: var(--admin-surface);
   color: var(--admin-text);
@@ -54,6 +60,15 @@
 
 #milkdown-editor .ProseMirror > * + * {
   margin-top: 0.9rem;
+}
+
+/* Placeholder shown while the editor is empty (see the placeholder plugin). */
+#milkdown-editor .ProseMirror .is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--admin-text-subtle);
+  pointer-events: none;
 }
 
 #milkdown-editor .ProseMirror h1 {

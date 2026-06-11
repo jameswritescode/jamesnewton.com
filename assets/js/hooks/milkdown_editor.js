@@ -8,6 +8,8 @@ export function syncMarkdown(input, markdown) {
   input.dispatchEvent(new Event("input", {bubbles: true}))
 }
 
+const PLACEHOLDER_TEXT = "Write your post in markdown…"
+
 // phx-hook on a container that also holds a hidden `post[body_markdown]`
 // textarea. The container is wrapped in phx-update="ignore" so LiveView never
 // patches the editor's DOM after mount.
@@ -18,14 +20,51 @@ export function syncMarkdown(input, markdown) {
 // this module is safe to import in tests.
 export const MilkdownEditor = {
   async mounted() {
-    const [{Editor, rootCtx, defaultValueCtx}, {commonmark}, {gfm}, {listener, listenerCtx}, {history}] =
-      await Promise.all([
-        import("@milkdown/kit/core"),
-        import("@milkdown/kit/preset/commonmark"),
-        import("@milkdown/kit/preset/gfm"),
-        import("@milkdown/kit/plugin/listener"),
-        import("@milkdown/kit/plugin/history"),
-      ])
+    const [
+      {Editor, rootCtx, defaultValueCtx},
+      {commonmark},
+      {gfm},
+      {listener, listenerCtx},
+      {history},
+      {$prose},
+      {Plugin, PluginKey},
+      {Decoration, DecorationSet},
+    ] = await Promise.all([
+      import("@milkdown/kit/core"),
+      import("@milkdown/kit/preset/commonmark"),
+      import("@milkdown/kit/preset/gfm"),
+      import("@milkdown/kit/plugin/listener"),
+      import("@milkdown/kit/plugin/history"),
+      import("@milkdown/kit/utils"),
+      import("@milkdown/kit/prose/state"),
+      import("@milkdown/kit/prose/view"),
+    ])
+
+    // Show a placeholder while the document is a single empty block.
+    const placeholder = $prose(
+      () =>
+        new Plugin({
+          key: new PluginKey("MILKDOWN_PLACEHOLDER"),
+          props: {
+            decorations(state) {
+              const {doc} = state
+              const empty =
+                doc.childCount === 1 &&
+                doc.firstChild?.isTextblock &&
+                doc.firstChild.content.size === 0
+
+              if (!empty) return null
+
+              return DecorationSet.create(doc, [
+                Decoration.node(0, doc.firstChild.nodeSize, {
+                  class: "is-empty",
+                  "data-placeholder": PLACEHOLDER_TEXT,
+                }),
+              ])
+            },
+          },
+        })
+    )
 
     const input = document.getElementById(this.el.dataset.inputId)
     const initial = input ? input.value : ""
@@ -42,6 +81,7 @@ export const MilkdownEditor = {
       .use(commonmark)
       .use(gfm)
       .use(history)
+      .use(placeholder)
       .create()
   },
 

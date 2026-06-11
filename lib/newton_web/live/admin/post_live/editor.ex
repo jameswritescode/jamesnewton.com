@@ -32,52 +32,45 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp apply_action(socket, :edit, %{"id" => id}) do
     post = Blog.get_post!(id)
 
-    # The slug auto-follows the title only for unpublished posts whose slug still
-    # matches the title (i.e. never hand-edited). Published posts lock the slug so
-    # links/SEO don't break. The excerpt auto-follows the body unless it differs
-    # from what the body would derive (i.e. the author wrote a custom one).
-    slug_locked = not is_nil(post.published_at) or post.slug != Newton.Slug.slugify(post.title)
-    excerpt_locked = (post.excerpt || "") != Newton.Markdown.excerpt(post.body_markdown || "")
-
     socket
     |> assign(:page_title, "Edit post")
     |> assign(:post, post)
     |> assign(:published_at, post.published_at)
-    |> assign(:slug_locked, slug_locked)
+    |> assign(:slug_locked, slug_locked?(post))
     |> assign(:slug_auto, post.slug)
-    |> assign(:excerpt_locked, excerpt_locked)
+    |> assign(:excerpt_locked, excerpt_locked?(post))
     |> assign(:excerpt_auto, post.excerpt || "")
     |> assign(:form, to_form(Blog.change_post(post)))
+  end
+
+  # Published posts lock the slug so existing links/SEO don't break.
+  defp slug_locked?(post) do
+    not is_nil(post.published_at) or post.slug != Newton.Slug.slugify(post.title)
+  end
+
+  defp excerpt_locked?(post) do
+    (post.excerpt || "") != Newton.Markdown.excerpt(post.body_markdown || "")
   end
 
   @impl true
   def handle_event("validate", %{"post" => params}, socket) do
     published? = not is_nil(socket.assigns.published_at)
 
-    # Slug: derive from the *full* title until the author edits the slug field
-    # (or the post is published — then it's manual-only for SEO).
     slug_locked =
       socket.assigns.slug_locked or published? or params["slug"] != socket.assigns.slug_auto
 
-    {params, slug_auto} =
-      if slug_locked do
-        {params, socket.assigns.slug_auto}
-      else
-        slug = Newton.Slug.slugify(params["title"] || "")
-        {Map.put(params, "slug", slug), slug}
-      end
-
-    # Excerpt: derive from the *full* body until the author edits the excerpt.
     excerpt_locked =
       socket.assigns.excerpt_locked or params["excerpt"] != socket.assigns.excerpt_auto
 
+    {params, slug_auto} =
+      autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
+        Newton.Slug.slugify(params["title"] || "")
+      end)
+
     {params, excerpt_auto} =
-      if excerpt_locked do
-        {params, socket.assigns.excerpt_auto}
-      else
-        excerpt = Newton.Markdown.excerpt(params["body_markdown"] || "")
-        {Map.put(params, "excerpt", excerpt), excerpt}
-      end
+      autofill(params, "excerpt", excerpt_locked, socket.assigns.excerpt_auto, fn ->
+        Newton.Markdown.excerpt(params["body_markdown"] || "")
+      end)
 
     form =
       socket.assigns.post
@@ -122,6 +115,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      socket
      |> put_flash(:info, "Post deleted")
      |> push_navigate(to: ~p"/admin/posts")}
+  end
+
+  defp autofill(params, _field, true, prev_auto, _derive), do: {params, prev_auto}
+
+  defp autofill(params, field, false, _prev_auto, derive) do
+    value = derive.()
+    {Map.put(params, field, value), value}
   end
 
   defp save(socket, %Post{id: nil}, params) do

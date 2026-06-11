@@ -1,6 +1,3 @@
-// Mirror the editor's markdown into the hidden form field and notify LiveView,
-// but only when it actually changed. Exported separately so it can be
-// unit-tested without loading CodeMirror.
 export function syncMarkdown(field, markdown) {
   if (field.value === markdown) return
   field.value = markdown
@@ -9,11 +6,7 @@ export function syncMarkdown(field, markdown) {
 
 const PLACEHOLDER_TEXT = "Write your post in markdown…"
 
-// An Obsidian-style "styled source" editor: the markdown stays visible (##, **,
-// backticks, [text](url)) but is styled in place, and everything is directly
-// editable as text. Built on CodeMirror 6 + markdown — the editor's content IS
-// the markdown, so there's no rendering/serialization layer. Loaded via dynamic
-// import so this module is safe to import in tests.
+// Dynamic import keeps CodeMirror out of the test bundle.
 export const MarkdownEditor = {
   async mounted() {
     const [
@@ -37,12 +30,7 @@ export const MarkdownEditor = {
     const field = document.getElementById(this.el.dataset.inputId)
     const initial = field ? field.value : ""
 
-    // Style markdown tokens in place (markers dimmed, content emphasized), plus
-    // the common code tokens inside fenced blocks. Colors reference admin tokens
-    // so the editor follows light/dark.
     const highlight = HighlightStyle.define([
-      // Published posts use normal-weight serif headings sized for hierarchy
-      // (see site.css); only bold (`**`) is heavier.
       {tag: t.heading1, fontSize: "1.7em", fontWeight: "400"},
       {tag: t.heading2, fontSize: "1.4em", fontWeight: "400"},
       {tag: t.heading3, fontSize: "1.2em", fontWeight: "400"},
@@ -55,9 +43,7 @@ export const MarkdownEditor = {
       {tag: t.monospace, color: "var(--admin-accent)", fontFamily: "ui-monospace, monospace"},
       {tag: t.quote, color: "var(--admin-text-muted)", fontStyle: "italic"},
       {tag: t.list, color: "var(--admin-text-muted)"},
-      // Markdown markers (#, *, `, fences, >): dimmed but visible.
       {tag: t.processingInstruction, color: "var(--admin-text-subtle)"},
-      // Code tokens inside fenced blocks.
       {tag: t.keyword, color: "var(--ed-syntax-keyword)"},
       {tag: [t.string, t.special(t.string)], color: "var(--ed-syntax-string)"},
       {tag: t.comment, color: "var(--admin-text-subtle)", fontStyle: "italic"},
@@ -67,8 +53,8 @@ export const MarkdownEditor = {
       {tag: [t.bool, t.null, t.atom], color: "var(--ed-syntax-keyword)"},
     ])
 
-    // Give whole fenced/indented code-block lines a monospace, boxed look
-    // (per-token styling alone leaves untokenized text in Lora serif).
+    // Per-token styling alone leaves untokenized code in the serif body font, so
+    // decorate whole fenced/indented lines for a monospace, boxed look.
     const codeLine = Decoration.line({class: "cm-code-line"})
     const codeBlockLines = ViewPlugin.fromClass(
       class {

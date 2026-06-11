@@ -50,6 +50,41 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     save(socket, socket.assigns.post, params)
   end
 
+  def handle_event("toggle_drawer", _params, socket) do
+    {:noreply, assign(socket, :drawer_open, !socket.assigns.drawer_open)}
+  end
+
+  def handle_event("publish_now", _params, socket) do
+    {:noreply, assign(socket, :published_at, DateTime.truncate(DateTime.utc_now(), :second))}
+  end
+
+  def handle_event("unpublish", _params, socket) do
+    {:noreply, assign(socket, :published_at, nil)}
+  end
+
+  def handle_event("schedule", %{"value" => ""}, socket) do
+    {:noreply, assign(socket, :published_at, nil)}
+  end
+
+  def handle_event("schedule", %{"value" => date_string}, socket) do
+    published_at =
+      case Date.from_iso8601(date_string) do
+        {:ok, date} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+        _ -> socket.assigns.published_at
+      end
+
+    {:noreply, assign(socket, :published_at, published_at)}
+  end
+
+  def handle_event("delete", _params, socket) do
+    {:ok, _} = Blog.delete_post(socket.assigns.post)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Post deleted")
+     |> push_navigate(to: ~p"/admin/posts")}
+  end
+
   # Auto-fill the slug from the title only while the slug field is still blank,
   # so manual slug edits are never clobbered.
   defp maybe_autofill_slug(%{"slug" => slug} = params) when slug != "" do
@@ -101,6 +136,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             ← Posts
           </.link>
           <div class="flex-1"></div>
+          <span class="text-[0.78rem] text-(--admin-text-subtle)">
+            {Blog.publish_status(@published_at)}
+          </span>
+          <button
+            type="button"
+            phx-click="toggle_drawer"
+            class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.8rem] text-(--admin-text) hover:bg-(--admin-accent-soft)"
+          >
+            Publish settings
+          </button>
           <button
             type="submit"
             class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white hover:bg-(--admin-accent-hover)"
@@ -127,11 +172,100 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           field={@form[:body_markdown]}
           type="textarea"
           placeholder="Write your post in markdown…"
-          rows="24"
+          rows="22"
           class="w-full rounded-lg border border-(--admin-border) bg-(--admin-surface) p-4 font-mono text-[0.9rem] text-(--admin-text) focus:outline-none"
         />
+
+        <.input
+          field={@form[:excerpt]}
+          type="textarea"
+          label="Excerpt (optional — auto-derived from the body when blank)"
+          rows="2"
+          class="mt-4 w-full rounded-lg border border-(--admin-border) bg-(--admin-surface) p-3 text-[0.85rem] text-(--admin-text) focus:outline-none"
+        />
       </.form>
+
+      <div
+        id="publish-drawer"
+        class={[
+          "fixed inset-y-0 right-0 z-20 flex w-80 flex-col gap-4 border-l border-(--admin-border) bg-(--admin-sidebar) p-5 shadow-xl transition-transform",
+          @drawer_open && "translate-x-0",
+          !@drawer_open && "translate-x-full"
+        ]}
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-[0.9rem] font-semibold">Publish</span>
+          <button
+            type="button"
+            phx-click="toggle_drawer"
+            aria-label="Close"
+            class="text-(--admin-text-subtle) hover:text-(--admin-text)"
+          >
+            <.icon name="hero-x-mark-mini" class="size-5" />
+          </button>
+        </div>
+
+        <div class="text-[0.78rem] text-(--admin-text-muted)">
+          Status: <span class="font-medium text-(--admin-text)">{Blog.publish_status(@published_at)}</span>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            type="button"
+            phx-click="publish_now"
+            class="flex-1 rounded-md bg-(--admin-accent) px-2 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+          >
+            Publish now
+          </button>
+          <button
+            type="button"
+            phx-click="unpublish"
+            class="flex-1 rounded-md border border-(--admin-border) px-2 py-1.5 text-[0.78rem] hover:bg-(--admin-accent-soft)"
+          >
+            Move to draft
+          </button>
+        </div>
+
+        <label class="block text-[0.78rem]">
+          <span class="mb-1 block text-(--admin-text-muted)">Schedule for</span>
+          <input
+            id="schedule-date"
+            type="date"
+            value={schedule_value(@published_at)}
+            phx-change="schedule"
+            class="w-full rounded-md border border-(--admin-border) bg-(--admin-surface) px-2 py-1 text-(--admin-text)"
+          />
+        </label>
+
+        <div class="text-[0.78rem] text-(--admin-text-subtle)">
+          Reading time: {@post.reading_time || "—"} min
+        </div>
+
+        <.link
+          :if={@post.id}
+          href={~p"/posts/#{@post.slug}"}
+          target="_blank"
+          class="text-[0.8rem] text-(--admin-accent) no-underline hover:underline"
+        >
+          View on site ↗
+        </.link>
+
+        <div class="flex-1"></div>
+
+        <button
+          :if={@post.id}
+          type="button"
+          phx-click="delete"
+          data-confirm="Delete this post permanently?"
+          class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.8rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
+        >
+          Delete post
+        </button>
+      </div>
     </Layouts.admin>
     """
   end
+
+  defp schedule_value(nil), do: ""
+  defp schedule_value(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d")
 end

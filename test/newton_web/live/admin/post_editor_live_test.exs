@@ -12,10 +12,20 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
     view |> element("button", "Settings") |> render_click()
-    assert has_element?(view, "#publish-drawer.translate-x-0")
+    assert has_element?(view, "#publish-drawer")
 
     view |> element("#publish-drawer") |> render_keydown(%{"key" => "Escape"})
-    refute has_element?(view, "#publish-drawer.translate-x-0")
+    refute has_element?(view, "#publish-drawer")
+  end
+
+  test "the publish drawer closes on click-away", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    view |> element("button", "Settings") |> render_click()
+    assert has_element?(view, "#publish-drawer[phx-click-away]")
+
+    render_click(view, "close_drawer", %{})
+    refute has_element?(view, "#publish-drawer")
   end
 
   test "creates a post and stays in the editor on its edit URL", %{conn: conn} do
@@ -128,7 +138,8 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   test "publish-now sets the post to published on save", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-    view |> element("button", "Publish now") |> render_click()
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Publish now") |> render_click()
 
     view
     |> form("#post-form", post: %{title: "Pub", slug: "pub-now", body_markdown: "body"})
@@ -148,9 +159,10 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
       })
 
     {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    view |> element("button", "Settings") |> render_click()
 
-    refute has_element?(view, "button", "Publish now")
-    assert has_element?(view, "button", "Move to draft")
+    refute has_element?(view, "#publish-drawer button", "Publish now")
+    assert has_element?(view, "#publish-drawer button", "Move to draft")
   end
 
   test "the editor renders a markdown editor seeded from the post body", %{conn: conn} do
@@ -168,9 +180,10 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     {:ok, post} = Newton.Blog.create_post(%{title: "Kill", slug: "kill", body_markdown: "b"})
 
     {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    view |> element("button", "Settings") |> render_click()
 
     view
-    |> element("button", "Delete post")
+    |> element("#publish-drawer button", "Delete post")
     |> render_click()
     |> follow_redirect(conn, ~p"/admin/posts")
 

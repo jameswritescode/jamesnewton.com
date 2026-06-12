@@ -3,6 +3,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   alias Newton.Blog
   alias Newton.Blog.Post
+  alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
 
   @impl true
@@ -217,27 +218,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         />
       </.form>
 
-      <div
-        id="publish-drawer"
-        phx-window-keydown={@drawer_open && "close_drawer"}
-        phx-key="Escape"
-        class={[
-          "fixed inset-y-0 right-0 z-20 flex w-80 flex-col gap-4 border-l border-(--admin-border) bg-(--admin-sidebar) p-5 shadow-xl transition-transform",
-          @drawer_open && "translate-x-0",
-          !@drawer_open && "translate-x-full"
-        ]}
-      >
-        <div class="flex items-center justify-between">
-          <span class="text-[0.9rem] font-semibold">Publish</span>
-          <button
-            type="button"
-            phx-click="toggle_drawer"
-            aria-label="Close"
-            class="text-(--admin-text-subtle) hover:text-(--admin-text)"
-          >
-            <.icon name="hero-x-mark-mini" class="size-5" />
-          </button>
-        </div>
+      <Components.drawer :if={@drawer_open} id="publish-drawer" on_close="close_drawer">
+        <:title>Publish</:title>
 
         <div class="text-[0.78rem] text-(--admin-text-muted)">
           Status:
@@ -287,7 +269,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         >
           Delete post
         </button>
-      </div>
+      </Components.drawer>
     </Layouts.admin>
     """
   end

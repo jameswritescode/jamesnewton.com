@@ -5,7 +5,7 @@ defmodule Newton.Gallery.Photo do
 
   schema "photos" do
     field :image_key, :string
-    field :alt, :string
+    field :alt, :string, default: ""
     field :position, :integer, default: 0
     field :width, :integer
     field :height, :integer
@@ -18,6 +18,6 @@ defmodule Newton.Gallery.Photo do
   def changeset(photo, attrs) do
     photo
     |> cast(attrs, [:image_key, :alt, :position, :width, :height, :photo_group_id])
-    |> validate_required([:image_key, :alt, :position])
+    |> validate_required([:image_key, :position])
   end
 end

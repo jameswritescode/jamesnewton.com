@@ -43,4 +43,10 @@ defmodule Newton.GalleryTest do
     assert Gallery.count_groups() == 1
     assert Gallery.count_photos() == 2
   end
+
+  test "a photo may be created with blank alt" do
+    {:ok, g} = Gallery.create_group(%{slug: "blank-alt", title: "Blank Alt"})
+    assert {:ok, photo} = Gallery.add_photo(g, %{image_key: "x.jpg", alt: "", position: 0})
+    assert photo.alt == ""
+  end
 end

@@ -3,7 +3,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
 
   alias Newton.Gallery
   alias Newton.Gallery.Storage
-  alias NewtonWeb.Admin.Layouts
+  alias NewtonWeb.Admin.{Components, Layouts}
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -20,6 +20,25 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
        max_entries: 20,
        max_file_size: 50_000_000
      )}
+  end
+
+  @impl true
+  def handle_params(params, _uri, socket) do
+    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :show, _params) do
+    socket
+    |> assign(:editing_photo, nil)
+    |> assign(:photo_form, nil)
+  end
+
+  defp apply_action(socket, :photo, %{"photo_id" => photo_id}) do
+    photo = Gallery.get_photo!(photo_id)
+
+    socket
+    |> assign(:editing_photo, photo)
+    |> assign(:photo_form, to_form(Gallery.change_photo(photo), as: :photo))
   end
 
   @impl true
@@ -62,6 +81,39 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
       end)
 
     {:noreply, stream(socket, :photos, photos, at: -1)}
+  end
+
+  def handle_event("validate_photo", %{"photo" => params}, socket) do
+    form =
+      socket.assigns.editing_photo
+      |> Gallery.change_photo(params)
+      |> Map.put(:action, :validate)
+      |> to_form(as: :photo)
+
+    {:noreply, assign(socket, :photo_form, form)}
+  end
+
+  def handle_event("save_photo", %{"photo" => params}, socket) do
+    {:ok, photo} = Gallery.update_photo(socket.assigns.editing_photo, params)
+
+    {:noreply,
+     socket
+     |> stream_insert(:photos, photo)
+     |> push_patch(to: ~p"/admin/photos/#{socket.assigns.group.id}")}
+  end
+
+  def handle_event("close_photo", _params, socket) do
+    {:noreply, push_patch(socket, to: ~p"/admin/photos/#{socket.assigns.group.id}")}
+  end
+
+  def handle_event("delete_photo", _params, socket) do
+    photo = socket.assigns.editing_photo
+    {:ok, _} = Gallery.delete_photo(photo)
+
+    {:noreply,
+     socket
+     |> stream_delete(:photos, photo)
+     |> push_patch(to: ~p"/admin/photos/#{socket.assigns.group.id}")}
   end
 
   @impl true
@@ -146,16 +198,56 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
           id={id}
           class="group relative aspect-square overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-bg)"
         >
-          <img src={Gallery.image_url(photo.image_key)} alt={photo.alt} class="size-full object-cover" />
+          <.link patch={~p"/admin/photos/#{@group.id}/photo/#{photo.id}"} class="block size-full">
+            <img src={Gallery.image_url(photo.image_key)} alt={photo.alt} class="size-full object-cover" />
+          </.link>
           <span
             :if={photo.alt == ""}
             data-role="needs-alt"
-            class="absolute left-1.5 top-1.5 rounded bg-(--admin-accent) px-1.5 py-0.5 text-[0.65rem] font-medium text-white"
+            class="pointer-events-none absolute left-1.5 top-1.5 rounded bg-(--admin-accent) px-1.5 py-0.5 text-[0.65rem] font-medium text-white"
           >
             needs alt
           </span>
         </div>
       </div>
+
+      <Components.drawer :if={@editing_photo} id="photo-drawer" on_close="close_photo">
+        <:title>Photo</:title>
+
+        <img
+          src={Gallery.image_url(@editing_photo.image_key)}
+          alt={@editing_photo.alt}
+          class="aspect-square w-full rounded-lg object-cover"
+        />
+
+        <.form
+          for={@photo_form}
+          id="photo-form"
+          phx-change="validate_photo"
+          phx-submit="save_photo"
+          class="flex flex-col gap-3"
+        >
+          <Components.field field={@photo_form[:alt]} type="textarea" label="Alt text" rows="2" />
+
+          <div class="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              phx-click="delete_photo"
+              data-confirm="Delete this photo?"
+              class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
+            >
+              Delete
+            </button>
+            <div class="flex-1"></div>
+            <button
+              type="submit"
+              class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+            >
+              Save
+            </button>
+          </div>
+        </.form>
+      </Components.drawer>
     </Layouts.admin>
     """
   end

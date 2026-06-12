@@ -50,4 +50,28 @@ defmodule NewtonWeb.Admin.GalleryShowLiveTest do
     assert created.height == 800
     assert has_element?(view, "#photo-#{created.id}")
   end
+
+  test "editing alt text clears the needs-alt badge", %{conn: conn} do
+    group = group_fixture()
+    photo = photo_fixture(group, %{alt: ""})
+    {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}/photo/#{photo.id}")
+
+    view |> form("#photo-form", photo: %{alt: "A described photo"}) |> render_submit()
+
+    assert_patch(view, ~p"/admin/photos/#{group.id}")
+    assert Gallery.get_photo!(photo.id).alt == "A described photo"
+    refute has_element?(view, "#photo-#{photo.id} [data-role=needs-alt]")
+  end
+
+  test "deleting a photo removes it from the grid", %{conn: conn} do
+    group = group_fixture()
+    photo = photo_fixture(group, %{alt: "x"})
+    {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}/photo/#{photo.id}")
+
+    view |> element("#photo-drawer button", "Delete") |> render_click()
+
+    assert_patch(view, ~p"/admin/photos/#{group.id}")
+    assert_raise Ecto.NoResultsError, fn -> Gallery.get_photo!(photo.id) end
+    refute has_element?(view, "#photo-#{photo.id}")
+  end
 end

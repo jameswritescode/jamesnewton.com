@@ -9,12 +9,13 @@ import topbar from "../vendor/topbar"
 import {AdminTheme} from "./hooks/admin_theme"
 import {MarkdownEditor} from "./hooks/markdown_editor"
 import {ImageDimensions} from "./hooks/image_dimensions"
+import {SortableGrid} from "./hooks/sortable_grid"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AdminTheme, MarkdownEditor, ImageDimensions},
+  hooks: {...colocatedHooks, AdminTheme, MarkdownEditor, ImageDimensions, SortableGrid},
 })
 
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})

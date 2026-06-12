@@ -116,6 +116,12 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
      |> push_patch(to: ~p"/admin/photos/#{socket.assigns.group.id}")}
   end
 
+  def handle_event("reorder", %{"ids" => ids}, socket) do
+    ordered_ids = Enum.map(ids, &String.to_integer/1)
+    :ok = Gallery.reorder_photos(socket.assigns.group, ordered_ids)
+    {:noreply, socket}
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -184,6 +190,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
 
       <div
         id="photos"
+        phx-hook="SortableGrid"
         phx-update="stream"
         class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
       >
@@ -196,7 +203,9 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
         <div
           :for={{id, photo} <- @streams.photos}
           id={id}
-          class="group relative aspect-square overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-bg)"
+          draggable="true"
+          data-id={photo.id}
+          class="group relative aspect-square cursor-grab overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-bg) active:cursor-grabbing"
         >
           <.link patch={~p"/admin/photos/#{@group.id}/photo/#{photo.id}"} class="block size-full">
             <img src={Gallery.image_url(photo.image_key)} alt={photo.alt} class="size-full object-cover" />

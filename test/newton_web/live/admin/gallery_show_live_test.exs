@@ -74,4 +74,16 @@ defmodule NewtonWeb.Admin.GalleryShowLiveTest do
     assert_raise Ecto.NoResultsError, fn -> Gallery.get_photo!(photo.id) end
     refute has_element?(view, "#photo-#{photo.id}")
   end
+
+  test "reorder event persists the new photo order", %{conn: conn} do
+    group = group_fixture()
+    a = photo_fixture(group, %{position: 0})
+    b = photo_fixture(group, %{position: 1})
+    {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}")
+
+    render_hook(view, "reorder", %{"ids" => ["#{b.id}", "#{a.id}"]})
+
+    ordered = Gallery.get_group!(group.id).photos |> Enum.map(& &1.id)
+    assert ordered == [b.id, a.id]
+  end
 end

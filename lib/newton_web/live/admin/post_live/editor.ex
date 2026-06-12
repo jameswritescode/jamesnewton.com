@@ -4,6 +4,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias Newton.Blog
   alias Newton.Blog.Post
   alias NewtonWeb.Admin.Components
+  alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.Layouts
 
   @impl true
@@ -64,12 +65,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       socket.assigns.excerpt_locked or params["excerpt"] != socket.assigns.excerpt_auto
 
     {params, slug_auto} =
-      autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
+      FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
         Newton.Slug.slugify(params["title"] || "")
       end)
 
     {params, excerpt_auto} =
-      autofill(params, "excerpt", excerpt_locked, socket.assigns.excerpt_auto, fn ->
+      FormHelpers.autofill(params, "excerpt", excerpt_locked, socket.assigns.excerpt_auto, fn ->
         Newton.Markdown.excerpt(params["body_markdown"] || "")
       end)
 
@@ -116,13 +117,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      socket
      |> put_flash(:info, "Post deleted")
      |> push_navigate(to: ~p"/admin/posts")}
-  end
-
-  defp autofill(params, _field, true, prev_auto, _derive), do: {params, prev_auto}
-
-  defp autofill(params, field, false, _prev_auto, derive) do
-    value = derive.()
-    {Map.put(params, field, value), value}
   end
 
   defp save(socket, %Post{id: nil}, params) do

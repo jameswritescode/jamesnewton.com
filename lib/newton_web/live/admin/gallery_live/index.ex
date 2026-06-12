@@ -3,7 +3,8 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
 
   alias Newton.Gallery
   alias Newton.Gallery.PhotoGroup
-  alias NewtonWeb.Admin.{Components, FormHelpers, Layouts}
+  alias NewtonWeb.Admin.{FormHelpers, Layouts}
+  alias NewtonWeb.Admin.GalleryLive.Components, as: GalleryComponents
 
   @impl true
   def mount(_params, _session, socket) do
@@ -37,20 +38,8 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
     |> assign(:form, to_form(Gallery.change_group(group), as: :group))
   end
 
-  defp apply_action(socket, :edit, %{"id" => id}) do
-    group = Gallery.get_group!(id)
-
-    socket
-    |> assign(:page_title, "Edit gallery")
-    |> assign(:drawer_open, true)
-    |> assign(:group, group)
-    |> assign(:slug_locked, group.slug != Newton.Slug.slugify(group.title))
-    |> assign(:slug_auto, group.slug)
-    |> assign(:form, to_form(Gallery.change_group(group), as: :group))
-  end
-
   @impl true
-  def handle_event("validate", %{"group" => params}, socket) do
+  def handle_event("validate_settings", %{"group" => params}, socket) do
     slug_locked = socket.assigns.slug_locked or params["slug"] != socket.assigns.slug_auto
 
     {params, slug_auto} =
@@ -71,32 +60,8 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
      |> assign(:slug_auto, slug_auto)}
   end
 
-  def handle_event("save", %{"group" => params}, socket) do
-    save(socket, socket.assigns.group, fill_blank_slug(params))
-  end
-
-  def handle_event("close_drawer", _params, socket) do
-    {:noreply, push_patch(socket, to: ~p"/admin/photos")}
-  end
-
-  def handle_event("delete", _params, socket) do
-    {:ok, _} = Gallery.delete_group(socket.assigns.group)
-
-    {:noreply,
-     socket
-     |> put_flash(:info, "Gallery deleted")
-     |> stream(:galleries, Gallery.list_groups(), reset: true)
-     |> push_patch(to: ~p"/admin/photos")}
-  end
-
-  defp fill_blank_slug(%{"slug" => slug} = params) when slug not in [nil, ""], do: params
-
-  defp fill_blank_slug(params) do
-    Map.put(params, "slug", Newton.Slug.slugify(params["title"] || ""))
-  end
-
-  defp save(socket, %PhotoGroup{id: nil}, params) do
-    case Gallery.create_group(params) do
+  def handle_event("save_settings", %{"group" => params}, socket) do
+    case Gallery.create_group(fill_blank_slug(params)) do
       {:ok, _group} ->
         {:noreply,
          socket
@@ -109,18 +74,14 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
     end
   end
 
-  defp save(socket, %PhotoGroup{} = group, params) do
-    case Gallery.update_group(group, params) do
-      {:ok, _group} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Gallery saved")
-         |> stream(:galleries, Gallery.list_groups(), reset: true)
-         |> push_patch(to: ~p"/admin/photos")}
+  def handle_event("close_settings", _params, socket) do
+    {:noreply, push_patch(socket, to: ~p"/admin/photos")}
+  end
 
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset, as: :group))}
-    end
+  defp fill_blank_slug(%{"slug" => slug} = params) when slug not in [nil, ""], do: params
+
+  defp fill_blank_slug(params) do
+    Map.put(params, "slug", Newton.Slug.slugify(params["title"] || ""))
   end
 
   @impl true
@@ -176,47 +137,12 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
         </div>
       </div>
 
-      <Components.drawer :if={@drawer_open} id="gallery-drawer" on_close="close_drawer">
-        <:title>{if @group.id, do: "Edit gallery", else: "New gallery"}</:title>
-
-        <.form
-          for={@form}
-          id="gallery-form"
-          phx-change="validate"
-          phx-submit="save"
-          class="flex flex-col gap-3"
-        >
-          <Components.field field={@form[:title]} label="Title" />
-          <Components.field field={@form[:slug]} label="Slug" />
-          <Components.field field={@form[:caption]} type="textarea" label="Caption" rows="2" />
-          <Components.field field={@form[:taken_on]} type="date" label="Taken on" />
-
-          <div class="mt-2 flex items-center gap-2">
-            <button
-              :if={@group.id}
-              type="button"
-              phx-click="delete"
-              data-confirm="Delete this gallery and all its photos?"
-              class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
-            >
-              Delete
-            </button>
-            <div class="flex-1"></div>
-            <.link
-              patch={~p"/admin/photos"}
-              class="rounded-md px-3 py-1.5 text-[0.78rem] text-(--admin-text-muted) no-underline hover:text-(--admin-text)"
-            >
-              Cancel
-            </.link>
-            <button
-              type="submit"
-              class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
-            >
-              Save
-            </button>
-          </div>
-        </.form>
-      </Components.drawer>
+      <GalleryComponents.settings_drawer
+        :if={@drawer_open}
+        form={@form}
+        editing?={false}
+        cancel_path={~p"/admin/photos"}
+      />
     </Layouts.admin>
     """
   end

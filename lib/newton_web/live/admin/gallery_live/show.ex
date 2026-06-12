@@ -3,7 +3,8 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
 
   alias Newton.Gallery
   alias Newton.Gallery.Storage
-  alias NewtonWeb.Admin.{Components, Layouts}
+  alias NewtonWeb.Admin.{Components, FormHelpers, Layouts}
+  alias NewtonWeb.Admin.GalleryLive.Components, as: GalleryComponents
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -14,6 +15,8 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
      |> assign(:page_title, group.title)
      |> assign(:group, group)
      |> assign(:dimensions, %{})
+     |> assign(:slug_locked, false)
+     |> assign(:slug_auto, "")
      |> stream(:photos, group.photos, dom_id: &"photo-#{&1.id}")
      |> allow_upload(:photos,
        accept: ~w(.jpg .jpeg .png .webp),
@@ -27,18 +30,32 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :show, _params) do
-    socket
-    |> assign(:editing_photo, nil)
-    |> assign(:photo_form, nil)
-  end
+  defp apply_action(socket, :show, _params), do: close_drawers(socket)
 
   defp apply_action(socket, :photo, %{"photo_id" => photo_id}) do
     photo = Gallery.get_photo!(photo_id)
 
     socket
+    |> close_drawers()
     |> assign(:editing_photo, photo)
     |> assign(:photo_form, to_form(Gallery.change_photo(photo), as: :photo))
+  end
+
+  defp apply_action(socket, :settings, _params) do
+    group = socket.assigns.group
+
+    socket
+    |> close_drawers()
+    |> assign(:settings_form, to_form(Gallery.change_group(group), as: :group))
+    |> assign(:slug_locked, group.slug != Newton.Slug.slugify(group.title))
+    |> assign(:slug_auto, group.slug)
+  end
+
+  defp close_drawers(socket) do
+    socket
+    |> assign(:editing_photo, nil)
+    |> assign(:photo_form, nil)
+    |> assign(:settings_form, nil)
   end
 
   @impl true
@@ -122,6 +139,55 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
     {:noreply, socket}
   end
 
+  def handle_event("validate_settings", %{"group" => params}, socket) do
+    slug_locked = socket.assigns.slug_locked or params["slug"] != socket.assigns.slug_auto
+
+    {params, slug_auto} =
+      FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
+        Newton.Slug.slugify(params["title"] || "")
+      end)
+
+    form =
+      socket.assigns.group
+      |> Gallery.change_group(params)
+      |> Map.put(:action, :validate)
+      |> to_form(as: :group)
+
+    {:noreply,
+     socket
+     |> assign(:settings_form, form)
+     |> assign(:slug_locked, slug_locked)
+     |> assign(:slug_auto, slug_auto)}
+  end
+
+  def handle_event("save_settings", %{"group" => params}, socket) do
+    case Gallery.update_group(socket.assigns.group, params) do
+      {:ok, group} ->
+        {:noreply,
+         socket
+         |> assign(:group, group)
+         |> assign(:page_title, group.title)
+         |> put_flash(:info, "Gallery saved")
+         |> push_patch(to: ~p"/admin/photos/#{group.id}")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :settings_form, to_form(changeset, as: :group))}
+    end
+  end
+
+  def handle_event("close_settings", _params, socket) do
+    {:noreply, push_patch(socket, to: ~p"/admin/photos/#{socket.assigns.group.id}")}
+  end
+
+  def handle_event("delete_gallery", _params, socket) do
+    {:ok, _} = Gallery.delete_group(socket.assigns.group)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Gallery deleted")
+     |> push_navigate(to: ~p"/admin/photos")}
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -159,7 +225,10 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
           <.live_file_input upload={@uploads.photos} class="sr-only" />
         </label>
 
-        <div :for={entry <- @uploads.photos.entries} class="mt-3 flex items-center gap-3 text-[0.8rem]">
+        <div
+          :for={entry <- @uploads.photos.entries}
+          class="mt-3 flex items-center gap-3 text-[0.8rem]"
+        >
           <span class="flex-1 truncate text-(--admin-text)">{entry.client_name}</span>
           <div class="h-1.5 w-32 overflow-hidden rounded-full bg-(--admin-bg)">
             <div class="h-full bg-(--admin-accent)" style={"width: #{entry.progress}%"}></div>
@@ -175,7 +244,10 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
           </button>
         </div>
 
-        <p :for={err <- upload_errors(@uploads.photos)} class="mt-1 text-[0.78rem] text-(--admin-accent)">
+        <p
+          :for={err <- upload_errors(@uploads.photos)}
+          class="mt-1 text-[0.78rem] text-(--admin-accent)"
+        >
           {upload_error_to_string(err)}
         </p>
 
@@ -184,7 +256,9 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
           type="submit"
           class="mt-3 rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white hover:bg-(--admin-accent-hover)"
         >
-          Upload {length(@uploads.photos.entries)} photo{if length(@uploads.photos.entries) == 1, do: "", else: "s"}
+          Upload {length(@uploads.photos.entries)} photo{if length(@uploads.photos.entries) == 1,
+            do: "",
+            else: "s"}
         </button>
       </form>
 
@@ -208,7 +282,11 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
           class="group relative aspect-square cursor-grab overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-bg) active:cursor-grabbing"
         >
           <.link patch={~p"/admin/photos/#{@group.id}/photo/#{photo.id}"} class="block size-full">
-            <img src={Gallery.image_url(photo.image_key)} alt={photo.alt} class="size-full object-cover" />
+            <img
+              src={Gallery.image_url(photo.image_key)}
+              alt={photo.alt}
+              class="size-full object-cover"
+            />
           </.link>
           <span
             :if={photo.alt == ""}
@@ -257,6 +335,13 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
           </div>
         </.form>
       </Components.drawer>
+
+      <GalleryComponents.settings_drawer
+        :if={@live_action == :settings}
+        form={@settings_form}
+        editing?={true}
+        cancel_path={~p"/admin/photos/#{@group.id}"}
+      />
     </Layouts.admin>
     """
   end

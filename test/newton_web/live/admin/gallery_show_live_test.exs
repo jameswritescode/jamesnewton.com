@@ -86,4 +86,40 @@ defmodule NewtonWeb.Admin.GalleryShowLiveTest do
     ordered = Gallery.get_group!(group.id).photos |> Enum.map(& &1.id)
     assert ordered == [b.id, a.id]
   end
+
+  test "Settings opens the gallery drawer on the gallery page, not the list", %{conn: conn} do
+    group = group_fixture(%{title: "Trip"})
+    photo = photo_fixture(group)
+    {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}")
+
+    view |> element("a", "Settings") |> render_click()
+
+    assert_patch(view, ~p"/admin/photos/#{group.id}/edit")
+    # Still on the gallery page: the photo grid and the settings drawer coexist.
+    assert has_element?(view, "#gallery-drawer #gallery-form")
+    assert has_element?(view, "#photo-#{photo.id}")
+  end
+
+  test "saving gallery settings updates it and stays on the gallery page", %{conn: conn} do
+    group = group_fixture(%{title: "Old"})
+    {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}/edit")
+
+    view |> form("#gallery-form", group: %{title: "Renamed"}) |> render_submit()
+
+    assert_patch(view, ~p"/admin/photos/#{group.id}")
+    assert Gallery.get_group!(group.id).title == "Renamed"
+    assert has_element?(view, "h1", "Renamed")
+  end
+
+  test "deleting a gallery from settings returns to the list", %{conn: conn} do
+    group = group_fixture()
+    {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}/edit")
+
+    view
+    |> element("#gallery-drawer button", "Delete")
+    |> render_click()
+    |> follow_redirect(conn, ~p"/admin/photos")
+
+    assert_raise Ecto.NoResultsError, fn -> Gallery.get_group!(group.id) end
+  end
 end

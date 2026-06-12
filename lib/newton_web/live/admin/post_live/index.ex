@@ -40,11 +40,11 @@ defmodule NewtonWeb.Admin.PostLive.Index do
         <div
           :for={{id, post} <- @streams.posts}
           id={id}
-          class="flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
+          class="relative flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
         >
           <.link
             navigate={~p"/admin/posts/#{post.id}/edit"}
-            class="flex-1 text-[0.9rem] font-medium text-(--admin-text) no-underline"
+            class="flex-1 text-[0.9rem] font-medium text-(--admin-text) no-underline after:absolute after:inset-0"
           >
             {post.title}
           </.link>
@@ -57,7 +57,7 @@ defmodule NewtonWeb.Admin.PostLive.Index do
             phx-click="delete"
             phx-value-id={post.id}
             data-confirm="Delete this post?"
-            class="rounded-md px-2 py-1 text-[0.75rem] text-(--admin-text-subtle) hover:text-(--admin-accent)"
+            class="relative z-10 rounded-md px-2 py-1 text-[0.75rem] text-(--admin-text-subtle) hover:text-(--admin-accent)"
           >
             Delete
           </button>

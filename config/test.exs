@@ -3,6 +3,9 @@ import Config
 # Only in tests, remove the complexity from the password hashing algorithm
 config :bcrypt_elixir, :log_rounds, 1
 
+# Keep test image writes out of the repo.
+config :newton, :media_root, Path.join(System.tmp_dir!(), "newton_test_media")
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used

@@ -3,6 +3,7 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
 
   alias Newton.Reading
   alias Newton.Reading.Entry
+  alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
 
   @status_options [
@@ -148,15 +149,17 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
         <div
           :for={{id, entry} <- @streams.entries}
           id={id}
-          class="flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
+          class="relative flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
         >
-          <.link
-            patch={~p"/admin/reading/#{entry.id}/edit"}
-            class="flex-1 text-[0.9rem] font-medium text-(--admin-text) no-underline"
-          >
-            {entry.title}
-          </.link>
-          <span class="w-32 truncate text-[0.8rem] text-(--admin-text-subtle)">{entry.author}</span>
+          <div class="flex min-w-0 flex-1 items-baseline gap-2">
+            <.link
+              patch={~p"/admin/reading/#{entry.id}/edit"}
+              class="text-[0.9rem] font-medium text-(--admin-text) no-underline after:absolute after:inset-0"
+            >
+              {entry.title}
+            </.link>
+            <span class="truncate text-[0.8rem] text-(--admin-text-subtle)">{entry.author}</span>
+          </div>
           <Layouts.reading_badge status={entry.status} />
           <span class="w-24 text-right text-[0.78rem] text-(--admin-text-subtle)">
             {format_date(entry.finished_at)}
@@ -251,24 +254,8 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
 
   defp reading_drawer(assigns) do
     ~H"""
-    <div
-      id="reading-drawer"
-      phx-window-keydown="close_drawer"
-      phx-key="Escape"
-      class="fixed inset-y-0 right-0 z-20 flex w-80 flex-col gap-4 overflow-y-auto border-l border-(--admin-border) bg-(--admin-sidebar) p-5 shadow-xl"
-    >
-      <div class="flex items-center justify-between">
-        <span class="text-[0.9rem] font-semibold">
-          {if @entry.id, do: "Edit entry", else: "New entry"}
-        </span>
-        <.link
-          patch={~p"/admin/reading"}
-          aria-label="Close"
-          class="text-(--admin-text-subtle) hover:text-(--admin-text)"
-        >
-          <.icon name="hero-x-mark-mini" class="size-5" />
-        </.link>
-      </div>
+    <Components.drawer id="reading-drawer" on_close="close_drawer">
+      <:title>{if @entry.id, do: "Edit entry", else: "New entry"}</:title>
 
       <.form
         for={@form}
@@ -277,12 +264,17 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
         phx-submit="save"
         class="flex flex-col gap-3"
       >
-        <.input field={@form[:title]} type="text" label="Title" />
-        <.input field={@form[:author]} type="text" label="Author" />
-        <.input field={@form[:link]} type="text" label="Link" />
-        <.input field={@form[:status]} type="select" label="Status" options={@status_options} />
-        <.input field={@form[:finished_at]} type="date" label="Finished on" />
-        <.input field={@form[:note]} type="textarea" label="Note" rows="3" />
+        <Components.field field={@form[:title]} label="Title" />
+        <Components.field field={@form[:author]} label="Author" />
+        <Components.field field={@form[:link]} label="Link" />
+        <Components.field
+          field={@form[:status]}
+          type="select"
+          label="Status"
+          options={@status_options}
+        />
+        <Components.field field={@form[:finished_at]} type="date" label="Finished on" />
+        <Components.field field={@form[:note]} type="textarea" label="Note" rows="3" />
 
         <div class="mt-2 flex items-center gap-2">
           <button
@@ -310,7 +302,7 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
           </button>
         </div>
       </.form>
-    </div>
+    </Components.drawer>
     """
   end
 

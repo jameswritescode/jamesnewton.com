@@ -93,6 +93,16 @@ defmodule NewtonWeb.Admin.ReadingLiveTest do
     refute has_element?(view, "#reading-drawer")
   end
 
+  test "the drawer closes on click-away", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/reading/new")
+    assert has_element?(view, "#reading-drawer[phx-click-away]")
+
+    render_click(view, "close_drawer", %{})
+
+    assert_patch(view, ~p"/admin/reading")
+    refute has_element?(view, "#reading-drawer")
+  end
+
   test "deletes an entry from the drawer", %{conn: conn} do
     entry = entry_fixture()
     {:ok, view, _html} = live(conn, ~p"/admin/reading/#{entry.id}/edit")

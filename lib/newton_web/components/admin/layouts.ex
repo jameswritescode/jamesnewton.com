@@ -41,7 +41,20 @@ defmodule NewtonWeb.Admin.Layouts do
           />
         </nav>
 
-        <div class="mt-[0.6rem] border-t border-(--admin-border) pt-[0.6rem]">
+        <div class="mt-[0.6rem] flex flex-col gap-0.5 border-t border-(--admin-border) pt-[0.6rem]">
+          <.link
+            href={~p"/"}
+            class="flex items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) no-underline transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+          >
+            <.icon name="hero-arrow-top-right-on-square-mini" class="size-4" /> View site
+          </.link>
+          <.link
+            href={~p"/logout"}
+            method="delete"
+            class="flex items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) no-underline transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+          >
+            <.icon name="hero-arrow-right-start-on-rectangle-mini" class="size-4" /> Log out
+          </.link>
           <button
             id="admin-theme-toggle"
             type="button"
@@ -58,9 +71,9 @@ defmodule NewtonWeb.Admin.Layouts do
       </aside>
 
       <main id="admin-main" class="max-w-6xl flex-1 px-10 py-8">
-        <Layouts.flash_group flash={@flash} />
         {render_slot(@inner_block)}
       </main>
+      <.admin_flash_group flash={@flash} />
     </div>
     """
   end
@@ -90,6 +103,58 @@ defmodule NewtonWeb.Admin.Layouts do
     >
       {@section.label}
     </.link>
+    """
+  end
+
+  @doc "Admin flash toasts: token-styled, stacked at the bottom-right."
+  attr :flash, :map, required: true
+
+  def admin_flash_group(assigns) do
+    ~H"""
+    <div
+      id="admin-flash-group"
+      aria-live="polite"
+      class="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2"
+    >
+      <.admin_flash kind={:info} flash={@flash} />
+      <.admin_flash kind={:error} flash={@flash} />
+    </div>
+    """
+  end
+
+  attr :kind, :atom, required: true
+  attr :flash, :map, required: true
+
+  defp admin_flash(assigns) do
+    ~H"""
+    <div
+      :if={msg = Phoenix.Flash.get(@flash, @kind)}
+      id={"admin-flash-#{@kind}"}
+      role="alert"
+      phx-click={
+        JS.push("lv:clear-flash", value: %{key: @kind})
+        |> JS.hide(
+          to: "#admin-flash-#{@kind}",
+          transition:
+            {"transition-all duration-200 ease-in", "opacity-100", "opacity-0 translate-y-1"}
+        )
+      }
+      class={[
+        "flex w-80 cursor-pointer items-center gap-3 rounded-lg border bg-(--admin-surface) p-3 text-[0.82rem] shadow-lg",
+        @kind == :info && "border-(--admin-border) text-(--admin-text)",
+        @kind == :error && "border-red-500/40 text-red-600 admin-dark:text-red-400"
+      ]}
+    >
+      <.icon
+        name={if @kind == :info, do: "hero-check-circle-mini", else: "hero-exclamation-circle-mini"}
+        class={[
+          "size-4 shrink-0",
+          @kind == :info && "text-(--admin-accent)",
+          @kind == :error && "text-red-500"
+        ]}
+      />
+      <span class="flex-1">{msg}</span>
+    </div>
     """
   end
 

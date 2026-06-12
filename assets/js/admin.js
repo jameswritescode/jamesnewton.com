@@ -18,7 +18,16 @@ const liveSocket = new LiveSocket("/live", Socket, {
   hooks: {...colocatedHooks, AdminTheme, MarkdownEditor, ImageDimensions, SortableGrid},
 })
 
-topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
+// Match the loading bar to the admin accent, re-reading it when the theme flips.
+const applyTopbarTheme = () => {
+  const accent = getComputedStyle(document.documentElement).getPropertyValue("--admin-accent").trim()
+  topbar.config({barColors: {0: accent || "#b54a2b"}, shadowColor: "rgba(0, 0, 0, .15)"})
+}
+applyTopbarTheme()
+new MutationObserver(applyTopbarTheme).observe(document.documentElement, {
+  attributeFilter: ["data-admin-theme"],
+})
+
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 

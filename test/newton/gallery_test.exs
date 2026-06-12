@@ -1,6 +1,7 @@
 defmodule Newton.GalleryTest do
   use Newton.DataCase
   alias Newton.Gallery
+  alias Newton.Gallery.Storage
   import Newton.GalleryFixtures
 
   test "image_url passes absolute URLs through" do
@@ -132,7 +133,7 @@ defmodule Newton.GalleryTest do
     File.mkdir_p!(root)
     src = Path.join(root, "src-#{System.unique_integer([:positive])}.tmp")
     File.write!(src, "data")
-    {:ok, key} = Newton.Gallery.Storage.store(src, "p.jpg")
+    {:ok, key} = Storage.store(src, "p.jpg")
     File.rm(src)
     key
   end

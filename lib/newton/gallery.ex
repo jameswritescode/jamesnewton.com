@@ -18,7 +18,8 @@ defmodule Newton.Gallery do
   end
 
   def get_group_by_slug!(slug) do
-    Repo.get_by!(PhotoGroup, slug: slug) |> Repo.preload(photos: from(p in Photo, order_by: p.position))
+    Repo.get_by!(PhotoGroup, slug: slug)
+    |> Repo.preload(photos: from(p in Photo, order_by: p.position))
   end
 
   def update_group(%PhotoGroup{} = group, attrs) do
@@ -55,7 +56,8 @@ defmodule Newton.Gallery do
 
   def reorder_photos(%PhotoGroup{id: group_id}, ordered_ids) do
     valid_ids =
-      Repo.all(from p in Photo, where: p.photo_group_id == ^group_id, select: p.id) |> MapSet.new()
+      Repo.all(from p in Photo, where: p.photo_group_id == ^group_id, select: p.id)
+      |> MapSet.new()
 
     ordered_ids
     |> Enum.filter(&MapSet.member?(valid_ids, &1))

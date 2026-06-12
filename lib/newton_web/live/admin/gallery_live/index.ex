@@ -75,12 +75,6 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
     save(socket, socket.assigns.group, fill_blank_slug(params))
   end
 
-  defp fill_blank_slug(%{"slug" => slug} = params) when slug not in [nil, ""], do: params
-
-  defp fill_blank_slug(params) do
-    Map.put(params, "slug", Newton.Slug.slugify(params["title"] || ""))
-  end
-
   def handle_event("close_drawer", _params, socket) do
     {:noreply, push_patch(socket, to: ~p"/admin/photos")}
   end
@@ -93,6 +87,12 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
      |> put_flash(:info, "Gallery deleted")
      |> stream(:galleries, Gallery.list_groups(), reset: true)
      |> push_patch(to: ~p"/admin/photos")}
+  end
+
+  defp fill_blank_slug(%{"slug" => slug} = params) when slug not in [nil, ""], do: params
+
+  defp fill_blank_slug(params) do
+    Map.put(params, "slug", Newton.Slug.slugify(params["title"] || ""))
   end
 
   defp save(socket, %PhotoGroup{id: nil}, params) do

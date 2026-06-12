@@ -149,6 +149,34 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert status == :published
   end
 
+  test "publishing an existing draft persists immediately, without a separate save", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{title: "Draft", slug: "draft-pub", body_markdown: "b"})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Publish now") |> render_click()
+
+    status = Newton.Blog.publish_status(Newton.Blog.get_post!(post.id).published_at)
+    assert status == :published
+  end
+
+  test "moving an existing published post to draft persists immediately", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "live-unpub",
+        body_markdown: "b",
+        published_at: ~U[2026-01-01 00:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Move to draft") |> render_click()
+
+    assert is_nil(Newton.Blog.get_post!(post.id).published_at)
+  end
+
   test "an already-published post hides Publish now and offers Move to draft", %{conn: conn} do
     {:ok, post} =
       Newton.Blog.create_post(%{

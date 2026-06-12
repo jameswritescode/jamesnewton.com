@@ -103,11 +103,11 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   def handle_event("publish_now", _params, socket) do
-    {:noreply, assign(socket, :published_at, DateTime.truncate(DateTime.utc_now(), :second))}
+    {:noreply, set_published(socket, DateTime.truncate(DateTime.utc_now(), :second))}
   end
 
   def handle_event("unpublish", _params, socket) do
-    {:noreply, assign(socket, :published_at, nil)}
+    {:noreply, set_published(socket, nil)}
   end
 
   def handle_event("delete", _params, socket) do
@@ -117,6 +117,24 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      socket
      |> put_flash(:info, "Post deleted")
      |> push_navigate(to: ~p"/admin/posts")}
+  end
+
+  # A persisted post publishes/unpublishes immediately. A new post has no record
+  # yet, so the choice is staged and applied when it's first saved. Content edits
+  # in the form are left untouched — publish only toggles publication state.
+  defp set_published(socket, published_at) do
+    case socket.assigns.post do
+      %Post{id: nil} ->
+        assign(socket, :published_at, published_at)
+
+      post ->
+        {:ok, post} = Blog.update_post(post, %{"published_at" => published_at})
+
+        socket
+        |> assign(:post, post)
+        |> assign(:published_at, post.published_at)
+        |> put_flash(:info, if(post.published_at, do: "Post published", else: "Moved to draft"))
+    end
   end
 
   defp save(socket, %Post{id: nil}, params) do

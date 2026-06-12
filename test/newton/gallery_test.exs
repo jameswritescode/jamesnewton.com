@@ -101,6 +101,30 @@ defmodule Newton.GalleryTest do
     refute File.exists?(Path.join(media_root(), key))
   end
 
+  test "reorder_photos/2 sets position to match the given id order" do
+    group = group_fixture()
+    a = photo_fixture(group, %{position: 0})
+    b = photo_fixture(group, %{position: 1})
+    c = photo_fixture(group, %{position: 2})
+
+    :ok = Gallery.reorder_photos(group, [c.id, a.id, b.id])
+
+    ordered = Gallery.get_group!(group.id).photos |> Enum.map(& &1.id)
+    assert ordered == [c.id, a.id, b.id]
+  end
+
+  test "reorder_photos/2 ignores ids that belong to another gallery" do
+    group = group_fixture()
+    other = group_fixture()
+    a = photo_fixture(group, %{position: 0})
+    foreign = photo_fixture(other, %{position: 0})
+
+    :ok = Gallery.reorder_photos(group, [foreign.id, a.id])
+
+    assert Gallery.get_photo!(foreign.id).position == 0
+    assert Gallery.get_photo!(a.id).position in 0..1
+  end
+
   defp media_root, do: Application.fetch_env!(:newton, :media_root)
 
   defp stored_image do

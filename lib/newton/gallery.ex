@@ -53,6 +53,23 @@ defmodule Newton.Gallery do
     end
   end
 
+  def reorder_photos(%PhotoGroup{id: group_id}, ordered_ids) do
+    valid_ids =
+      Repo.all(from p in Photo, where: p.photo_group_id == ^group_id, select: p.id) |> MapSet.new()
+
+    ordered_ids
+    |> Enum.filter(&MapSet.member?(valid_ids, &1))
+    |> Enum.with_index()
+    |> Enum.reduce(Ecto.Multi.new(), fn {id, index}, multi ->
+      Ecto.Multi.update_all(multi, {:photo, id}, from(p in Photo, where: p.id == ^id),
+        set: [position: index]
+      )
+    end)
+    |> Repo.transaction()
+
+    :ok
+  end
+
   def list_groups do
     Repo.all(from g in PhotoGroup, order_by: [desc: g.taken_on], preload: [:photos])
   end

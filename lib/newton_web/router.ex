@@ -41,6 +41,11 @@ defmodule NewtonWeb.Router do
       live "/reading", ReadingLive.Index, :index
       live "/reading/new", ReadingLive.Index, :new
       live "/reading/:id/edit", ReadingLive.Index, :edit
+      live "/photos", GalleryLive.Index, :index
+      live "/photos/new", GalleryLive.Index, :new
+      live "/photos/:id/edit", GalleryLive.Index, :edit
+      live "/photos/:id", GalleryLive.Show, :show
+      live "/photos/:id/photo/:photo_id", GalleryLive.Show, :photo
     end
   end
 

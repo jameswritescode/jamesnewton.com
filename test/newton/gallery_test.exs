@@ -1,6 +1,7 @@
 defmodule Newton.GalleryTest do
   use Newton.DataCase
   alias Newton.Gallery
+  import Newton.GalleryFixtures
 
   test "image_url passes absolute URLs through" do
     assert Gallery.image_url("https://example.com/a.jpg") == "https://example.com/a.jpg"
@@ -48,5 +49,67 @@ defmodule Newton.GalleryTest do
     {:ok, g} = Gallery.create_group(%{slug: "blank-alt", title: "Blank Alt"})
     assert {:ok, photo} = Gallery.add_photo(g, %{image_key: "x.jpg", alt: "", position: 0})
     assert photo.alt == ""
+  end
+
+  test "get_group!/1, update_group/2, change_group/2" do
+    group = group_fixture(%{title: "Orig"})
+    assert Gallery.get_group!(group.id).id == group.id
+    {:ok, updated} = Gallery.update_group(group, %{title: "New"})
+    assert updated.title == "New"
+    assert %Ecto.Changeset{} = Gallery.change_group(group)
+  end
+
+  test "get_group_by_slug!/1 finds by slug" do
+    group = group_fixture(%{slug: "find-me"})
+    assert Gallery.get_group_by_slug!("find-me").id == group.id
+  end
+
+  test "photo get/update/change" do
+    group = group_fixture()
+    photo = photo_fixture(group, %{alt: "old"})
+    assert Gallery.get_photo!(photo.id).id == photo.id
+    {:ok, updated} = Gallery.update_photo(photo, %{alt: "new"})
+    assert updated.alt == "new"
+    assert %Ecto.Changeset{} = Gallery.change_photo(photo)
+  end
+
+  test "next_position/1 returns max position + 1, or 0 when empty" do
+    group = group_fixture()
+    assert Gallery.next_position(group) == 0
+    photo_fixture(group, %{position: 5})
+    assert Gallery.next_position(group) == 6
+  end
+
+  test "delete_photo/1 removes the row and the file" do
+    group = group_fixture()
+    key = stored_image()
+    photo = photo_fixture(group, %{image_key: key})
+
+    {:ok, _} = Gallery.delete_photo(photo)
+    assert_raise Ecto.NoResultsError, fn -> Gallery.get_photo!(photo.id) end
+    refute File.exists?(Path.join(media_root(), key))
+  end
+
+  test "delete_group/1 removes the group, its photos, and their files" do
+    group = group_fixture()
+    key = stored_image()
+    photo = photo_fixture(group, %{image_key: key})
+
+    {:ok, _} = Gallery.delete_group(group)
+    assert_raise Ecto.NoResultsError, fn -> Gallery.get_group!(group.id) end
+    assert_raise Ecto.NoResultsError, fn -> Gallery.get_photo!(photo.id) end
+    refute File.exists?(Path.join(media_root(), key))
+  end
+
+  defp media_root, do: Application.fetch_env!(:newton, :media_root)
+
+  defp stored_image do
+    root = media_root()
+    File.mkdir_p!(root)
+    src = Path.join(root, "src-#{System.unique_integer([:positive])}.tmp")
+    File.write!(src, "data")
+    {:ok, key} = Newton.Gallery.Storage.store(src, "p.jpg")
+    File.rm(src)
+    key
   end
 end

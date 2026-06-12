@@ -1,7 +1,7 @@
 defmodule Newton.Gallery do
   @moduledoc "Photo groups and photos; resolves image keys to URLs."
   import Ecto.Query, warn: false
-  alias Newton.Gallery.{Photo, PhotoGroup}
+  alias Newton.Gallery.{Photo, PhotoGroup, Storage}
   alias Newton.Repo
 
   def create_group(attrs) do
@@ -11,6 +11,46 @@ defmodule Newton.Gallery do
   def add_photo(%PhotoGroup{id: group_id}, attrs) do
     attrs = Map.put(attrs, :photo_group_id, group_id)
     %Photo{} |> Photo.changeset(attrs) |> Repo.insert()
+  end
+
+  def get_group!(id) do
+    Repo.get!(PhotoGroup, id) |> Repo.preload(photos: from(p in Photo, order_by: p.position))
+  end
+
+  def get_group_by_slug!(slug) do
+    Repo.get_by!(PhotoGroup, slug: slug) |> Repo.preload(photos: from(p in Photo, order_by: p.position))
+  end
+
+  def update_group(%PhotoGroup{} = group, attrs) do
+    group |> PhotoGroup.changeset(attrs) |> Repo.update()
+  end
+
+  def change_group(%PhotoGroup{} = group, attrs \\ %{}), do: PhotoGroup.changeset(group, attrs)
+
+  def delete_group(%PhotoGroup{} = group) do
+    group = Repo.preload(group, :photos)
+    Enum.each(group.photos, &Storage.delete(&1.image_key))
+    Repo.delete(group)
+  end
+
+  def get_photo!(id), do: Repo.get!(Photo, id)
+
+  def update_photo(%Photo{} = photo, attrs) do
+    photo |> Photo.changeset(attrs) |> Repo.update()
+  end
+
+  def change_photo(%Photo{} = photo, attrs \\ %{}), do: Photo.changeset(photo, attrs)
+
+  def delete_photo(%Photo{} = photo) do
+    Storage.delete(photo.image_key)
+    Repo.delete(photo)
+  end
+
+  def next_position(%PhotoGroup{id: group_id}) do
+    case Repo.aggregate(from(p in Photo, where: p.photo_group_id == ^group_id), :max, :position) do
+      nil -> 0
+      max -> max + 1
+    end
   end
 
   def list_groups do

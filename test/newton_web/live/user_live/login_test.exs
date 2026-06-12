@@ -6,9 +6,9 @@ defmodule NewtonWeb.UserLive.LoginTest do
 
   describe "login page" do
     test "renders login page", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
+      {:ok, _lv, html} = live(conn, ~p"/login")
 
-      assert html =~ "Log in"
+      assert html =~ "Sign in"
       assert html =~ "Password"
     end
   end
@@ -17,7 +17,7 @@ defmodule NewtonWeb.UserLive.LoginTest do
     test "redirects if user logs in with valid credentials", %{conn: conn} do
       user = user_fixture() |> set_password()
 
-      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+      {:ok, lv, _html} = live(conn, ~p"/login")
 
       form =
         form(lv, "#login_form_password",
@@ -26,13 +26,13 @@ defmodule NewtonWeb.UserLive.LoginTest do
 
       conn = submit_form(form, conn)
 
-      assert redirected_to(conn) == ~p"/"
+      assert redirected_to(conn) == ~p"/admin"
     end
 
     test "redirects to login page with a flash error if credentials are invalid", %{
       conn: conn
     } do
-      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+      {:ok, lv, _html} = live(conn, ~p"/login")
 
       form =
         form(lv, "#login_form_password", user: %{email: "test@email.com", password: "123456"})
@@ -41,23 +41,20 @@ defmodule NewtonWeb.UserLive.LoginTest do
 
       conn = follow_trigger_action(form, conn)
       assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
-      assert redirected_to(conn) == ~p"/users/log-in"
+      assert redirected_to(conn) == ~p"/login"
     end
   end
 
-  describe "re-authentication (sudo mode)" do
+  describe "already logged-in user" do
     setup %{conn: conn} do
       user = user_fixture()
       %{user: user, conn: log_in_user(conn, user)}
     end
 
-    test "shows login page with email filled in", %{conn: conn, user: user} do
-      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
+    test "pre-fills the email on the login page", %{conn: conn, user: user} do
+      {:ok, _lv, html} = live(conn, ~p"/login")
 
-      assert html =~ "You need to reauthenticate"
-
-      assert html =~
-               ~s(<input type="email" name="user[email]" id="login_form_password_email" value="#{user.email}")
+      assert html =~ user.email
     end
   end
 end

@@ -1,68 +1,82 @@
 defmodule NewtonWeb.UserLive.Login do
   use NewtonWeb, :live_view
 
+  alias NewtonWeb.Admin.Layouts, as: AdminLayouts
+
+  @field_class "w-full rounded-md border border-(--admin-border) bg-(--admin-bg) px-3 py-2 text-[0.85rem] text-(--admin-text) focus:border-(--admin-accent) focus:outline-none"
+
   @impl true
   def render(assigns) do
+    assigns = assign(assigns, :field_class, @field_class)
+
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm space-y-4">
-        <div class="text-center">
-          <.header>
-            <p>Log in</p>
-            <:subtitle>
-              <%= if @current_scope do %>
-                You need to reauthenticate to perform sensitive actions on your account.
-              <% else %>
-                Sign in to manage the site.
-              <% end %>
-            </:subtitle>
-          </.header>
+    <div class="flex min-h-screen items-center justify-center px-4">
+      <div class="w-full max-w-sm">
+        <div class="mb-6 flex items-center justify-center gap-2 text-[1.05rem] font-semibold tracking-tight text-(--admin-text)">
+          <span class="size-2.5 rounded-full bg-(--admin-accent)"></span> newton
         </div>
 
-        <div :if={local_mail_adapter?()} class="alert alert-info">
-          <.icon name="hero-information-circle" class="size-6 shrink-0" />
-          <div>
-            <p>You are running the local mail adapter.</p>
-            <p>
-              To see sent emails, visit <.link href="/dev/mailbox" class="underline">the mailbox page</.link>.
-            </p>
-          </div>
-        </div>
+        <div class="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-6 shadow-sm">
+          <h1 class="text-[1.1rem] font-semibold text-(--admin-text)">Sign in</h1>
+          <p class="mt-1 mb-5 text-[0.82rem] text-(--admin-text-subtle)">
+            Sign in to manage the site.
+          </p>
 
-        <.form
-          :let={f}
-          for={@form}
-          id="login_form_password"
-          action={~p"/users/log-in"}
-          phx-submit="submit_password"
-          phx-trigger-action={@trigger_submit}
-        >
-          <.input
-            readonly={!!@current_scope}
-            field={f[:email]}
-            type="email"
-            label="Email"
-            autocomplete="username"
-            spellcheck="false"
-            required
-            phx-mounted={JS.focus()}
-          />
-          <.input
-            field={@form[:password]}
-            type="password"
-            label="Password"
-            autocomplete="current-password"
-            spellcheck="false"
-          />
-          <.button class="btn btn-primary w-full" name={@form[:remember_me].name} value="true">
-            Log in and stay logged in <span aria-hidden="true">→</span>
-          </.button>
-          <.button class="btn btn-primary btn-soft w-full mt-2">
-            Log in only this time
-          </.button>
-        </.form>
+          <.form
+            :let={f}
+            for={@form}
+            id="login_form_password"
+            action={~p"/login"}
+            phx-submit="submit_password"
+            phx-trigger-action={@trigger_submit}
+            class="flex flex-col gap-3"
+          >
+            <div>
+              <label for={f[:email].id} class="mb-1 block text-[0.78rem] text-(--admin-text-muted)">
+                Email
+              </label>
+              <.input
+                field={f[:email]}
+                type="email"
+                autocomplete="username"
+                spellcheck="false"
+                required
+                phx-mounted={JS.focus()}
+                class={@field_class}
+              />
+            </div>
+
+            <div>
+              <label
+                for={@form[:password].id}
+                class="mb-1 block text-[0.78rem] text-(--admin-text-muted)"
+              >
+                Password
+              </label>
+              <.input
+                field={@form[:password]}
+                type="password"
+                autocomplete="current-password"
+                spellcheck="false"
+                required
+                class={@field_class}
+              />
+            </div>
+
+            <button
+              type="submit"
+              name={@form[:remember_me].name}
+              value="true"
+              class="mt-2 w-full rounded-md bg-(--admin-accent) px-3 py-2 text-[0.85rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+            >
+              Sign in
+            </button>
+          </.form>
+        </div>
       </div>
-    </Layouts.app>
+
+      <AdminLayouts.admin_flash_group flash={@flash} />
+    </div>
     """
   end
 
@@ -80,9 +94,5 @@ defmodule NewtonWeb.UserLive.Login do
   @impl true
   def handle_event("submit_password", _params, socket) do
     {:noreply, assign(socket, :trigger_submit, true)}
-  end
-
-  defp local_mail_adapter? do
-    Application.get_env(:newton, Newton.Mailer)[:adapter] == Swoosh.Adapters.Local
   end
 end

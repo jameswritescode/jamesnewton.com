@@ -43,8 +43,8 @@ defmodule NewtonWeb.Router do
       live "/reading/:id/edit", ReadingLive.Index, :edit
       live "/photos", GalleryLive.Index, :index
       live "/photos/new", GalleryLive.Index, :new
-      live "/photos/:id/edit", GalleryLive.Index, :edit
       live "/photos/:id", GalleryLive.Show, :show
+      live "/photos/:id/edit", GalleryLive.Show, :settings
       live "/photos/:id/photo/:photo_id", GalleryLive.Show, :photo
     end
   end
@@ -74,26 +74,15 @@ defmodule NewtonWeb.Router do
   ## Authentication routes
 
   scope "/", NewtonWeb do
-    pipe_through [:browser, :require_authenticated_user]
-
-    live_session :require_authenticated_user,
-      on_mount: [{NewtonWeb.UserAuth, :require_authenticated}] do
-      live "/users/settings", UserLive.Settings, :edit
-      live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
-    end
-
-    post "/users/update-password", UserSessionController, :update_password
-  end
-
-  scope "/", NewtonWeb do
     pipe_through [:browser]
 
     live_session :current_user,
-      on_mount: [{NewtonWeb.UserAuth, :mount_current_scope}] do
-      live "/users/log-in", UserLive.Login, :new
+      on_mount: [{NewtonWeb.UserAuth, :mount_current_scope}],
+      root_layout: {NewtonWeb.Layouts, :admin_root} do
+      live "/login", UserLive.Login, :new
     end
 
-    post "/users/log-in", UserSessionController, :create
-    delete "/users/log-out", UserSessionController, :delete
+    post "/login", UserSessionController, :create
+    delete "/logout", UserSessionController, :delete
   end
 end

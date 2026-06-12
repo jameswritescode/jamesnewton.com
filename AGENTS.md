@@ -154,6 +154,7 @@ Controllers automatically have the `current_scope` available if they use the `:b
 
 ## Test guidelines
 
+- **We test behaviors, not structure.** Assert on outcomes and interactions — clicking navigates/creates/deletes, validation errors appear, state changes — never on static template details (an element merely existing, a link's hardcoded `href`, a CSS class). If a test would still pass by reading the template back to itself, it isn't earning its keep.
 - **Always use `start_supervised!/1`** to start processes in tests as it guarantees cleanup between tests
 - **Avoid** `Process.sleep/1` and `Process.alive?/1` in tests
   - Instead of sleeping to wait for a process to finish, **always** use `Process.monitor/1` and assert on the DOWN message:

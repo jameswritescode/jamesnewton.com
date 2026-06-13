@@ -8,6 +8,18 @@
 
 **Tech Stack:** Phoenix 1.8 LiveView, Ecto/Postgres.
 
+> **As-built note:** three things changed during implementation from the tasks
+> below — see the "Revisions during implementation" callout in the design spec.
+> (1) New-post **creation moved to the `PostLive.Index` "New post" button event**
+> (`Blog.create_draft/0` + `push_navigate`), not `apply_action(:new)`, to avoid a
+> double-create on the disconnected+connected mount. (2) **Discard moved from
+> `terminate/2` to `Blog.discard_empty_untitled_drafts/0` called from
+> `PostLive.Index.mount`** — `terminate/2` doesn't fire reliably because a
+> `live_session` reuses the LiveView process across navigations; the
+> `?new`/`:autocreated?`/`:edited?` machinery (Tasks 3 & 6) was dropped. (3)
+> Bodyless drafts needed a **changeset coercion** (`""` → kept, not nil'd), not
+> just a relaxed `validate_required` (Task 1).
+
 ---
 
 ## Context for the implementer

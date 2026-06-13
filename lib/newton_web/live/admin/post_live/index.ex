@@ -5,19 +5,14 @@ defmodule NewtonWeb.Admin.PostLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    Newton.Blog.discard_empty_untitled_drafts()
     {:ok, stream(socket, :posts, Newton.Blog.list_posts())}
   end
 
   @impl true
   def handle_event("new_post", _params, socket) do
-    {:ok, post} =
-      Newton.Blog.create_post(%{
-        "title" => "Untitled post",
-        "slug" => Newton.Blog.next_untitled_slug(),
-        "body_markdown" => ""
-      })
-
-    {:noreply, push_navigate(socket, to: ~p"/admin/posts/#{post.id}/edit?new=1")}
+    {:ok, post} = Newton.Blog.create_draft()
+    {:noreply, push_navigate(socket, to: ~p"/admin/posts/#{post.id}/edit")}
   end
 
   def handle_event("delete", %{"id" => id}, socket) do

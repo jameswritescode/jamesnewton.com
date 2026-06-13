@@ -17,8 +17,19 @@ defmodule Newton.Blog do
     :updated_at
   ]
 
+  @untitled_title "Untitled post"
+
   def create_post(attrs) do
     %Post{} |> Post.changeset(attrs) |> Repo.insert()
+  end
+
+  @doc "Create a blank draft (Untitled post, unique slug, empty body)."
+  def create_draft do
+    create_post(%{
+      "title" => @untitled_title,
+      "slug" => next_untitled_slug(),
+      "body_markdown" => ""
+    })
   end
 
   def update_post(%Post{} = post, attrs) do
@@ -56,6 +67,17 @@ defmodule Newton.Blog do
 
   @doc "Build a post changeset for forms."
   def change_post(%Post{} = post, attrs \\ %{}), do: Post.changeset(post, attrs)
+
+  @doc """
+  Delete abandoned new drafts — an "Untitled post" with no body and no publish
+  date. Called when listing posts so untouched drafts never accumulate.
+  """
+  def discard_empty_untitled_drafts do
+    from(p in Post,
+      where: p.title == @untitled_title and p.body_markdown == "" and is_nil(p.published_at)
+    )
+    |> Repo.delete_all()
+  end
 
   @doc "First free slug in the series untitled-post, untitled-post-2, …"
   def next_untitled_slug do

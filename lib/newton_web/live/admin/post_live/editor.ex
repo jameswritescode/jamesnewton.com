@@ -14,8 +14,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:ok,
      socket
      |> assign(:drawer_open, false)
-     |> assign(:autocreated?, false)
-     |> assign(:edited?, false)
      |> assign(:save_state, :saved)
      |> assign(:autosave_params, nil)
      |> assign(:autosave_timer, nil)}
@@ -26,11 +24,10 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :edit, %{"id" => id} = params) do
+  defp apply_action(socket, :edit, %{"id" => id}) do
     post = Blog.get_post!(id)
 
     socket
-    |> assign(:autocreated?, socket.assigns.autocreated? or params["new"] == "1")
     |> assign(:page_title, "Edit post")
     |> assign(:post, post)
     |> assign(:published_at, post.published_at)
@@ -38,7 +35,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:slug_auto, post.slug)
     |> assign(:excerpt_locked, excerpt_locked?(post))
     |> assign(:excerpt_auto, post.excerpt || "")
-    |> assign(:edited?, false)
     |> assign(:save_state, :saved)
     |> assign(:autosave_params, nil)
     |> assign(:form, to_form(Blog.change_post(post)))
@@ -126,24 +122,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   @impl true
-  def terminate(_reason, socket) do
-    discard_untouched_draft(socket.assigns)
-    :ok
-  end
-
-  defp discard_untouched_draft(%{
-         autocreated?: true,
-         edited?: false,
-         published_at: nil,
-         post: %Post{id: id} = post
-       })
-       when not is_nil(id) do
-    Blog.delete_post(post)
-  end
-
-  defp discard_untouched_draft(_assigns), do: :ok
-
-  @impl true
   def handle_info(:autosave, socket) do
     draft? = is_nil(socket.assigns.published_at)
 
@@ -169,14 +147,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp maybe_schedule_autosave(socket, params, true) do
     socket
-    |> assign(:edited?, socket.assigns.edited? or edited?(params))
     |> assign(:autosave_params, params)
     |> assign(:save_state, :unsaved)
     |> reschedule_autosave_timer()
-  end
-
-  defp edited?(params) do
-    params["title"] != "Untitled post" or (params["body_markdown"] || "") != ""
   end
 
   defp reschedule_autosave_timer(socket) do

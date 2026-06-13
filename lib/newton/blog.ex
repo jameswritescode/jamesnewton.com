@@ -57,6 +57,19 @@ defmodule Newton.Blog do
   @doc "Build a post changeset for forms."
   def change_post(%Post{} = post, attrs \\ %{}), do: Post.changeset(post, attrs)
 
+  @doc "First free slug in the series untitled-post, untitled-post-2, …"
+  def next_untitled_slug do
+    taken =
+      Repo.all(from p in Post, where: like(p.slug, "untitled-post%"), select: p.slug)
+      |> MapSet.new()
+
+    Stream.iterate(1, &(&1 + 1))
+    |> Enum.find_value(fn n ->
+      slug = if n == 1, do: "untitled-post", else: "untitled-post-#{n}"
+      if slug not in taken, do: slug
+    end)
+  end
+
   @doc "Derive publish status from a `published_at` value (or nil)."
   def publish_status(nil), do: :draft
 

@@ -21,9 +21,14 @@ defmodule Newton.BlogTest do
     assert post.excerpt == "Custom excerpt"
   end
 
-  test "create_post requires slug, title, body_markdown" do
+  test "create_post requires slug and title" do
     {:error, changeset} = Blog.create_post(%{})
-    assert %{slug: _, title: _, body_markdown: _} = errors_on(changeset)
+    assert %{slug: _, title: _} = errors_on(changeset)
+  end
+
+  test "a post can be created without a body" do
+    assert {:ok, post} = Blog.create_post(%{title: "Empty", slug: "empty", body_markdown: ""})
+    assert post.body_markdown == ""
   end
 
   test "slug must be unique" do

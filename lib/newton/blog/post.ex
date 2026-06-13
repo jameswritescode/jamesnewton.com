@@ -19,9 +19,20 @@ defmodule Newton.Blog.Post do
   def changeset(post, attrs) do
     post
     |> cast(attrs, [:slug, :title, :excerpt, :body_markdown, :published_at])
-    |> validate_required([:slug, :title, :body_markdown])
+    |> ensure_body()
+    |> validate_required([:slug, :title])
     |> unique_constraint(:slug)
     |> render_derived_fields()
+  end
+
+  # The body column is non-null and `cast` nils out empty strings, so a bodyless
+  # draft would violate the constraint. Coerce a missing body to "".
+  defp ensure_body(changeset) do
+    if is_nil(get_field(changeset, :body_markdown)) do
+      put_change(changeset, :body_markdown, "")
+    else
+      changeset
+    end
   end
 
   @doc "Force re-render of derived fields (body_html, excerpt, reading_time) from existing body_markdown."

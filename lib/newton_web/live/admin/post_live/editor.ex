@@ -94,6 +94,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     save(socket, socket.assigns.post, params)
   end
 
+  def handle_event("autosave_now", _params, socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+    send(self(), :autosave)
+    {:noreply, assign(socket, :autosave_timer, nil)}
+  end
+
   def handle_event("toggle_drawer", _params, socket) do
     {:noreply, assign(socket, :drawer_open, !socket.assigns.drawer_open)}
   end
@@ -231,6 +237,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           field={@form[:title]}
           type="text"
           placeholder="Title"
+          phx-blur="autosave_now"
           class="mb-2 w-full border-none bg-transparent text-2xl font-semibold text-(--admin-text) focus:outline-none"
         />
 
@@ -238,6 +245,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           field={@form[:slug]}
           type="text"
           placeholder="slug"
+          phx-blur="autosave_now"
           class="mb-4 w-full border-none bg-transparent font-mono text-[0.8rem] text-(--admin-text-subtle) focus:outline-none"
         />
 

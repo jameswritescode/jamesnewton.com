@@ -276,4 +276,15 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     _ = :sys.get_state(view.pid)
     refute render(view) =~ "Unsaved changes"
   end
+
+  test "blurring a field flushes the pending auto-save", %{conn: conn} do
+    {:ok, post} = Newton.Blog.create_post(%{title: "D", slug: "blur-draft", body_markdown: "a"})
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    view |> form("#post-form", post: %{body_markdown: "blurred body"}) |> render_change()
+    view |> element("#post_title") |> render_blur()
+    _ = :sys.get_state(view.pid)
+
+    assert Newton.Blog.get_post!(post.id).body_html =~ "blurred body"
+  end
 end

@@ -9,6 +9,17 @@ defmodule NewtonWeb.Admin.PostLive.Index do
   end
 
   @impl true
+  def handle_event("new_post", _params, socket) do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        "title" => "Untitled post",
+        "slug" => Newton.Blog.next_untitled_slug(),
+        "body_markdown" => ""
+      })
+
+    {:noreply, push_navigate(socket, to: ~p"/admin/posts/#{post.id}/edit?new=1")}
+  end
+
   def handle_event("delete", %{"id" => id}, socket) do
     post = Newton.Blog.get_post!(id)
     {:ok, _} = Newton.Blog.delete_post(post)
@@ -21,12 +32,13 @@ defmodule NewtonWeb.Admin.PostLive.Index do
     <Layouts.admin flash={@flash} current={:posts}>
       <div class="mb-6 flex items-center justify-between">
         <h1 class="text-[1.35rem] font-semibold tracking-tight">Posts</h1>
-        <.link
-          navigate={~p"/admin/posts/new"}
-          class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white no-underline hover:bg-(--admin-accent-hover)"
+        <button
+          type="button"
+          phx-click="new_post"
+          class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white hover:bg-(--admin-accent-hover)"
         >
           New post
-        </.link>
+        </button>
       </div>
 
       <div

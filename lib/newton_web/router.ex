@@ -36,7 +36,6 @@ defmodule NewtonWeb.Router do
       root_layout: {NewtonWeb.Layouts, :admin_root} do
       live "/", DashboardLive, :index
       live "/posts", PostLive.Index, :index
-      live "/posts/new", PostLive.Editor, :new
       live "/posts/:id/edit", PostLive.Editor, :edit
       live "/reading", ReadingLive.Index, :index
       live "/reading/new", ReadingLive.Index, :new

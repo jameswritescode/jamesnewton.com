@@ -8,8 +8,18 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     %{conn: log_in_user(conn, user_fixture())}
   end
 
+  defp open_draft(conn, attrs \\ %{}) do
+    {:ok, post} =
+      Newton.Blog.create_post(
+        Enum.into(attrs, %{title: "Untitled post", slug: "untitled-post", body_markdown: ""})
+      )
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    {view, post}
+  end
+
   test "Escape closes the publish drawer", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    {view, _post} = open_draft(conn)
 
     view |> element("button", "Settings") |> render_click()
     assert has_element?(view, "#publish-drawer")
@@ -19,7 +29,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   end
 
   test "the publish drawer closes on click-away", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    {view, _post} = open_draft(conn)
 
     view |> element("button", "Settings") |> render_click()
     assert has_element?(view, "#publish-drawer[phx-click-away]")
@@ -28,8 +38,8 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     refute has_element?(view, "#publish-drawer")
   end
 
-  test "creates a post and stays in the editor on its edit URL", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+  test "editing a draft persists on submit", %{conn: conn} do
+    {view, _post} = open_draft(conn)
 
     view
     |> form("#post-form",
@@ -38,26 +48,26 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     |> render_submit()
 
     post = Newton.Blog.get_post_by_slug!("hello-admin")
-    assert_patch(view, ~p"/admin/posts/#{post.id}/edit")
     assert post.body_html =~ "Body text."
+    assert Newton.Blog.publish_status(post.published_at) == :draft
   end
 
-  test "auto-fills the slug from the title while the slug is blank", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+  test "the slug follows the title", %{conn: conn} do
+    {view, _post} = open_draft(conn)
 
     html =
       view
-      |> form("#post-form", post: %{title: "My First Post!", slug: "", body_markdown: "x"})
+      |> form("#post-form", post: %{title: "My First Post!", slug: "untitled-post"})
       |> render_change()
 
     assert html =~ ~s(value="my-first-post")
   end
 
   test "slug keeps following the full title across keystrokes", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    {view, _post} = open_draft(conn)
 
-    # First keystroke: slug becomes "h".
-    view |> form("#post-form", post: %{title: "h", slug: ""}) |> render_change()
+    # First keystroke: slug derives "h" (the field carries the seeded slug).
+    view |> form("#post-form", post: %{title: "h", slug: "untitled-post"}) |> render_change()
 
     # Later keystroke sends the slug rendered so far ("h"); it must re-derive
     # from the full title rather than freezing at "h".
@@ -66,9 +76,9 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   end
 
   test "a manual slug edit stops the slug from following the title", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    {view, _post} = open_draft(conn)
 
-    view |> form("#post-form", post: %{title: "hello", slug: ""}) |> render_change()
+    view |> form("#post-form", post: %{title: "hello", slug: "untitled-post"}) |> render_change()
     # User types a custom slug (differs from the auto value).
     view |> form("#post-form", post: %{title: "hello", slug: "custom"}) |> render_change()
     # Changing the title no longer touches the slug.
@@ -79,7 +89,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   end
 
   test "excerpt follows the body until the author edits it", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    {view, _post} = open_draft(conn)
 
     html =
       view
@@ -109,7 +119,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   end
 
   test "shows validation errors on invalid submit", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    {view, _post} = open_draft(conn)
 
     html =
       view
@@ -136,7 +146,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   end
 
   test "publish-now sets the post to published on save", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    {view, _post} = open_draft(conn)
 
     view |> element("button", "Settings") |> render_click()
     view |> element("#publish-drawer button", "Publish now") |> render_click()

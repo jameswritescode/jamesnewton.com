@@ -9,7 +9,14 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :drawer_open, false)}
+    {:ok,
+     socket
+     |> assign(:drawer_open, false)
+     |> assign(:autocreated?, false)
+     |> assign(:edited?, false)
+     |> assign(:save_state, :saved)
+     |> assign(:autosave_params, nil)
+     |> assign(:autosave_timer, nil)}
   end
 
   @impl true
@@ -17,24 +24,11 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :new, _params) do
-    post = %Post{}
-
-    socket
-    |> assign(:page_title, "New post")
-    |> assign(:post, post)
-    |> assign(:published_at, nil)
-    |> assign(:slug_locked, false)
-    |> assign(:slug_auto, "")
-    |> assign(:excerpt_locked, false)
-    |> assign(:excerpt_auto, "")
-    |> assign(:form, to_form(Blog.change_post(post)))
-  end
-
-  defp apply_action(socket, :edit, %{"id" => id}) do
+  defp apply_action(socket, :edit, %{"id" => id} = params) do
     post = Blog.get_post!(id)
 
     socket
+    |> assign(:autocreated?, socket.assigns.autocreated? or params["new"] == "1")
     |> assign(:page_title, "Edit post")
     |> assign(:post, post)
     |> assign(:published_at, post.published_at)
@@ -42,6 +36,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:slug_auto, post.slug)
     |> assign(:excerpt_locked, excerpt_locked?(post))
     |> assign(:excerpt_auto, post.excerpt || "")
+    |> assign(:edited?, false)
+    |> assign(:save_state, :saved)
+    |> assign(:autosave_params, nil)
     |> assign(:form, to_form(Blog.change_post(post)))
   end
 
@@ -119,37 +116,15 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> push_navigate(to: ~p"/admin/posts")}
   end
 
-  # A persisted post publishes/unpublishes immediately. A new post has no record
-  # yet, so the choice is staged and applied when it's first saved. Content edits
-  # in the form are left untouched — publish only toggles publication state.
+  # Publishing toggles publication state on the saved post; content edits in the
+  # form are left untouched.
   defp set_published(socket, published_at) do
-    case socket.assigns.post do
-      %Post{id: nil} ->
-        assign(socket, :published_at, published_at)
+    {:ok, post} = Blog.update_post(socket.assigns.post, %{"published_at" => published_at})
 
-      post ->
-        {:ok, post} = Blog.update_post(post, %{"published_at" => published_at})
-
-        socket
-        |> assign(:post, post)
-        |> assign(:published_at, post.published_at)
-        |> put_flash(:info, if(post.published_at, do: "Post published", else: "Moved to draft"))
-    end
-  end
-
-  defp save(socket, %Post{id: nil}, params) do
-    case Blog.create_post(params) do
-      {:ok, post} ->
-        # Stay in the editor: patch to the new post's edit URL so subsequent
-        # saves update it and a refresh works.
-        {:noreply,
-         socket
-         |> put_flash(:info, "Post created")
-         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
-    end
+    socket
+    |> assign(:post, post)
+    |> assign(:published_at, post.published_at)
+    |> put_flash(:info, if(post.published_at, do: "Post published", else: "Moved to draft"))
   end
 
   defp save(socket, %Post{} = post, params) do

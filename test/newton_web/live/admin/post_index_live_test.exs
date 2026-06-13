@@ -15,16 +15,28 @@ defmodule NewtonWeb.Admin.PostIndexLiveTest do
     post
   end
 
-  test "lists posts with a status label and a new-post link", %{conn: conn} do
+  test "lists posts with a status label", %{conn: conn} do
     post_fixture(%{title: "Published", slug: "pub", published_at: ~U[2026-01-01 00:00:00Z]})
     post_fixture(%{title: "Draft", slug: "draft", published_at: nil})
 
     {:ok, view, _html} = live(conn, ~p"/admin/posts")
 
     assert has_element?(view, "#posts")
-    assert has_element?(view, "a", "New post")
     assert render(view) =~ "Published"
     assert render(view) =~ "Draft"
+  end
+
+  test "New post creates a draft and opens the editor", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts")
+
+    {:error, {:live_redirect, %{to: path}}} =
+      view |> element("button", "New post") |> render_click()
+
+    assert path =~ ~r{^/admin/posts/\d+/edit\?new=1$}
+
+    [draft] = Newton.Blog.list_posts()
+    assert draft.title == "Untitled post"
+    assert Newton.Blog.publish_status(draft.published_at) == :draft
   end
 
   test "deletes a post from the list", %{conn: conn} do

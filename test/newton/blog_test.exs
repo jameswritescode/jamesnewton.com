@@ -33,9 +33,15 @@ defmodule Newton.BlogTest do
 
   test "next_untitled_slug returns the first free untitled slug" do
     assert Blog.next_untitled_slug() == "untitled-post"
-    {:ok, _} = Blog.create_post(%{title: "Untitled post", slug: "untitled-post", body_markdown: ""})
+
+    {:ok, _} =
+      Blog.create_post(%{title: "Untitled post", slug: "untitled-post", body_markdown: ""})
+
     assert Blog.next_untitled_slug() == "untitled-post-2"
-    {:ok, _} = Blog.create_post(%{title: "Untitled post", slug: "untitled-post-2", body_markdown: ""})
+
+    {:ok, _} =
+      Blog.create_post(%{title: "Untitled post", slug: "untitled-post-2", body_markdown: ""})
+
     assert Blog.next_untitled_slug() == "untitled-post-3"
   end
 

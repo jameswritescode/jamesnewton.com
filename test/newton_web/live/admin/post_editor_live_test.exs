@@ -287,4 +287,32 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     assert Newton.Blog.get_post!(post.id).body_html =~ "blurred body"
   end
+
+  test "an untouched new draft is discarded when the editor closes", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{title: "Untitled post", slug: "untitled-post", body_markdown: ""})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit?new=1")
+
+    ref = Process.monitor(view.pid)
+    GenServer.stop(view.pid)
+    assert_receive {:DOWN, ^ref, :process, _, _}
+
+    assert_raise Ecto.NoResultsError, fn -> Newton.Blog.get_post!(post.id) end
+  end
+
+  test "an edited new draft survives when the editor closes", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{title: "Untitled post", slug: "untitled-post", body_markdown: ""})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit?new=1")
+
+    view |> form("#post-form", post: %{title: "Real title"}) |> render_change()
+
+    ref = Process.monitor(view.pid)
+    GenServer.stop(view.pid)
+    assert_receive {:DOWN, ^ref, :process, _, _}
+
+    assert Newton.Blog.get_post!(post.id).id == post.id
+  end
 end

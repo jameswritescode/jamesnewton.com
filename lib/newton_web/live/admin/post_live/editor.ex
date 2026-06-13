@@ -126,6 +126,24 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   @impl true
+  def terminate(_reason, socket) do
+    discard_untouched_draft(socket.assigns)
+    :ok
+  end
+
+  defp discard_untouched_draft(%{
+         autocreated?: true,
+         edited?: false,
+         published_at: nil,
+         post: %Post{id: id} = post
+       })
+       when not is_nil(id) do
+    Blog.delete_post(post)
+  end
+
+  defp discard_untouched_draft(_assigns), do: :ok
+
+  @impl true
   def handle_info(:autosave, socket) do
     draft? = is_nil(socket.assigns.published_at)
 

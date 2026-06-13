@@ -227,4 +227,53 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     assert_raise Ecto.NoResultsError, fn -> Newton.Blog.get_post!(post.id) end
   end
+
+  test "editing a draft auto-saves without a manual save", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{title: "Draft", slug: "auto-draft", body_markdown: "old"})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    view
+    |> form("#post-form", post: %{title: "Draft", slug: "auto-draft", body_markdown: "new body"})
+    |> render_change()
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    assert Newton.Blog.get_post!(post.id).body_html =~ "new body"
+  end
+
+  test "a published post is not auto-saved", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "live-auto",
+        body_markdown: "original",
+        published_at: ~U[2026-01-01 00:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    view
+    |> form("#post-form", post: %{title: "Live", slug: "live-auto", body_markdown: "changed"})
+    |> render_change()
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    refute Newton.Blog.get_post!(post.id).body_html =~ "changed"
+  end
+
+  test "the editor shows unsaved then saved state for a draft", %{conn: conn} do
+    {:ok, post} = Newton.Blog.create_post(%{title: "D", slug: "state-draft", body_markdown: "a"})
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    html = view |> form("#post-form", post: %{body_markdown: "b"}) |> render_change()
+    assert html =~ "Unsaved changes"
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+    refute render(view) =~ "Unsaved changes"
+  end
 end

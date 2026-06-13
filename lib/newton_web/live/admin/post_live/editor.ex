@@ -7,6 +7,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.Layouts
 
+  @autosave_debounce_ms 1500
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
@@ -83,7 +85,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> assign(:slug_locked, slug_locked)
      |> assign(:slug_auto, slug_auto)
      |> assign(:excerpt_locked, excerpt_locked)
-     |> assign(:excerpt_auto, excerpt_auto)}
+     |> assign(:excerpt_auto, excerpt_auto)
+     |> maybe_schedule_autosave(params, not published?)}
   end
 
   def handle_event("save", %{"post" => params}, socket) do
@@ -116,6 +119,51 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> push_navigate(to: ~p"/admin/posts")}
   end
 
+  @impl true
+  def handle_info(:autosave, socket) do
+    draft? = is_nil(socket.assigns.published_at)
+
+    if draft? and socket.assigns.autosave_params do
+      case Blog.update_post(socket.assigns.post, socket.assigns.autosave_params) do
+        {:ok, post} ->
+          {:noreply,
+           socket
+           |> assign(:post, post)
+           |> assign(:autosave_params, nil)
+           |> assign(:autosave_timer, nil)
+           |> assign(:save_state, :saved)}
+
+        {:error, _changeset} ->
+          {:noreply, assign(socket, :save_state, :error)}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp maybe_schedule_autosave(socket, _params, false), do: socket
+
+  defp maybe_schedule_autosave(socket, params, true) do
+    socket
+    |> assign(:edited?, socket.assigns.edited? or edited?(params))
+    |> assign(:autosave_params, params)
+    |> assign(:save_state, :unsaved)
+    |> reschedule_autosave_timer()
+  end
+
+  defp edited?(params) do
+    params["title"] != "Untitled post" or (params["body_markdown"] || "") != ""
+  end
+
+  defp reschedule_autosave_timer(socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+    assign(socket, :autosave_timer, Process.send_after(self(), :autosave, @autosave_debounce_ms))
+  end
+
+  defp save_state_label(:unsaved), do: "Unsaved changes…"
+  defp save_state_label(:error), do: "Couldn't save"
+  defp save_state_label(_), do: "Saved"
+
   # Publishing toggles publication state on the saved post; content edits in the
   # form are left untouched.
   defp set_published(socket, published_at) do
@@ -135,7 +183,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
          |> put_flash(:info, "Post saved")
          |> assign(:post, post)
          |> assign(:published_at, post.published_at)
-         |> assign(:form, to_form(Blog.change_post(post)))}
+         |> assign(:form, to_form(Blog.change_post(post)))
+         |> assign(:save_state, :saved)
+         |> assign(:autosave_params, nil)}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -155,6 +205,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             ← Posts
           </.link>
           <div class="flex-1"></div>
+          <span
+            :if={Blog.publish_status(@published_at) == :draft}
+            class="text-[0.78rem] text-(--admin-text-subtle)"
+          >
+            {save_state_label(@save_state)}
+          </span>
           <Layouts.status_badge status={Blog.publish_status(@published_at)} />
           <button
             type="button"

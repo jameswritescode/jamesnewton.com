@@ -1,0 +1,29 @@
+app = "jamesnewton-com"
+primary_region = "lax"
+
+[build]
+
+[env]
+  PHX_HOST = "jamesnewton-com.fly.dev"
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[mounts]]
+  source = "media"
+  destination = "/data/images"
+  auto_extend_size_threshold = 80
+  auto_extend_size_increment = "1GB"
+  auto_extend_size_limit = "10GB"
+
+[deploy]
+  release_command = "/app/bin/migrate"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

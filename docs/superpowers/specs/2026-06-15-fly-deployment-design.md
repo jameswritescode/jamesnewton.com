@@ -84,7 +84,13 @@ image small and is the standard Phoenix prod pattern.
    - `[http_service]` → `internal_port = 8080`, `force_https = true`,
      `auto_stop_machines = "stop"`, `auto_start_machines = true`,
      `min_machines_running = 1`.
-   - `[[mounts]]` → `source = "media"`, `destination = "/data/images"`.
+   - `[[mounts]]` → `source = "media"`, `destination = "/data/images"`, plus
+     **auto-extend**: `auto_extend_size_threshold = 80`,
+     `auto_extend_size_increment = "1GB"`, `auto_extend_size_limit = "10GB"`
+     (increment + limit are both required for auto-extend to work). The volume
+     grows itself by 1GB whenever it passes 80% full, up to a 10GB cap — so we
+     start small (1GB) without guessing. Volumes only grow, never shrink, so the
+     limit is the cost ceiling.
    - `[deploy]` → `release_command = "/app/bin/migrate"`.
 
 ### Verification of the app side (no changes expected)
@@ -103,8 +109,9 @@ These require authenticated `flyctl` and touch the account, so the user runs the
 (inline with `! fly …` so output returns, or independently).
 
 1. **Create the app (no deploy):** `fly apps create jamesnewton-com`.
-2. **Create the media volume in LAX:**
-   `fly volumes create media --region lax --size 1 -a jamesnewton-com`.
+2. **Create the media volume in LAX (1GB start; auto-extends per `fly.toml`):**
+   `fly volumes create media --region lax --size 1 -a jamesnewton-com`. (It can
+   also be grown manually anytime with `fly volume extend <id> -s <gb>`.)
 3. **Dedicated db + user on the existing MPG cluster:**
    - `fly mpg databases create` → create `newton`.
    - `fly mpg users create` → create an app user scoped to `newton`.
@@ -131,7 +138,8 @@ then set `PHX_HOST = "jamesnewton.com"` in `fly.toml` and redeploy.
 
 - **Volume = single machine:** durability relies on Fly volume snapshots, not
   replication; no horizontal scale. Acceptable for a single-admin blog; revisit
-  with object storage if needed.
+  with object storage if needed. The volume **auto-extends** (1GB → 10GB cap) so
+  it won't fill silently; it only grows, never shrinks.
 - **Release command failure** (e.g. a bad migration) aborts the deploy before the
   new version goes live — old machine keeps serving.
 - **Missing secrets** (`SECRET_KEY_BASE`/`DATABASE_URL`): `runtime.exs` raises at

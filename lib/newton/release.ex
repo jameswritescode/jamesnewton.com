@@ -31,13 +31,23 @@ defmodule Newton.Release do
   @doc """
   Create the single confirmed admin account with email + password.
   Returns `{:ok, user}` or `{:error, changeset}`.
+
+  Starts the repo itself (via `with_repo`) so it works under `bin/newton eval`,
+  which boots a minimal node that does not start the application.
   """
   def create_admin(email, password) do
-    %User{}
-    |> User.email_changeset(%{email: email})
-    |> User.password_changeset(%{password: password})
-    |> User.confirm_changeset()
-    |> Repo.insert()
+    load_app()
+
+    {:ok, result, _} =
+      Ecto.Migrator.with_repo(Repo, fn _repo ->
+        %User{}
+        |> User.email_changeset(%{email: email})
+        |> User.password_changeset(%{password: password})
+        |> User.confirm_changeset()
+        |> Repo.insert()
+      end)
+
+    result
   end
 
   defp repos do

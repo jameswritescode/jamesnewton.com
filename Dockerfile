@@ -25,6 +25,17 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends build-essential git \
   && rm -rf /var/lib/apt/lists/*
 
+# Node + pnpm: esbuild bundles the JS (admin.js imports CodeMirror from
+# assets/node_modules), so the npm deps must be installed before assets.deploy.
+# Node is only needed at build time; the runtime image has no Node.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl ca-certificates \
+  && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+  && apt-get install -y --no-install-recommends nodejs \
+  && corepack enable \
+  && corepack prepare pnpm@11.5.2 --activate \
+  && rm -rf /var/lib/apt/lists/*
+
 # prepare build dir
 WORKDIR /app
 
@@ -56,6 +67,9 @@ COPY lib lib
 RUN mix compile
 
 COPY assets assets
+
+# install JS deps (CodeMirror, etc.) so esbuild can resolve them
+RUN cd assets && pnpm install --frozen-lockfile
 
 # compile assets
 RUN mix assets.deploy

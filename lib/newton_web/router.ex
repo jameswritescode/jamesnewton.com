@@ -10,6 +10,7 @@ defmodule NewtonWeb.Router do
     plug :put_root_layout, html: {NewtonWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug NewtonWeb.ContentSecurityPolicy
     plug :fetch_current_scope_for_user
   end
 

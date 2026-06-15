@@ -14,7 +14,7 @@
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/admin.js"}>
     </script>
-    <script>
+    <script nonce={@csp_nonce}>
       // Apply the admin theme before first paint to avoid a flash.
       (() => {
         try {

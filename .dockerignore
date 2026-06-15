@@ -27,9 +27,13 @@
 # Common development/test artifacts
 /cover/
 /doc/
+/docs/
 /test/
 /tmp/
 .elixir_ls
+
+# Local-only dev tooling (not needed in the image)
+/assets/screenshot.mjs
 
 # Mix artifacts
 /_build/

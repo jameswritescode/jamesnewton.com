@@ -10,7 +10,7 @@ defmodule Newton.Gallery do
 
   def add_photo(%PhotoGroup{id: group_id}, attrs) do
     attrs = Map.put(attrs, :photo_group_id, group_id)
-    %Photo{} |> Photo.changeset(attrs) |> Repo.insert()
+    %Photo{} |> Photo.create_changeset(attrs) |> Repo.insert()
   end
 
   def get_group!(id) do

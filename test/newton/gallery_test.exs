@@ -74,6 +74,27 @@ defmodule Newton.GalleryTest do
     assert %Ecto.Changeset{} = Gallery.change_photo(photo)
   end
 
+  test "update_photo only changes alt, ignoring server-owned fields" do
+    group = group_fixture()
+    other = group_fixture()
+    photo = photo_fixture(group, %{image_key: "orig.jpg", position: 0, alt: "old"})
+
+    {:ok, updated} =
+      Gallery.update_photo(photo, %{
+        "alt" => "new alt",
+        "image_key" => "../../etc/passwd",
+        "photo_group_id" => other.id,
+        "position" => 99,
+        "width" => 1,
+        "height" => 1
+      })
+
+    assert updated.alt == "new alt"
+    assert updated.image_key == "orig.jpg"
+    assert updated.photo_group_id == group.id
+    assert updated.position == 0
+  end
+
   test "next_position/1 returns max position + 1, or 0 when empty" do
     group = group_fixture()
     assert Gallery.next_position(group) == 0

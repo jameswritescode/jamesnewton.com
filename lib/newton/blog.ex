@@ -54,7 +54,16 @@ defmodule Newton.Blog do
     Repo.one!(from p in published_query(), where: p.slug == ^slug)
   end
 
-  def list_posts, do: Repo.all(from p in Post, order_by: [desc: p.published_at])
+  @doc "Admin post list, optionally filtered by status, newest-first."
+  def list_posts(filter \\ :all) do
+    from(p in Post, order_by: [desc: coalesce(p.published_at, p.inserted_at)])
+    |> filter_posts(filter)
+    |> Repo.all()
+  end
+
+  defp filter_posts(query, :drafts), do: from(p in query, where: is_nil(p.published_at))
+  defp filter_posts(query, :published), do: from(p in query, where: not is_nil(p.published_at))
+  defp filter_posts(query, _all), do: query
 
   @doc "Fetch any post by id (admin), regardless of publish status."
   def get_post!(id), do: Repo.get!(Post, id)

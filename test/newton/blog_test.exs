@@ -71,6 +71,23 @@ defmodule Newton.BlogTest do
     assert Blog.next_untitled_slug() == "untitled-post-3"
   end
 
+  test "list_posts/1 filters by status and sorts newest-first across drafts and published" do
+    {:ok, _pub_old} =
+      Blog.create_post(%{@valid | slug: "pub-old", published_at: ~U[2026-01-01 00:00:00Z]})
+
+    {:ok, _pub_new} =
+      Blog.create_post(%{@valid | slug: "pub-new", published_at: ~U[2026-03-01 00:00:00Z]})
+
+    {:ok, draft} = Blog.create_post(%{@valid | slug: "a-draft", published_at: nil})
+
+    all = Blog.list_posts(:all) |> Enum.map(& &1.slug)
+    assert all == ["a-draft", "pub-new", "pub-old"]
+
+    assert Blog.list_posts(:drafts) |> Enum.map(& &1.slug) == ["a-draft"]
+    assert Blog.list_posts(:published) |> Enum.map(& &1.slug) == ["pub-new", "pub-old"]
+    assert Blog.list_posts() |> Enum.map(& &1.id) |> Enum.member?(draft.id)
+  end
+
   test "slug must be unique" do
     {:ok, _} = Blog.create_post(@valid)
     {:error, changeset} = Blog.create_post(@valid)

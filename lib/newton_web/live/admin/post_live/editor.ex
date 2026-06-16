@@ -98,7 +98,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> assign(:slug_auto, slug_auto)
      |> assign(:excerpt_locked, excerpt_locked)
      |> assign(:excerpt_auto, excerpt_auto)
-     |> maybe_schedule_autosave(params, not published?)}
+     |> track_save_state(params, published?)}
   end
 
   def handle_event("save", %{"post" => params}, socket) do
@@ -203,7 +203,19 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     end
   end
 
-  defp maybe_schedule_autosave(socket, _params, false), do: socket
+  defp track_save_state(socket, params, false), do: maybe_schedule_autosave(socket, params, true)
+
+  defp track_save_state(socket, params, true) do
+    state = if dirty?(socket.assigns.post, params), do: :unsaved, else: :saved
+    assign(socket, :save_state, state)
+  end
+
+  defp dirty?(post, params) do
+    params["title"] != post.title or
+      params["slug"] != post.slug or
+      (params["body_markdown"] || "") != (post.body_markdown || "") or
+      (params["excerpt"] || "") != (post.excerpt || "")
+  end
 
   defp maybe_schedule_autosave(socket, params, true) do
     socket
@@ -267,6 +279,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     ~H"""
     <Layouts.admin flash={@flash} current={:posts}>
       <.form for={@form} id="post-form" phx-submit="save" phx-change="validate">
+        <div
+          id="unsaved-guard"
+          phx-hook="UnsavedGuard"
+          data-unsaved={to_string(@save_state == :unsaved and not is_nil(@published_at))}
+        >
+        </div>
         <div class="mb-4 flex flex-wrap items-center gap-3">
           <.link
             navigate={~p"/admin/posts"}
@@ -276,7 +294,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           </.link>
           <div class="flex-1"></div>
           <span
-            :if={Blog.publish_status(@published_at) == :draft}
+            :if={Blog.publish_status(@published_at) == :draft or @save_state != :saved}
             class="text-[0.78rem] text-(--admin-text-subtle)"
           >
             {save_state_label(@save_state)}

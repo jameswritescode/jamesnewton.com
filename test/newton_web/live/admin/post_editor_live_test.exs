@@ -363,4 +363,90 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     assert Newton.Blog.get_post!(post.id).body_html =~ "blurred body"
   end
+
+  test "editing a published post flags unsaved changes and the leave guard", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "guard-live",
+        body_markdown: "body",
+        published_at: ~U[2026-01-01 12:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    assert has_element?(view, "#unsaved-guard[data-unsaved='false']")
+
+    view
+    |> form("#post-form",
+      post: %{title: "Live Edited", slug: "guard-live", body_markdown: "body"}
+    )
+    |> render_change()
+
+    assert render(view) =~ "Unsaved changes"
+    assert has_element?(view, "#unsaved-guard[data-unsaved='true']")
+  end
+
+  test "saving a published post clears the unsaved flag", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "guard-save",
+        body_markdown: "body",
+        published_at: ~U[2026-01-01 12:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    view
+    |> form("#post-form",
+      post: %{title: "Live Edited", slug: "guard-save", body_markdown: "body"}
+    )
+    |> render_change()
+
+    view
+    |> form("#post-form",
+      post: %{title: "Live Edited", slug: "guard-save", body_markdown: "body"}
+    )
+    |> render_submit()
+
+    assert has_element?(view, "#unsaved-guard[data-unsaved='false']")
+    refute render(view) =~ "Unsaved changes"
+
+    # The saved values are the new baseline: re-submitting them is not dirty.
+    view
+    |> form("#post-form",
+      post: %{title: "Live Edited", slug: "guard-save", body_markdown: "body"}
+    )
+    |> render_change()
+
+    assert has_element?(view, "#unsaved-guard[data-unsaved='false']")
+  end
+
+  test "re-typing the saved values leaves a published post not dirty", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "guard-same",
+        body_markdown: "body",
+        published_at: ~U[2026-01-01 12:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    view
+    |> form("#post-form", post: %{title: "Live", slug: "guard-same", body_markdown: "body"})
+    |> render_change()
+
+    assert has_element?(view, "#unsaved-guard[data-unsaved='false']")
+  end
+
+  test "a draft never sets the unsaved leave guard", %{conn: conn} do
+    {view, _post} = open_draft(conn)
+
+    view
+    |> form("#post-form", post: %{title: "Typing a draft", slug: "typing-a-draft"})
+    |> render_change()
+
+    assert has_element?(view, "#unsaved-guard[data-unsaved='false']")
+  end
 end

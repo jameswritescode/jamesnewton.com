@@ -34,7 +34,7 @@ defmodule NewtonWeb.Admin.Components do
           time: 200
         )
       }
-      class="fixed inset-y-0 right-0 z-20 flex w-80 flex-col gap-4 overflow-y-auto border-l border-(--admin-border) bg-(--admin-sidebar) p-5 shadow-xl"
+      class="fixed inset-y-0 right-0 z-20 flex w-80 max-w-[calc(100vw-3rem)] flex-col gap-4 overflow-y-auto border-l border-(--admin-border) bg-(--admin-sidebar) p-5 shadow-xl"
     >
       <div class="flex items-center justify-between">
         <span class="text-[0.9rem] font-semibold">{render_slot(@title)}</span>

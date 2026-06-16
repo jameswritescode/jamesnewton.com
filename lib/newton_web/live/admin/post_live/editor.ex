@@ -267,7 +267,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     ~H"""
     <Layouts.admin flash={@flash} current={:posts}>
       <.form for={@form} id="post-form" phx-submit="save" phx-change="validate">
-        <div class="mb-4 flex items-center gap-3">
+        <div class="mb-4 flex flex-wrap items-center gap-3">
           <.link
             navigate={~p"/admin/posts"}
             class="text-[0.8rem] text-(--admin-text-subtle) no-underline hover:text-(--admin-text)"

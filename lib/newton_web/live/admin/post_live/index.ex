@@ -69,7 +69,7 @@ defmodule NewtonWeb.Admin.PostLive.Index do
             {post.title}
           </.link>
           <Layouts.status_badge status={Newton.Blog.publish_status(post.published_at)} />
-          <span class="w-28 text-right text-[0.78rem] text-(--admin-text-subtle)">
+          <span class="hidden w-28 text-right text-[0.78rem] text-(--admin-text-subtle) sm:block">
             {format_date(post.published_at)}
           </span>
           <button

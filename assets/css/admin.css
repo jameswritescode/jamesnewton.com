@@ -48,3 +48,18 @@
 #post_title {
   font-family: "Lora", Georgia, "Times New Roman", serif;
 }
+
+/* Mobile nav drawer open state. Tracked as a class on <html> (set by the
+   AdminNav hook) rather than on the sidebar itself, so a LiveView re-render
+   can't clobber it mid-interaction. Scoped below the `md` breakpoint (768px)
+   so it never affects the desktop rail or shows the backdrop on desktop. */
+@media (max-width: 767.98px) {
+  /* Override Tailwind's `-translate-x-full`, which sets the `translate`
+     property (not `transform`); `transition-transform` animates `translate`. */
+  .admin-nav-open #admin-sidebar {
+    translate: 0;
+  }
+  .admin-nav-open #admin-sidebar-backdrop {
+    display: block;
+  }
+}

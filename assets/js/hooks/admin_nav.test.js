@@ -19,39 +19,40 @@ function setup() {
   }
 }
 
-const isOpen = (sidebar, backdrop) =>
-  sidebar.classList.contains("translate-x-0") &&
-  !sidebar.classList.contains("-translate-x-full") &&
-  !backdrop.classList.contains("hidden")
+// Open state lives as a class on <html> (so LiveView re-renders can't clobber it).
+const isOpen = () => document.documentElement.classList.contains("admin-nav-open")
 
 describe("AdminNav hook", () => {
-  beforeEach(() => (document.body.innerHTML = ""))
+  beforeEach(() => {
+    document.body.innerHTML = ""
+    document.documentElement.classList.remove("admin-nav-open")
+  })
 
   it("opens the drawer when the toggle is clicked", () => {
-    const {toggle, sidebar, backdrop} = setup()
+    const {toggle} = setup()
     toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
-    expect(isOpen(sidebar, backdrop)).toBe(true)
+    expect(isOpen()).toBe(true)
   })
 
   it("closes on backdrop click", () => {
-    const {toggle, sidebar, backdrop} = setup()
+    const {toggle, backdrop} = setup()
     toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
     backdrop.dispatchEvent(new MouseEvent("click", {bubbles: true}))
-    expect(isOpen(sidebar, backdrop)).toBe(false)
+    expect(isOpen()).toBe(false)
   })
 
   it("closes on Escape", () => {
-    const {toggle, sidebar, backdrop} = setup()
+    const {toggle} = setup()
     toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
     document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape"}))
-    expect(isOpen(sidebar, backdrop)).toBe(false)
+    expect(isOpen()).toBe(false)
   })
 
   it("closes on navigation (phx:page-loading-start)", () => {
-    const {toggle, sidebar, backdrop} = setup()
+    const {toggle} = setup()
     toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
     window.dispatchEvent(new Event("phx:page-loading-start"))
-    expect(isOpen(sidebar, backdrop)).toBe(false)
+    expect(isOpen()).toBe(false)
     expect(toggle.getAttribute("aria-expanded")).toBe("false")
   })
 
@@ -73,13 +74,13 @@ describe("AdminNav hook", () => {
   })
 
   it("stops responding to events after destroyed()", () => {
-    const {hook, toggle, sidebar, backdrop} = setup()
+    const {hook, toggle} = setup()
     hook.destroyed()
     // toggle click should not open the drawer
     toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
-    expect(isOpen(sidebar, backdrop)).toBe(false)
-    // Escape should not close (drawer is already closed, but verify no error and no state change)
+    expect(isOpen()).toBe(false)
+    // Escape should not error or change state
     document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape"}))
-    expect(isOpen(sidebar, backdrop)).toBe(false)
+    expect(isOpen()).toBe(false)
   })
 })

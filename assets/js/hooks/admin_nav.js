@@ -1,17 +1,18 @@
 // Mobile admin navigation drawer. Below the `md` breakpoint the sidebar is an
 // off-canvas drawer; this hook (attached to the hamburger button) toggles it,
 // with a backdrop, Escape, and auto-close on LiveView navigation. Desktop is
-// unaffected — md: classes keep the sidebar visible regardless of these toggles.
+// unaffected — md: rules keep the sidebar visible regardless of this state.
+//
+// The open state is a class on <html>, which lives OUTSIDE the LiveView-managed
+// DOM, with the visuals driven by CSS (see assets/css/admin.css). Keeping it off
+// the sidebar element is deliberate: a LiveView re-render (e.g. closing the
+// editor's publish drawer via click-away) re-patches the sidebar's class
+// attribute and would otherwise wipe a client-toggled open class mid-interaction.
+
+const OPEN_CLASS = "admin-nav-open"
 
 function setOpen(open) {
-  const sidebar = document.getElementById("admin-sidebar")
-  const backdrop = document.getElementById("admin-sidebar-backdrop")
-  // Both elements are always rendered together by the admin layout, so a
-  // combined guard is intentional — if one is missing the other is too.
-  if (!sidebar || !backdrop) return
-  sidebar.classList.toggle("translate-x-0", open)
-  sidebar.classList.toggle("-translate-x-full", !open)
-  backdrop.classList.toggle("hidden", !open)
+  document.documentElement.classList.toggle(OPEN_CLASS, open)
 }
 
 export const AdminNav = {

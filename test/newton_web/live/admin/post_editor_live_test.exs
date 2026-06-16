@@ -187,6 +187,43 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert is_nil(Newton.Blog.get_post!(post.id).published_at)
   end
 
+  test "setting a past publish date backdates the post", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "backdate",
+        body_markdown: "b",
+        published_at: ~U[2026-06-01 12:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    view |> element("button", "Settings") |> render_click()
+
+    view |> element("#publish-date-form") |> render_change(%{"date" => "2020-03-15"})
+
+    updated = Newton.Blog.get_post!(post.id)
+    assert DateTime.to_date(updated.published_at) == ~D[2020-03-15]
+    assert Newton.Blog.publish_status(updated.published_at) == :published
+  end
+
+  test "setting a future publish date schedules the post", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "sched",
+        body_markdown: "b",
+        published_at: ~U[2026-06-01 12:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    view |> element("button", "Settings") |> render_click()
+
+    view |> element("#publish-date-form") |> render_change(%{"date" => "2999-01-01"})
+
+    updated = Newton.Blog.get_post!(post.id)
+    assert Newton.Blog.publish_status(updated.published_at) == :scheduled
+  end
+
   test "an already-published post hides Publish now and offers Move to draft", %{conn: conn} do
     {:ok, post} =
       Newton.Blog.create_post(%{

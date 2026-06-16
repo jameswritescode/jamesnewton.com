@@ -112,6 +112,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:noreply, set_published(socket, nil)}
   end
 
+  def handle_event("set_publish_date", %{"date" => date}, socket) do
+    case Date.from_iso8601(date) do
+      {:ok, date} -> {:noreply, set_published(socket, DateTime.new!(date, ~T[12:00:00]))}
+      _ -> {:noreply, socket}
+    end
+  end
+
   def handle_event("delete", _params, socket) do
     {:ok, _} = Blog.delete_post(socket.assigns.post)
 
@@ -267,6 +274,18 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           Status:
           <span class="font-medium text-(--admin-text)">{Blog.publish_status(@published_at)}</span>
         </div>
+
+        <form :if={@published_at} id="publish-date-form" phx-change="set_publish_date">
+          <label class="block text-[0.78rem] text-(--admin-text-muted)">
+            Publish date
+            <input
+              type="date"
+              name="date"
+              value={Date.to_iso8601(DateTime.to_date(@published_at))}
+              class="mt-1 w-full rounded-md border border-(--admin-border) bg-(--admin-surface) px-2 py-1 text-[0.8rem] text-(--admin-text) focus:outline-none"
+            />
+          </label>
+        </form>
 
         <div class="flex gap-2">
           <button

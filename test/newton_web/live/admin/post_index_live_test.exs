@@ -50,6 +50,37 @@ defmodule NewtonWeb.Admin.PostIndexLiveTest do
     assert Enum.any?(Newton.Blog.list_posts(), &(&1.id == real.id))
   end
 
+  test "the drafts filter shows only drafts", %{conn: conn} do
+    post_fixture(%{title: "Live Article", slug: "pub", published_at: ~U[2026-01-01 00:00:00Z]})
+    post_fixture(%{title: "Work In Progress", slug: "draftee", published_at: nil})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts?filter=drafts")
+
+    assert has_element?(view, "#posts", "Work In Progress")
+    refute has_element?(view, "#posts", "Live Article")
+  end
+
+  test "the published filter shows only published", %{conn: conn} do
+    post_fixture(%{title: "Live Article", slug: "pub", published_at: ~U[2026-01-01 00:00:00Z]})
+    post_fixture(%{title: "Work In Progress", slug: "draftee", published_at: nil})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts?filter=published")
+
+    assert has_element?(view, "#posts", "Live Article")
+    refute has_element?(view, "#posts", "Work In Progress")
+  end
+
+  test "switching filters re-streams the list", %{conn: conn} do
+    post_fixture(%{title: "Live Article", slug: "pub", published_at: ~U[2026-01-01 00:00:00Z]})
+    post_fixture(%{title: "Work In Progress", slug: "draftee", published_at: nil})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts")
+    view |> element(~s(a[href="/admin/posts?filter=drafts"])) |> render_click()
+
+    assert has_element?(view, "#posts", "Work In Progress")
+    refute has_element?(view, "#posts", "Live Article")
+  end
+
   test "deletes a post from the list", %{conn: conn} do
     post = post_fixture(%{title: "Doomed", slug: "doomed"})
 

@@ -48,7 +48,7 @@ defmodule NewtonWeb.Admin.Layouts do
           <button
             id="admin-theme-toggle"
             type="button"
-            class="flex w-full items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+            class="flex w-full cursor-pointer items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
             phx-hook="AdminTheme"
             aria-label="Toggle light or dark theme"
           >
@@ -84,7 +84,7 @@ defmodule NewtonWeb.Admin.Layouts do
             aria-label="Open menu"
             aria-controls="admin-sidebar"
             aria-expanded="false"
-            class="rounded-md p-1 text-(--admin-text-muted) hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+            class="flex cursor-pointer items-center justify-center rounded-md p-1 text-(--admin-text-muted) hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
           >
             <.icon name="hero-bars-3" class="size-5" />
           </button>
@@ -95,7 +95,7 @@ defmodule NewtonWeb.Admin.Layouts do
           <button
             id="admin-theme-toggle-mobile"
             type="button"
-            class="rounded-md p-1 text-(--admin-text-muted) hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+            class="flex cursor-pointer items-center justify-center rounded-md p-1 text-(--admin-text-muted) hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
             phx-hook="AdminTheme"
             aria-label="Toggle light or dark theme"
           >

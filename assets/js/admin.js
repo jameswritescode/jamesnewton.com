@@ -8,6 +8,7 @@ import {hooks as colocatedHooks} from "phoenix-colocated/newton"
 import topbar from "../vendor/topbar"
 import {AdminTheme} from "./hooks/admin_theme"
 import {AdminNav} from "./hooks/admin_nav"
+import {UnsavedGuard} from "./hooks/unsaved_guard"
 import {MarkdownEditor} from "./hooks/markdown_editor"
 import {ImageDimensions} from "./hooks/image_dimensions"
 import {SortableGrid} from "./hooks/sortable_grid"
@@ -16,7 +17,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AdminTheme, AdminNav, MarkdownEditor, ImageDimensions, SortableGrid},
+  hooks: {...colocatedHooks, AdminTheme, AdminNav, UnsavedGuard, MarkdownEditor, ImageDimensions, SortableGrid},
 })
 
 // Match the loading bar to the admin accent, re-reading it when the theme flips.

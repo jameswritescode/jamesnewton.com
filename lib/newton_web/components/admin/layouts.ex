@@ -27,7 +27,10 @@ defmodule NewtonWeb.Admin.Layouts do
 
     ~H"""
     <div class="flex min-h-screen">
-      <aside class="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-(--admin-border) bg-(--admin-sidebar) px-3 py-[1.1rem]">
+      <aside
+        id="admin-sidebar"
+        class="fixed inset-y-0 left-0 z-40 flex h-screen w-56 -translate-x-full flex-col border-r border-(--admin-border) bg-(--admin-sidebar) px-3 py-[1.1rem] transition-transform duration-200 md:sticky md:top-0 md:translate-x-0 md:shrink-0 md:transition-none"
+      >
         <div class="flex items-center gap-2 px-[0.6rem] pb-[1.1rem] text-[0.95rem] font-semibold tracking-tight">
           <span class="size-2 rounded-full bg-(--admin-accent)"></span> newton
         </div>
@@ -70,9 +73,39 @@ defmodule NewtonWeb.Admin.Layouts do
         </div>
       </aside>
 
-      <main id="admin-main" class="max-w-6xl flex-1 px-10 py-8">
-        {render_slot(@inner_block)}
-      </main>
+      <div id="admin-sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-black/40 md:hidden"></div>
+
+      <div class="flex min-w-0 flex-1 flex-col">
+        <header class="flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-sidebar) px-4 py-3 md:hidden">
+          <button
+            id="admin-nav-toggle"
+            type="button"
+            phx-hook="AdminNav"
+            aria-label="Open menu"
+            class="rounded-md p-1 text-(--admin-text-muted) hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+          >
+            <.icon name="hero-bars-3" class="size-5" />
+          </button>
+          <span class="flex items-center gap-2 text-[0.95rem] font-semibold tracking-tight">
+            <span class="size-2 rounded-full bg-(--admin-accent)"></span> newton
+          </span>
+          <div class="flex-1"></div>
+          <button
+            id="admin-theme-toggle-mobile"
+            type="button"
+            class="rounded-md p-1 text-(--admin-text-muted) hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+            phx-hook="AdminTheme"
+            aria-label="Toggle light or dark theme"
+          >
+            <.icon name="hero-sun-mini" class="size-5 admin-dark:hidden" />
+            <.icon name="hero-moon-mini" class="hidden size-5 admin-dark:inline-flex" />
+          </button>
+        </header>
+
+        <main id="admin-main" class="max-w-6xl flex-1 px-4 py-8 md:px-10">
+          {render_slot(@inner_block)}
+        </main>
+      </div>
       <.admin_flash_group flash={@flash} />
     </div>
     """

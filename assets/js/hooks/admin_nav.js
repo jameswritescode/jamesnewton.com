@@ -16,8 +16,14 @@ function setOpen(open) {
 
 export const AdminNav = {
   mounted() {
-    this.open = () => setOpen(true)
-    this.close = () => setOpen(false)
+    this.open = () => {
+      setOpen(true)
+      this.el.setAttribute("aria-expanded", "true")
+    }
+    this.close = () => {
+      setOpen(false)
+      this.el.setAttribute("aria-expanded", "false")
+    }
 
     this.el.addEventListener("click", this.open)
 

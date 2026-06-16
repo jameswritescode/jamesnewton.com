@@ -82,6 +82,7 @@ defmodule NewtonWeb.Admin.Layouts do
             type="button"
             phx-hook="AdminNav"
             aria-label="Open menu"
+            aria-expanded="false"
             class="rounded-md p-1 text-(--admin-text-muted) hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
           >
             <.icon name="hero-bars-3" class="size-5" />

@@ -54,6 +54,23 @@ describe("AdminNav hook", () => {
     expect(isOpen(sidebar, backdrop)).toBe(false)
   })
 
+  it("sets aria-expanded to true when opened and false when closed", () => {
+    const {toggle, backdrop} = setup()
+    expect(toggle.getAttribute("aria-expanded")).toBeNull()
+    toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
+    expect(toggle.getAttribute("aria-expanded")).toBe("true")
+    backdrop.dispatchEvent(new MouseEvent("click", {bubbles: true}))
+    expect(toggle.getAttribute("aria-expanded")).toBe("false")
+  })
+
+  it("sets aria-expanded to false when closed via Escape", () => {
+    const {toggle} = setup()
+    toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
+    expect(toggle.getAttribute("aria-expanded")).toBe("true")
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape"}))
+    expect(toggle.getAttribute("aria-expanded")).toBe("false")
+  })
+
   it("stops responding to events after destroyed()", () => {
     const {hook, toggle, sidebar, backdrop} = setup()
     hook.destroyed()

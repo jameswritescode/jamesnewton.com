@@ -29,8 +29,8 @@ defmodule Newton.Markdown do
   @doc "Plain-text excerpt from the first paragraph, truncated at a word boundary."
   def excerpt(markdown) when is_binary(markdown) do
     markdown
-    |> first_paragraph()
-    |> strip_markdown()
+    |> MDEx.parse_document!()
+    |> first_paragraph_text()
     |> truncate(@excerpt_max_chars)
   end
 
@@ -44,20 +44,21 @@ defmodule Newton.Markdown do
     max(1, ceil(words / @words_per_minute))
   end
 
-  defp first_paragraph(markdown) do
-    markdown
-    |> String.split(~r/\n\s*\n/, parts: 2)
-    |> List.first()
-    |> String.trim()
+  defp first_paragraph_text(%MDEx.Document{nodes: nodes}) do
+    case Enum.find(nodes, &match?(%MDEx.Paragraph{}, &1)) do
+      nil -> ""
+      paragraph -> paragraph |> node_text() |> normalize_ws()
+    end
   end
 
-  defp strip_markdown(text) do
-    text
-    |> String.replace(~r/!?\[([^\]]*)\]\([^)]*\)/, "\\1")
-    |> String.replace(~r/[*_`#>]/, "")
-    |> String.replace(~r/\s+/, " ")
-    |> String.trim()
-  end
+  defp node_text(%MDEx.Text{literal: literal}), do: literal
+  defp node_text(%MDEx.Code{literal: literal}), do: literal
+  defp node_text(%MDEx.SoftBreak{}), do: " "
+  defp node_text(%MDEx.LineBreak{}), do: " "
+  defp node_text(%{nodes: nodes}) when is_list(nodes), do: Enum.map_join(nodes, "", &node_text/1)
+  defp node_text(_), do: ""
+
+  defp normalize_ws(text), do: text |> String.replace(~r/\s+/, " ") |> String.trim()
 
   defp truncate(text, max) do
     if String.length(text) <= max do

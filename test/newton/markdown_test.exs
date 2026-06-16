@@ -29,6 +29,25 @@ defmodule Newton.MarkdownTest do
     refute excerpt =~ "Second paragraph"
   end
 
+  test "excerpt strips reference-style links to their text" do
+    md = """
+    Moved to join the team at [Code School][1] and wear [pants][2].
+
+    [1]: https://example.com
+    [2]: https://example.com/pants
+    """
+
+    excerpt = Markdown.excerpt(md)
+    assert excerpt == "Moved to join the team at Code School and wear pants."
+    refute excerpt =~ "["
+    refute excerpt =~ "]"
+  end
+
+  test "excerpt strips inline links and code to plain text" do
+    md = "A `code` bit and a [link](https://x.com)."
+    assert Markdown.excerpt(md) == "A code bit and a link."
+  end
+
   test "excerpt truncates very long first paragraphs with an ellipsis" do
     long = String.duplicate("word ", 80)
     excerpt = Markdown.excerpt(long)

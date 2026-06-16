@@ -6,6 +6,8 @@
 function setOpen(open) {
   const sidebar = document.getElementById("admin-sidebar")
   const backdrop = document.getElementById("admin-sidebar-backdrop")
+  // Both elements are always rendered together by the admin layout, so a
+  // combined guard is intentional — if one is missing the other is too.
   if (!sidebar || !backdrop) return
   sidebar.classList.toggle("translate-x-0", open)
   sidebar.classList.toggle("-translate-x-full", !open)

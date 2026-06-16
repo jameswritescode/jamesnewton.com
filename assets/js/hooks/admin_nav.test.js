@@ -12,6 +12,7 @@ function setup() {
   hook.el = toggle
   hook.mounted()
   return {
+    hook,
     toggle,
     sidebar: document.getElementById("admin-sidebar"),
     backdrop: document.getElementById("admin-sidebar-backdrop")
@@ -50,6 +51,17 @@ describe("AdminNav hook", () => {
     const {toggle, sidebar, backdrop} = setup()
     toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
     window.dispatchEvent(new Event("phx:page-loading-start"))
+    expect(isOpen(sidebar, backdrop)).toBe(false)
+  })
+
+  it("stops responding to events after destroyed()", () => {
+    const {hook, toggle, sidebar, backdrop} = setup()
+    hook.destroyed()
+    // toggle click should not open the drawer
+    toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
+    expect(isOpen(sidebar, backdrop)).toBe(false)
+    // Escape should not close (drawer is already closed, but verify no error and no state change)
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape"}))
     expect(isOpen(sidebar, backdrop)).toBe(false)
   })
 })

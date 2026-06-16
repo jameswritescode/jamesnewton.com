@@ -31,7 +31,6 @@ defmodule Newton.BlogTest do
     assert post.body_markdown == ""
   end
 
-
   test "next_untitled_slug returns the first free untitled slug" do
     assert Blog.next_untitled_slug() == "untitled-post"
 

@@ -45,6 +45,18 @@ defmodule NewtonWeb.Admin.Layouts do
         </nav>
 
         <div class="mt-[0.6rem] flex flex-col gap-0.5 border-t border-(--admin-border) pt-[0.6rem]">
+          <button
+            id="admin-theme-toggle"
+            type="button"
+            class="flex w-full items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
+            phx-hook="AdminTheme"
+            aria-label="Toggle light or dark theme"
+          >
+            <.icon name="hero-sun-mini" class="size-4 admin-dark:hidden" />
+            <.icon name="hero-moon-mini" class="hidden size-4 admin-dark:inline-flex" />
+            <span class="admin-dark:hidden">Light</span>
+            <span class="hidden admin-dark:inline">Dark</span>
+          </button>
           <.link
             href={~p"/"}
             class="flex items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) no-underline transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
@@ -58,18 +70,6 @@ defmodule NewtonWeb.Admin.Layouts do
           >
             <.icon name="hero-arrow-right-start-on-rectangle-mini" class="size-4" /> Log out
           </.link>
-          <button
-            id="admin-theme-toggle"
-            type="button"
-            class="flex w-full items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
-            phx-hook="AdminTheme"
-            aria-label="Toggle light or dark theme"
-          >
-            <.icon name="hero-sun-mini" class="size-4 admin-dark:hidden" />
-            <.icon name="hero-moon-mini" class="hidden size-4 admin-dark:inline-flex" />
-            <span class="admin-dark:hidden">Light</span>
-            <span class="hidden admin-dark:inline">Dark</span>
-          </button>
         </div>
       </aside>
 

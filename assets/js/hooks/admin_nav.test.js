@@ -52,6 +52,7 @@ describe("AdminNav hook", () => {
     toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}))
     window.dispatchEvent(new Event("phx:page-loading-start"))
     expect(isOpen(sidebar, backdrop)).toBe(false)
+    expect(toggle.getAttribute("aria-expanded")).toBe("false")
   })
 
   it("sets aria-expanded to true when opened and false when closed", () => {

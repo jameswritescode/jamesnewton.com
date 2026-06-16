@@ -24,6 +24,22 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
+  defp apply_action(socket, :new, _params) do
+    post = %Post{}
+
+    socket
+    |> assign(:page_title, "New post")
+    |> assign(:post, post)
+    |> assign(:published_at, nil)
+    |> assign(:slug_locked, false)
+    |> assign(:slug_auto, "")
+    |> assign(:excerpt_locked, false)
+    |> assign(:excerpt_auto, "")
+    |> assign(:save_state, :saved)
+    |> assign(:autosave_params, nil)
+    |> assign(:form, to_form(Blog.change_post(post)))
+  end
+
   defp apply_action(socket, :edit, %{"id" => id}) do
     post = Blog.get_post!(id)
 
@@ -130,23 +146,60 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   @impl true
   def handle_info(:autosave, socket) do
-    draft? = is_nil(socket.assigns.published_at)
+    if is_nil(socket.assigns.published_at) and socket.assigns.autosave_params do
+      persist_autosave(socket, socket.assigns.post, socket.assigns.autosave_params)
+    else
+      {:noreply, socket}
+    end
+  end
 
-    if draft? and socket.assigns.autosave_params do
-      case Blog.update_post(socket.assigns.post, socket.assigns.autosave_params) do
+  defp persist_autosave(socket, %Post{id: nil}, params) do
+    if content?(params) do
+      case Blog.create_post(backfill_new(params)) do
         {:ok, post} ->
           {:noreply,
            socket
            |> assign(:post, post)
+           |> assign(:published_at, post.published_at)
            |> assign(:autosave_params, nil)
            |> assign(:autosave_timer, nil)
-           |> assign(:save_state, :saved)}
+           |> assign(:save_state, :saved)
+           |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
 
         {:error, _changeset} ->
           {:noreply, assign(socket, :save_state, :error)}
       end
     else
-      {:noreply, socket}
+      {:noreply, assign(socket, :save_state, :saved)}
+    end
+  end
+
+  defp persist_autosave(socket, %Post{} = post, params) do
+    case Blog.update_post(post, params) do
+      {:ok, post} ->
+        {:noreply,
+         socket
+         |> assign(:post, post)
+         |> assign(:autosave_params, nil)
+         |> assign(:autosave_timer, nil)
+         |> assign(:save_state, :saved)}
+
+      {:error, _changeset} ->
+        {:noreply, assign(socket, :save_state, :error)}
+    end
+  end
+
+  defp content?(params) do
+    String.trim(params["title"] || "") != "" or String.trim(params["body_markdown"] || "") != ""
+  end
+
+  defp backfill_new(params) do
+    if String.trim(params["title"] || "") == "" do
+      params
+      |> Map.put("title", "Untitled post")
+      |> Map.put("slug", Blog.next_untitled_slug())
+    else
+      params
     end
   end
 
@@ -177,6 +230,19 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:post, post)
     |> assign(:published_at, post.published_at)
     |> put_flash(:info, if(post.published_at, do: "Post published", else: "Moved to draft"))
+  end
+
+  defp save(socket, %Post{id: nil}, params) do
+    case Blog.create_post(backfill_new(params)) do
+      {:ok, post} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Post saved")
+         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :form, to_form(changeset))}
+    end
   end
 
   defp save(socket, %Post{} = post, params) do

@@ -187,6 +187,45 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert is_nil(Newton.Blog.get_post!(post.id).published_at)
   end
 
+  test "a brand-new post creates no row until there is content", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    render_change(view, "validate", %{"post" => %{"title" => "", "body_markdown" => ""}})
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+    assert Newton.Blog.list_posts() == []
+  end
+
+  test "typing content into a new post creates it and moves to its edit URL", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "Fresh Post", "slug" => "", "body_markdown" => "Hello body"}
+    })
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    post = Newton.Blog.get_post_by_slug!("fresh-post")
+    assert post.body_html =~ "Hello body"
+    assert_patch(view, ~p"/admin/posts/#{post.id}/edit")
+  end
+
+  test "a body-only new post is created with a default title", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "", "slug" => "", "body_markdown" => "Just a body"}
+    })
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    [post] = Newton.Blog.list_posts()
+    assert post.title == "Untitled post"
+    assert post.body_html =~ "Just a body"
+  end
+
   test "setting a past publish date backdates the post", %{conn: conn} do
     {:ok, post} =
       Newton.Blog.create_post(%{

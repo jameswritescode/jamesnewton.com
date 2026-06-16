@@ -31,31 +31,6 @@ defmodule Newton.BlogTest do
     assert post.body_markdown == ""
   end
 
-  test "discard_empty_untitled_drafts removes only untouched untitled drafts" do
-    {:ok, untouched} =
-      Blog.create_post(%{title: "Untitled post", slug: "untitled-post", body_markdown: ""})
-
-    {:ok, titled} =
-      Blog.create_post(%{title: "Real title", slug: "untitled-post-2", body_markdown: ""})
-
-    {:ok, with_body} =
-      Blog.create_post(%{title: "Untitled post", slug: "untitled-post-3", body_markdown: "hi"})
-
-    {:ok, published} =
-      Blog.create_post(%{
-        title: "Untitled post",
-        slug: "untitled-post-4",
-        body_markdown: "",
-        published_at: ~U[2026-01-01 00:00:00Z]
-      })
-
-    Blog.discard_empty_untitled_drafts()
-
-    assert_raise Ecto.NoResultsError, fn -> Blog.get_post!(untouched.id) end
-    assert Blog.get_post!(titled.id).id == titled.id
-    assert Blog.get_post!(with_body.id).id == with_body.id
-    assert Blog.get_post!(published.id).id == published.id
-  end
 
   test "next_untitled_slug returns the first free untitled slug" do
     assert Blog.next_untitled_slug() == "untitled-post"

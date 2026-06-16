@@ -5,7 +5,6 @@ defmodule NewtonWeb.Admin.PostLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    Newton.Blog.discard_empty_untitled_drafts()
     {:ok, stream(socket, :posts, [])}
   end
 
@@ -24,11 +23,6 @@ defmodule NewtonWeb.Admin.PostLive.Index do
   defp parse_filter(_), do: :all
 
   @impl true
-  def handle_event("new_post", _params, socket) do
-    {:ok, post} = Newton.Blog.create_draft()
-    {:noreply, push_navigate(socket, to: ~p"/admin/posts/#{post.id}/edit")}
-  end
-
   def handle_event("delete", %{"id" => id}, socket) do
     post = Newton.Blog.get_post!(id)
     {:ok, _} = Newton.Blog.delete_post(post)
@@ -41,13 +35,12 @@ defmodule NewtonWeb.Admin.PostLive.Index do
     <Layouts.admin flash={@flash} current={:posts}>
       <div class="mb-6 flex items-center justify-between">
         <h1 class="text-[1.35rem] font-semibold tracking-tight">Posts</h1>
-        <button
-          type="button"
-          phx-click="new_post"
-          class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+        <.link
+          navigate={~p"/admin/posts/new"}
+          class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white no-underline hover:bg-(--admin-accent-hover)"
         >
           New post
-        </button>
+        </.link>
       </div>
 
       <div class="mb-4 flex gap-1 text-[0.8rem]">

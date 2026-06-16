@@ -26,28 +26,14 @@ defmodule NewtonWeb.Admin.PostIndexLiveTest do
     assert render(view) =~ "Draft"
   end
 
-  test "New post creates a draft and opens the editor", %{conn: conn} do
+  test "New post opens the editor without creating a row", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts")
 
     {:error, {:live_redirect, %{to: path}}} =
-      view |> element("button", "New post") |> render_click()
+      view |> element("a", "New post") |> render_click()
 
-    assert path =~ ~r{^/admin/posts/\d+/edit$}
-
-    [draft] = Newton.Blog.list_posts()
-    assert draft.title == "Untitled post"
-    assert Newton.Blog.publish_status(draft.published_at) == :draft
-  end
-
-  test "untouched untitled drafts are discarded when the list loads", %{conn: conn} do
-    untouched = post_fixture(%{title: "Untitled post", slug: "untitled-post", body_markdown: ""})
-    real = post_fixture(%{title: "Real Draft", slug: "real-draft", body_markdown: "content"})
-
-    {:ok, _view, html} = live(conn, ~p"/admin/posts")
-
-    assert html =~ "Real Draft"
-    refute Enum.any?(Newton.Blog.list_posts(), &(&1.id == untouched.id))
-    assert Enum.any?(Newton.Blog.list_posts(), &(&1.id == real.id))
+    assert path == ~p"/admin/posts/new"
+    assert Newton.Blog.list_posts() == []
   end
 
   test "the drafts filter shows only drafts", %{conn: conn} do

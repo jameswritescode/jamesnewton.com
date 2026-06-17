@@ -23,7 +23,10 @@ defmodule NewtonWeb.Admin.ComponentsTest do
 
   test "drawer_footer omits Delete when not deletable" do
     html =
-      render_component(&Components.drawer_footer/1, cancel_path: "/admin/reading", deletable?: false)
+      render_component(&Components.drawer_footer/1,
+        cancel_path: "/admin/reading",
+        deletable?: false
+      )
 
     assert html =~ "Save"
     assert html =~ "Cancel"
@@ -32,7 +35,10 @@ defmodule NewtonWeb.Admin.ComponentsTest do
 
   test "delete_button omits phx-value-id when no id is given" do
     html =
-      render_component(&Components.delete_button/1, event: "delete_gallery", confirm: "Delete it?")
+      render_component(&Components.delete_button/1,
+        event: "delete_gallery",
+        confirm: "Delete it?"
+      )
 
     assert html =~ ~s(phx-click="delete_gallery")
     assert html =~ ~s(data-confirm="Delete it?")

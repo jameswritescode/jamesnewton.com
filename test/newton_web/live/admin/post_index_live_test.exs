@@ -66,5 +66,4 @@ defmodule NewtonWeb.Admin.PostIndexLiveTest do
     assert has_element?(view, "#posts", "Work In Progress")
     refute has_element?(view, "#posts", "Live Article")
   end
-
 end

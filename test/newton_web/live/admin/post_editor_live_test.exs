@@ -341,16 +341,39 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     refute Newton.Blog.get_post!(post.id).body_html =~ "changed"
   end
 
-  test "the editor shows unsaved then saved state for a draft", %{conn: conn} do
+  test "a draft autosave shows the Save button as Saving and disabled, then back to Save", %{
+    conn: conn
+  } do
     {:ok, post} = Newton.Blog.create_post(%{title: "D", slug: "state-draft", body_markdown: "a"})
     {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
 
-    html = view |> form("#post-form", post: %{body_markdown: "b"}) |> render_change()
-    assert html =~ "Unsaved changes"
+    view |> form("#post-form", post: %{body_markdown: "b"}) |> render_change()
+    assert has_element?(view, "#post-form button[type='submit'][disabled]", "Saving")
 
     send(view.pid, :autosave)
     _ = :sys.get_state(view.pid)
-    refute render(view) =~ "Unsaved changes"
+
+    refute has_element?(view, "#post-form button[type='submit'][disabled]")
+    assert has_element?(view, "#post-form button[type='submit']", "Save")
+  end
+
+  test "a published post's Save button stays enabled even when dirty", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Live",
+        slug: "btn-live",
+        body_markdown: "b",
+        published_at: ~U[2026-01-01 12:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    view
+    |> form("#post-form", post: %{title: "Live Edited", slug: "btn-live", body_markdown: "b"})
+    |> render_change()
+
+    refute has_element?(view, "#post-form button[type='submit'][disabled]")
+    assert has_element?(view, "#post-form button[type='submit']", "Save")
   end
 
   test "blurring a field flushes the pending auto-save", %{conn: conn} do

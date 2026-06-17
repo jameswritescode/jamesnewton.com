@@ -233,6 +233,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp save_state_label(:error), do: "Couldn't save"
   defp save_state_label(_), do: "Saved"
 
+  # Drafts autosave: the Save button becomes the live indicator ("Saving…").
+  defp saving?(published_at, save_state), do: is_nil(published_at) and save_state == :unsaved
+
+  # Published posts show the text indicator (manual-save signal); drafts only show
+  # it on error, since the button otherwise carries their state.
+  defp show_save_text?(published_at, save_state) do
+    (not is_nil(published_at) and save_state != :saved) or
+      (is_nil(published_at) and save_state == :error)
+  end
+
   # Publishing toggles publication state on the saved post; content edits in the
   # form are left untouched.
   defp set_published(socket, published_at) do
@@ -294,7 +304,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           </.link>
           <div class="flex-1"></div>
           <span
-            :if={Blog.publish_status(@published_at) == :draft or @save_state != :saved}
+            :if={show_save_text?(@published_at, @save_state)}
             class="text-[0.78rem] text-(--admin-text-subtle)"
           >
             {save_state_label(@save_state)}
@@ -309,9 +319,15 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           </button>
           <button
             type="submit"
-            class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+            disabled={saving?(@published_at, @save_state)}
+            class="flex items-center gap-1.5 rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white hover:bg-(--admin-accent-hover) disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Save
+            <span
+              :if={saving?(@published_at, @save_state)}
+              class="size-3 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            >
+            </span>
+            {if saving?(@published_at, @save_state), do: "Saving…", else: "Save"}
           </button>
         </div>
 

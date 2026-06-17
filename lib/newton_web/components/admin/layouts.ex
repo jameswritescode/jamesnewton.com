@@ -166,6 +166,7 @@ defmodule NewtonWeb.Admin.Layouts do
       :if={msg = Phoenix.Flash.get(@flash, @kind)}
       id={"admin-flash-#{@kind}"}
       role="alert"
+      phx-hook="FlashDismiss"
       phx-click={
         JS.push("lv:clear-flash", value: %{key: @kind})
         |> JS.hide(

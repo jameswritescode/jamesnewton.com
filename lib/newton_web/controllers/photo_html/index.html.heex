@@ -12,9 +12,10 @@
       </header>
       <div class="photo-grid" id={"grid-#{group.slug}"}>
         <button
-          :for={photo <- group.photos}
+          :for={{photo, index} <- Enum.with_index(group.photos)}
           type="button"
           class="photo-button"
+          data-index={index}
           aria-label={"Enlarge: #{photo.alt}"}
         >
           <img

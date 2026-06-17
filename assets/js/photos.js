@@ -47,14 +47,22 @@ function initLightbox() {
   const full = overlay.querySelector(".photo-overlay-img");
   const closeButton = overlay.querySelector(".photo-overlay-close");
   let lastFocus = null;
+  let currentButton = null;
 
-  const open = (img) => {
+  // Swap the displayed image without re-opening the dialog (so lastFocus and the
+  // open state are preserved across left/right navigation).
+  const show = (btn) => {
+    currentButton = btn;
+    const img = btn.querySelector("img");
     full.src = img.src;
     full.alt = img.alt;
+  };
+  const open = (btn) => {
     lastFocus = document.activeElement;
     document.body.style.overflow = "hidden";
     overlay.removeAttribute("inert");
     overlay.classList.add("is-open");
+    show(btn);
     // Focus the close button so there's a keyboard-operable control in the
     // dialog (Enter/Space activates it; Esc and backdrop-click also close).
     (closeButton || overlay).focus();
@@ -70,13 +78,35 @@ function initLightbox() {
     }, 240);
   };
 
+  // Move to the previous/next photo within the gallery the current one belongs
+  // to, in gallery order (data-index), wrapping around at the ends.
+  const navigate = (dir) => {
+    if (!currentButton) return;
+    const grid = currentButton.closest(".photo-grid");
+    if (!grid) return;
+    const buttons = Array.from(grid.querySelectorAll(".photo-button")).sort(
+      (a, b) => Number(a.dataset.index) - Number(b.dataset.index)
+    );
+    const i = buttons.indexOf(currentButton);
+    if (i === -1) return;
+    show(buttons[(i + dir + buttons.length) % buttons.length]);
+  };
+
   const onClick = (e) => {
     const btn = e.target.closest(".photo-button");
-    if (btn) open(btn.querySelector("img"));
+    if (btn) open(btn);
   };
   const onKeydown = (e) => {
     if (!overlay.classList.contains("is-open")) return;
     if (e.key === "Escape") return close();
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      return navigate(1);
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      return navigate(-1);
+    }
     if (e.key === "Tab") {
       // Only the close button is focusable inside the dialog, so keep focus on
       // it — this traps focus without letting it escape to the page behind.

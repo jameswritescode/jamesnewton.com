@@ -23,7 +23,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Components do
         id="gallery-form"
         phx-change="validate_settings"
         phx-submit="save_settings"
-        class="flex flex-col gap-3"
+        class="flex flex-1 flex-col gap-3"
       >
         <Components.field field={@form[:title]} label="Title" />
         <Components.field field={@form[:slug]} label="Slug" />
@@ -35,7 +35,9 @@ defmodule NewtonWeb.Admin.GalleryLive.Components do
           deletable?={@editing?}
           delete_event="delete_gallery"
           delete_confirm="Delete this gallery and all its photos?"
-        />
+        >
+          <Components.save_button />
+        </Components.drawer_footer>
       </.form>
     </Components.drawer>
     """

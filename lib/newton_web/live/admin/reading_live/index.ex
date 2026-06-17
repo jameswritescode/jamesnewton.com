@@ -262,7 +262,7 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
         id="reading-form"
         phx-change="validate"
         phx-submit="save"
-        class="flex flex-col gap-3"
+        class="flex flex-1 flex-col gap-3"
       >
         <Components.field field={@form[:title]} label="Title" />
         <Components.field field={@form[:author]} label="Author" />
@@ -282,7 +282,9 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
           delete_event="delete"
           delete_id={@entry.id}
           delete_confirm="Delete this entry?"
-        />
+        >
+          <Components.save_button />
+        </Components.drawer_footer>
       </.form>
     </Components.drawer>
     """

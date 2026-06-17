@@ -97,19 +97,21 @@ defmodule NewtonWeb.Admin.Components do
   end
 
   @doc """
-  The shared edit-drawer action row: an optional Delete on the left, then Cancel
-  and a submit Save on the right. Render inside the drawer's `<.form>`.
+  The shared edit-drawer footer: pinned to the bottom of the drawer with a top
+  divider (full-bleed via `-mx-5` to cancel the drawer's padding). An optional
+  Delete on the left, a spacer, an optional Cancel link, then the caller's primary
+  action(s) in the slot (a `save_button`, or the post publish toggles).
   """
-  attr :cancel_path, :string, required: true
+  attr :cancel_path, :string, default: nil
   attr :deletable?, :boolean, default: false
   attr :delete_event, :string, default: nil
   attr :delete_id, :any, default: nil
   attr :delete_confirm, :string, default: nil
-  attr :save_label, :string, default: "Save"
+  slot :inner_block, required: true
 
   def drawer_footer(assigns) do
     ~H"""
-    <div class="mt-2 flex items-center gap-2">
+    <div class="mt-auto -mx-5 flex items-center gap-2 border-t border-(--admin-border) px-5 pt-4">
       <.delete_button
         :if={@deletable?}
         event={@delete_event}
@@ -118,18 +120,28 @@ defmodule NewtonWeb.Admin.Components do
       />
       <div class="flex-1"></div>
       <.link
+        :if={@cancel_path}
         patch={@cancel_path}
         class="rounded-md px-3 py-1.5 text-[0.78rem] text-(--admin-text-muted) no-underline hover:text-(--admin-text)"
       >
         Cancel
       </.link>
-      <button
-        type="submit"
-        class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
-      >
-        {@save_label}
-      </button>
+      {render_slot(@inner_block)}
     </div>
+    """
+  end
+
+  @doc "The primary submit button used in edit-drawer footers."
+  attr :label, :string, default: "Save"
+
+  def save_button(assigns) do
+    ~H"""
+    <button
+      type="submit"
+      class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+    >
+      {@label}
+    </button>
     """
   end
 

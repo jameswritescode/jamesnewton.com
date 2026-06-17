@@ -1,6 +1,16 @@
 defmodule NewtonWeb.PageControllerTest do
   use NewtonWeb.ConnCase
 
+  test "GET /blog/:slug redirects permanently to /posts/:slug", %{conn: conn} do
+    conn = get(conn, "/blog/three-ways-to-retry")
+    assert redirected_to(conn, 301) == "/posts/three-ways-to-retry"
+  end
+
+  test "GET /blog redirects permanently to /posts", %{conn: conn} do
+    conn = get(conn, "/blog")
+    assert redirected_to(conn, 301) == "/posts"
+  end
+
   test "GET /resume renders the résumé", %{conn: conn} do
     conn = get(conn, ~p"/resume")
     html = html_response(conn, 200)

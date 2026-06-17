@@ -25,6 +25,8 @@ defmodule NewtonWeb.Router do
     get "/resume", PageController, :resume
     get "/posts", PostController, :index
     get "/posts/:slug", PostController, :show
+    get "/blog", PageController, :blog_redirect
+    get "/blog/:slug", PageController, :blog_redirect
     get "/reading", ReadingController, :index
     get "/photos", PhotoController, :index
   end

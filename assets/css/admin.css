@@ -63,3 +63,11 @@
     display: block;
   }
 }
+
+/* Admin buttons get a pointer cursor (Tailwind v4 defaults buttons to
+   cursor:default). Scoped to the admin (data-admin-theme is only set on the
+   admin <html>) and kept at zero specificity so cursor-* utilities still win;
+   :not(:disabled) leaves the editor's disabled "Saving…" button alone. */
+:where([data-admin-theme]) button:not(:disabled) {
+  cursor: pointer;
+}

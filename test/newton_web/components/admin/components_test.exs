@@ -51,7 +51,10 @@ defmodule NewtonWeb.Admin.ComponentsTest do
 
   test "delete_button omits phx-value-id when no id is given" do
     html =
-      render_component(&Components.delete_button/1, event: "delete_gallery", confirm: "Delete it?")
+      render_component(&Components.delete_button/1,
+        event: "delete_gallery",
+        confirm: "Delete it?"
+      )
 
     assert html =~ ~s(phx-click="delete_gallery")
     assert html =~ ~s(data-confirm="Delete it?")

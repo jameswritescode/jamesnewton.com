@@ -387,12 +387,28 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           </label>
         </form>
 
-        <div class="flex gap-2">
+        <div class="text-[0.78rem] text-(--admin-text-subtle)">
+          Reading time · {@post.reading_time || "—"} min
+          <.link
+            :if={@post.id}
+            href={~p"/posts/#{@post.slug}"}
+            target="_blank"
+            class="ml-2 text-(--admin-accent) no-underline hover:underline"
+          >
+            View on site ↗
+          </.link>
+        </div>
+
+        <Components.drawer_footer
+          deletable?={@post.id != nil}
+          delete_event="delete"
+          delete_confirm="Delete this post permanently?"
+        >
           <button
             :if={Blog.publish_status(@published_at) != :published}
             type="button"
             phx-click="publish_now"
-            class="flex-1 rounded-md bg-(--admin-accent) px-2 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+            class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
           >
             Publish now
           </button>
@@ -400,32 +416,11 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             :if={Blog.publish_status(@published_at) != :draft}
             type="button"
             phx-click="unpublish"
-            class="flex-1 rounded-md border border-(--admin-border) px-2 py-1.5 text-[0.78rem] hover:bg-(--admin-accent-soft)"
+            class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] hover:bg-(--admin-accent-soft)"
           >
             Move to draft
           </button>
-        </div>
-
-        <div class="text-[0.78rem] text-(--admin-text-subtle)">
-          Reading time: {@post.reading_time || "—"} min
-        </div>
-
-        <.link
-          :if={@post.id}
-          href={~p"/posts/#{@post.slug}"}
-          target="_blank"
-          class="text-[0.8rem] text-(--admin-accent) no-underline hover:underline"
-        >
-          View on site ↗
-        </.link>
-
-        <div class="flex-1"></div>
-
-        <Components.delete_button
-          :if={@post.id}
-          event="delete"
-          confirm="Delete this post permanently?"
-        />
+        </Components.drawer_footer>
       </Components.drawer>
     </Layouts.admin>
     """

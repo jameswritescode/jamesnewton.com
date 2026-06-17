@@ -1,7 +1,8 @@
 defmodule NewtonWeb.Admin.Components do
   @moduledoc """
   Reusable admin UI building blocks shared across the admin LiveViews:
-  a right-hand slide-over `drawer/1` and an admin-themed form `field/1`.
+  a right-hand slide-over `drawer/1` and an admin-themed form `field/1`, plus a
+  `delete_button/1` and a `drawer_footer/1` action row.
   """
   use NewtonWeb, :html
 
@@ -72,6 +73,63 @@ defmodule NewtonWeb.Admin.Components do
       class={field_class()}
       {@rest}
     />
+    """
+  end
+
+  @doc "Consistent destructive button used in admin edit drawers."
+  attr :event, :string, required: true
+  attr :id, :any, default: nil
+  attr :confirm, :string, required: true
+  attr :label, :string, default: "Delete"
+
+  def delete_button(assigns) do
+    ~H"""
+    <button
+      type="button"
+      phx-click={@event}
+      phx-value-id={@id}
+      data-confirm={@confirm}
+      class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
+    >
+      {@label}
+    </button>
+    """
+  end
+
+  @doc """
+  The shared edit-drawer action row: an optional Delete on the left, then Cancel
+  and a submit Save on the right. Render inside the drawer's `<.form>`.
+  """
+  attr :cancel_path, :string, required: true
+  attr :deletable?, :boolean, default: false
+  attr :delete_event, :string, default: nil
+  attr :delete_id, :any, default: nil
+  attr :delete_confirm, :string, default: nil
+  attr :save_label, :string, default: "Save"
+
+  def drawer_footer(assigns) do
+    ~H"""
+    <div class="mt-2 flex items-center gap-2">
+      <.delete_button
+        :if={@deletable?}
+        event={@delete_event}
+        id={@delete_id}
+        confirm={@delete_confirm}
+      />
+      <div class="flex-1"></div>
+      <.link
+        patch={@cancel_path}
+        class="rounded-md px-3 py-1.5 text-[0.78rem] text-(--admin-text-muted) no-underline hover:text-(--admin-text)"
+      >
+        Cancel
+      </.link>
+      <button
+        type="submit"
+        class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+      >
+        {@save_label}
+      </button>
+    </div>
     """
   end
 

@@ -23,13 +23,6 @@ defmodule NewtonWeb.Admin.PostLive.Index do
   defp parse_filter(_), do: :all
 
   @impl true
-  def handle_event("delete", %{"id" => id}, socket) do
-    post = Newton.Blog.get_post!(id)
-    {:ok, _} = Newton.Blog.delete_post(post)
-    {:noreply, stream_delete(socket, :posts, post)}
-  end
-
-  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:posts}>
@@ -72,15 +65,6 @@ defmodule NewtonWeb.Admin.PostLive.Index do
           <span class="hidden w-28 text-right text-[0.78rem] text-(--admin-text-subtle) sm:block">
             {format_date(post.published_at)}
           </span>
-          <button
-            type="button"
-            phx-click="delete"
-            phx-value-id={post.id}
-            data-confirm="Delete this post?"
-            class="relative z-10 rounded-md px-2 py-1 text-[0.75rem] text-(--admin-text-subtle) hover:text-(--admin-accent)"
-          >
-            Delete
-          </button>
         </div>
       </div>
     </Layouts.admin>

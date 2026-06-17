@@ -67,15 +67,4 @@ defmodule NewtonWeb.Admin.PostIndexLiveTest do
     refute has_element?(view, "#posts", "Live Article")
   end
 
-  test "deletes a post from the list", %{conn: conn} do
-    post = post_fixture(%{title: "Doomed", slug: "doomed"})
-
-    {:ok, view, _html} = live(conn, ~p"/admin/posts")
-    assert render(view) =~ "Doomed"
-
-    view |> element("#posts button[phx-value-id='#{post.id}']") |> render_click()
-
-    refute render(view) =~ "Doomed"
-    assert_raise Ecto.NoResultsError, fn -> Newton.Blog.get_post!(post.id) end
-  end
 end

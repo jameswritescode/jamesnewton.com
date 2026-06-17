@@ -30,30 +30,12 @@ defmodule NewtonWeb.Admin.GalleryLive.Components do
         <Components.field field={@form[:caption]} type="textarea" label="Caption" rows="2" />
         <Components.field field={@form[:taken_on]} type="date" label="Taken on" />
 
-        <div class="mt-2 flex items-center gap-2">
-          <button
-            :if={@editing?}
-            type="button"
-            phx-click="delete_gallery"
-            data-confirm="Delete this gallery and all its photos?"
-            class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
-          >
-            Delete
-          </button>
-          <div class="flex-1"></div>
-          <.link
-            patch={@cancel_path}
-            class="rounded-md px-3 py-1.5 text-[0.78rem] text-(--admin-text-muted) no-underline hover:text-(--admin-text)"
-          >
-            Cancel
-          </.link>
-          <button
-            type="submit"
-            class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
-          >
-            Save
-          </button>
-        </div>
+        <Components.drawer_footer
+          cancel_path={@cancel_path}
+          deletable?={@editing?}
+          delete_event="delete_gallery"
+          delete_confirm="Delete this gallery and all its photos?"
+        />
       </.form>
     </Components.drawer>
     """

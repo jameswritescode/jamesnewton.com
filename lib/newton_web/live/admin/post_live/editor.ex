@@ -421,15 +421,11 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
         <div class="flex-1"></div>
 
-        <button
+        <Components.delete_button
           :if={@post.id}
-          type="button"
-          phx-click="delete"
-          data-confirm="Delete this post permanently?"
-          class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.8rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
-        >
-          Delete post
-        </button>
+          event="delete"
+          confirm="Delete this post permanently?"
+        />
       </Components.drawer>
     </Layouts.admin>
     """

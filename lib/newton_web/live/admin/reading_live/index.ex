@@ -276,31 +276,13 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
         <Components.field field={@form[:finished_at]} type="date" label="Finished on" />
         <Components.field field={@form[:note]} type="textarea" label="Note" rows="3" />
 
-        <div class="mt-2 flex items-center gap-2">
-          <button
-            :if={@entry.id}
-            type="button"
-            phx-click="delete"
-            phx-value-id={@entry.id}
-            data-confirm="Delete this entry?"
-            class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
-          >
-            Delete
-          </button>
-          <div class="flex-1"></div>
-          <.link
-            patch={~p"/admin/reading"}
-            class="rounded-md px-3 py-1.5 text-[0.78rem] text-(--admin-text-muted) no-underline hover:text-(--admin-text)"
-          >
-            Cancel
-          </.link>
-          <button
-            type="submit"
-            class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
-          >
-            Save
-          </button>
-        </div>
+        <Components.drawer_footer
+          cancel_path={~p"/admin/reading"}
+          deletable?={@entry.id != nil}
+          delete_event="delete"
+          delete_id={@entry.id}
+          delete_confirm="Delete this entry?"
+        />
       </.form>
     </Components.drawer>
     """

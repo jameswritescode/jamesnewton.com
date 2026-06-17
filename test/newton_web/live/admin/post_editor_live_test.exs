@@ -297,7 +297,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     view |> element("button", "Settings") |> render_click()
 
     view
-    |> element("#publish-drawer button", "Delete post")
+    |> element("#publish-drawer button", "Delete")
     |> render_click()
     |> follow_redirect(conn, ~p"/admin/posts")
 

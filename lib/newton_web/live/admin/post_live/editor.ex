@@ -3,6 +3,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   alias Newton.Blog
   alias Newton.Blog.Post
+  alias Newton.Gallery
+  alias Newton.Gallery.Storage
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.Layouts
@@ -32,8 +34,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     if entry.done? do
       url =
         consume_uploaded_entry(socket, entry, fn %{path: path} ->
-          {:ok, key} = Newton.Gallery.Storage.store(path, entry.client_name)
-          {:ok, Newton.Gallery.image_url(key)}
+          {:ok, key} = Storage.store(path, entry.client_name)
+          {:ok, Gallery.image_url(key)}
         end)
 
       {:noreply, push_event(socket, "insert_image", %{url: url, alt: ""})}

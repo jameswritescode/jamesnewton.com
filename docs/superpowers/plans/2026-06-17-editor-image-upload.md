@@ -282,47 +282,29 @@ EOF
 
 ---
 
-### Task 4: Full verification + Playwright e2e
+### Task 4: Full verification + manual browser check
 
-**Files:**
-- Possibly add: an e2e spec under the existing Playwright test dir (match the repo's existing e2e layout/naming).
+The repo has no Playwright/e2e harness, and the dev CSP blocks injected JS, so the
+real-browser drop/paste path is verified manually rather than by an automated e2e.
+The pure JS logic (Task 1) and the whole server upload + `insert_image` contract
+(Task 3) are covered by automated tests.
 
 - [ ] **Step 1: Run the full precommit suite**
 
 Run: `mix precommit`
-Expected: PASS — formatting, compile (warnings-as-errors), full `mix test`, and the JS suite all green. Fix any findings (do not disable linters).
+Expected: PASS — formatting, compile (warnings-as-errors), credo, dialyzer, full `mix test`, and the JS suite all green. Fix any findings (do not disable linters).
 
-- [ ] **Step 2: Add a Playwright e2e that drops a PNG onto the editor**
+- [ ] **Step 2: Manually verify the drop/paste path in a browser**
 
-Locate the existing Playwright config/specs (e.g. `assets/test/e2e` or repo `e2e/` — match what's already there). Add a spec that: logs in as `hello@jamesnewton.com` / `password1234`, opens a draft post editor, drops (or uses Playwright's `setInputFiles` on the hidden `input[type=file]` for `:inline_images`) a small PNG, and asserts the hidden `#post_body_markdown` textarea value gains `![](/media/`. If the inserted URL is fetched, it resolves 200.
-
-- [ ] **Step 3: Run the e2e against a test server on PORT=4001**
-
-Run the project's e2e command with the server bound to `PORT=4001` (never 4000). Example shape (use the repo's actual scripts):
-
-```bash
-PORT=4001 MIX_ENV=test mix phx.server &   # or the repo's e2e harness
-# then run the playwright spec pointed at http://localhost:4001
-```
-
-Expected: the e2e passes — the dropped image appears as `![](/media/<key>)` in the editor body and the media URL resolves.
-
-- [ ] **Step 4: Commit the e2e**
-
-```bash
-git add <e2e-spec-path>
-git commit --no-gpg-sign -m "$(cat <<'EOF'
-Add e2e for dropping an image into the post editor
-
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
-EOF
-)"
-```
+Start a dev server on `PORT=4001` (never 4000), log in, open a draft post editor,
+and drag an image file onto the editor (and separately paste a screenshot). Confirm
+`![](/media/<key>)` is inserted at the cursor with the caret parked inside `![]`,
+and that the inserted `/media/...` URL resolves.
 
 ---
 
 ## Self-review notes
 
-- **Spec coverage:** drop + paste (Task 2), untracked `Storage.store` + `/media/<key>` (Task 3 callback), empty-alt insert with caret at offset 2 (Tasks 1+2), hidden `live_file_input` for registration/tests (Task 3), vitest for helpers (Task 1), LiveView `file_input`/`render_upload`/`assert_push_event` (Task 3), Playwright e2e (Task 4). Error cases (non-image filtered by `imageFiles`; oversize/wrong-type rejected by `allow_upload` constraints) are covered by the constraints + helper. `upload_errors` surfacing is a thin follow-up if the author needs the rejection message — noted, not blocking.
+- **Spec coverage:** drop + paste (Task 2), untracked `Storage.store` + `/media/<key>` (Task 3 callback), empty-alt insert with caret at offset 2 (Tasks 1+2), hidden `live_file_input` for registration/tests (Task 3), vitest for helpers (Task 1), LiveView `file_input`/`render_upload`/`assert_push_event` (Task 3), manual browser check of the drop/paste path (Task 4). Error cases (non-image filtered by `imageFiles`; oversize/wrong-type rejected by `allow_upload` constraints) are covered by the constraints + helper. `upload_errors` surfacing is a thin follow-up if the author needs the rejection message — noted, not blocking.
 - **Type consistency:** `imageMarkdown` returns `{text, caretOffset}` and the hook destructures exactly those names; `insert_image` payload is `%{url, alt}` and the client reads `{url}`; upload name `:inline_images` / `"inline_images"` matches across server `allow_upload`, the hook's `this.upload`, and the test's `file_input`.
 - **Out of scope (unchanged):** gallery-image picker, orphan cleanup, alt prompting, resizing, toolbar button.

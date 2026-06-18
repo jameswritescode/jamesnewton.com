@@ -16,7 +16,30 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> assign(:drawer_open, false)
      |> assign(:save_state, :saved)
      |> assign(:autosave_params, nil)
-     |> assign(:autosave_timer, nil)}
+     |> assign(:autosave_timer, nil)
+     |> allow_upload(:inline_images,
+       accept: ~w(.jpg .jpeg .png .webp .gif),
+       max_entries: 10,
+       max_file_size: 10_000_000,
+       auto_upload: true,
+       progress: &handle_inline_upload/3
+     )}
+  end
+
+  # Auto-upload progress callback: when an entry finishes, store it on the media
+  # volume (untracked) and push the URL back to the editor hook to insert.
+  defp handle_inline_upload(:inline_images, entry, socket) do
+    if entry.done? do
+      url =
+        consume_uploaded_entry(socket, entry, fn %{path: path} ->
+          {:ok, key} = Newton.Gallery.Storage.store(path, entry.client_name)
+          {:ok, Newton.Gallery.image_url(key)}
+        end)
+
+      {:noreply, push_event(socket, "insert_image", %{url: url, alt: ""})}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -357,6 +380,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           >
           </div>
         </div>
+
+        <.live_file_input upload={@uploads.inline_images} class="sr-only" />
 
         <.input
           field={@form[:excerpt]}

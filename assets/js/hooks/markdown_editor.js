@@ -4,6 +4,17 @@ export function syncMarkdown(field, markdown) {
   field.dispatchEvent(new Event("input", {bubbles: true}))
 }
 
+// Filter a FileList/array to the entries that are images.
+export function imageFiles(list) {
+  return Array.from(list || []).filter((f) => f.type && f.type.startsWith("image/"))
+}
+
+// Markdown for an inline image with an empty alt. caretOffset parks the cursor
+// just after the `![` so the author can type the alt text immediately.
+export function imageMarkdown(url) {
+  return {text: `![](${url})`, caretOffset: 2}
+}
+
 const PLACEHOLDER_TEXT = "Write your post in markdown…"
 
 // Dynamic import keeps CodeMirror out of the test bundle.

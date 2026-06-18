@@ -149,9 +149,46 @@ export const MarkdownEditor = {
         ],
       }),
     })
+
+    // Insert image markdown at the current selection when the server reports a
+    // finished upload. The updateListener above syncs the textarea → autosave.
+    this.handleEvent("insert_image", ({url}) => {
+      if (!this.view) return
+      const {text, caretOffset} = imageMarkdown(url)
+      const {from, to} = this.view.state.selection.main
+      this.view.dispatch({
+        changes: {from, to, insert: text},
+        selection: {anchor: from + caretOffset},
+      })
+      this.view.focus()
+    })
+
+    // Drag a file onto the editor → upload it. dragover must preventDefault so
+    // the browser treats the editor as a drop target.
+    this.onDragOver = (e) => e.preventDefault()
+    this.onDrop = (e) => {
+      const files = imageFiles(e.dataTransfer && e.dataTransfer.files)
+      if (!files.length) return
+      e.preventDefault()
+      this.upload("inline_images", files)
+    }
+    // Paste a screenshot/image → upload it (and preventDefault so CodeMirror
+    // doesn't also paste a filename or blob text).
+    this.onPaste = (e) => {
+      const files = imageFiles(e.clipboardData && e.clipboardData.files)
+      if (!files.length) return
+      e.preventDefault()
+      this.upload("inline_images", files)
+    }
+    this.el.addEventListener("dragover", this.onDragOver)
+    this.el.addEventListener("drop", this.onDrop)
+    this.el.addEventListener("paste", this.onPaste)
   },
 
   destroyed() {
+    if (this.onDragOver) this.el.removeEventListener("dragover", this.onDragOver)
+    if (this.onDrop) this.el.removeEventListener("drop", this.onDrop)
+    if (this.onPaste) this.el.removeEventListener("paste", this.onPaste)
     this.view?.destroy()
   },
 }

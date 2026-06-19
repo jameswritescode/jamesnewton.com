@@ -45,7 +45,15 @@ const scrollToHash = () => {
   if (el) el.scrollIntoView()
 }
 
-const swup = new Swup({containers: ["#main"]})
+// Leave hash-only links (e.g. footnote refs) to the browser: Swup intercepts
+// them and updates the URL via history.replaceState, which does NOT update the
+// :target pseudo-class, so the footnote highlight never fires on click. Native
+// fragment navigation updates :target and scrolls. Cross-page links with a hash
+// (e.g. /posts/x#y) still start with "/", so Swup keeps handling those.
+const swup = new Swup({
+  containers: ["#main"],
+  linkSelector: 'a[href]:not([href^="#"])',
+})
 // Page-specific JS (photo masonry + lightbox) re-runs on every swap.
 swup.hooks.on("visit:start", teardownPhotos)
 swup.hooks.on("content:replace", () => {

@@ -301,10 +301,27 @@ strong {
    link; the notes collect in a divider-separated "Notes" section at the foot of
    the post, set smaller and muted like a scholarly apparatus. */
 .post-body .footnote-ref a {
+  display: inline-block;
+  margin-left: 0.2em;
   color: var(--link);
   text-decoration: none;
   font-weight: 500;
-  padding: 0 0.1em;
+  line-height: 1.3;
+  padding: 0 0.3em;
+  border: 1px solid rgba(var(--dot), 0.16);
+  border-radius: var(--radius-sm);
+}
+
+.post-body .footnote-ref a:hover {
+  background-color: rgba(var(--dot), 0.12);
+}
+
+/* The reference you jump back to (via a footnote backref) flips to a filled box
+   so it's obvious which one in the body you returned to. */
+.post-body .footnote-ref a:target {
+  background-color: var(--link);
+  border-color: var(--link);
+  color: var(--bg);
 }
 
 .post-body .footnotes {

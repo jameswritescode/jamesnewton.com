@@ -1,6 +1,30 @@
 // Ported from the prototype ripple.js — a dot-matrix canvas with an expanding
 // ripple and a Konami "bloom" mode. Logic is unchanged; lifecycle is managed by
 // the LiveView hook so it cleans up on navigation.
+// Sampled feature points (canvas pixels) for a sad face centred on the viewport.
+// Eyes are two points above centre; the mouth is an inverted parabola (a frown:
+// high in the middle, drooping at the corners). Pure so it can be unit-tested.
+export function frownPoints(width, height) {
+  const cx = width / 2;
+  const cy = height / 2;
+  const s = Math.min(width, height) * 0.4; // overall face scale
+  const eyes = [
+    { x: cx - s * 0.28, y: cy - s * 0.22 },
+    { x: cx + s * 0.28, y: cy - s * 0.22 },
+  ];
+  const mouthWidth = s * 0.85;
+  const mouthTop = cy + s * 0.18; // y of the mouth's high (middle) point
+  const droop = s * 0.28; // how far the corners fall below the middle
+  const N = 11;
+  const mouth = [];
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1);
+    const k = (t - 0.5) * 2; // -1 (left) .. 0 (middle) .. +1 (right)
+    mouth.push({ x: cx - mouthWidth / 2 + t * mouthWidth, y: mouthTop + droop * k * k });
+  }
+  return { eyes, mouth };
+}
+
 export const RippleCanvas = {
   mounted() {
     const canvas = this.el;

@@ -6,8 +6,8 @@
 // high in the middle, drooping at the corners). Pure so it can be unit-tested.
 export function frownPoints(width, height) {
   const cx = width / 2;
-  const cy = height / 2;
-  const s = Math.min(width, height) * 0.4; // overall face scale
+  const cy = height * 0.55; // a touch below centre, to sit under the message
+  const s = Math.min(width, height) * 0.45; // overall face scale
   const eyes = [
     { x: cx - s * 0.28, y: cy - s * 0.22 },
     { x: cx + s * 0.28, y: cy - s * 0.22 },
@@ -34,7 +34,7 @@ export const RippleCanvas = {
     const RIPPLE_PEAK_OPACITY = 0.3, CYCLE_DURATION = 8000, RIPPLE_WIDTH = 150;
     const BLOOM_SIGMA = 140, BLOOM_DURATION = 3600, BLOOM_SPAWN_INTERVAL = 720;
     const BLOOM_BASE_ALPHA = 0.18, BLOOM_PEAK_ALPHA = 1;
-    const FROWN_INFLUENCE = DOT_SPACING * 1.4, FROWN_PEAK = 0.5, FROWN_PERIOD = 3500;
+    const FROWN_INFLUENCE = DOT_SPACING * 1.9, FROWN_PEAK = 0.9, FROWN_PERIOD = 3500;
 
     let width, height, cols, rows, maxDist;
     let frown = null;
@@ -128,7 +128,7 @@ export const RippleCanvas = {
         }));
         const sigmaSq2 = 2 * (RIPPLE_WIDTH / 3) * (RIPPLE_WIDTH / 3);
         const halfWidth = RIPPLE_WIDTH / 2;
-        const frownAmp = 0.6 + 0.4 * Math.sin((timestamp / FROWN_PERIOD) * 2 * Math.PI);
+        const frownAmp = 0.7 + 0.3 * Math.sin((timestamp / FROWN_PERIOD) * 2 * Math.PI);
         for (let row = 0; row < rows; row++) {
           for (let col = 0; col < cols; col++) {
             const x = col * DOT_SPACING, y = row * DOT_SPACING;

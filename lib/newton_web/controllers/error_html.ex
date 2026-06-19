@@ -6,18 +6,10 @@ defmodule NewtonWeb.ErrorHTML do
   """
   use NewtonWeb, :html
 
-  # If you want to customize your error pages,
-  # uncomment the embed_templates/1 call below
-  # and add pages to the error directory:
-  #
-  #   * lib/newton_web/controllers/error_html/404.html.heex
-  #   * lib/newton_web/controllers/error_html/500.html.heex
-  #
-  # embed_templates "error_html/*"
+  embed_templates "error_html/*"
 
-  # The default is to render a plain text page based on
-  # the template name. For example, "404.html" becomes
-  # "Not Found".
+  # Fallback for statuses without a dedicated template (e.g. 500): render the
+  # plain status text ("Internal Server Error") inside the root layout.
   def render(template, _assigns) do
     Phoenix.Controller.status_message_from_template(template)
   end

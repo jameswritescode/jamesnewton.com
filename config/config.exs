@@ -32,6 +32,7 @@ config :newton, NewtonWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [html: NewtonWeb.ErrorHTML, json: NewtonWeb.ErrorJSON],
+    root_layout: {NewtonWeb.Layouts, :root},
     layout: false
   ],
   pubsub_server: Newton.PubSub,

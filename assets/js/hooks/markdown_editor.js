@@ -15,6 +15,50 @@ export function imageMarkdown(url) {
   return {text: `![](${url})`, caretOffset: 2}
 }
 
+// Toggle a symmetric inline marker (e.g. "**" for bold) around the selection
+// [from, to) of `doc`. Returns the document change plus the selection to keep:
+// {from, to, insert, anchor, head} with all offsets in document coordinates.
+//
+//   - empty selection  → insert the pair, caret parked between them
+//   - plain selection  → wrap it
+//   - already wrapped  → unwrap (markers inside the selection *or* just outside
+//                        it, so double-clicking a word inside **bold** toggles)
+export function toggleMarker(doc, from, to, marker) {
+  const len = marker.length
+  let f = from
+  let t = to
+  let sel = doc.slice(from, to)
+
+  const before = from >= len ? doc.slice(from - len, from) : ""
+  const after = doc.slice(to, to + len)
+  if (before === marker && after === marker) {
+    f = from - len
+    t = to + len
+    sel = marker + sel + marker
+  }
+
+  const wrapped = sel.length >= 2 * len && sel.startsWith(marker) && sel.endsWith(marker)
+  if (wrapped) {
+    const inner = sel.slice(len, sel.length - len)
+    return {from: f, to: t, insert: inner, anchor: f, head: f + inner.length}
+  }
+
+  const insert = marker + sel + marker
+  return {from: f, to: t, insert, anchor: f + len, head: f + len + sel.length}
+}
+
+// Link markdown for the selection. anchor/head are offsets within `insert`:
+// a selection puts the `url` placeholder under the selection so it's ready to
+// type/paste; an empty selection parks the caret inside the `[]`.
+export function wrapLink(selected) {
+  if (selected) {
+    const insert = `[${selected}](url)`
+    const anchor = insert.length - 4
+    return {insert, anchor, head: anchor + 3}
+  }
+  return {insert: "[](url)", anchor: 1, head: 1}
+}
+
 const PLACEHOLDER_TEXT = "Write your post in markdown…"
 
 // Dynamic import keeps CodeMirror out of the test bundle.
@@ -22,7 +66,7 @@ export const MarkdownEditor = {
   async mounted() {
     const [
       {EditorView, keymap, placeholder, Decoration, ViewPlugin},
-      {EditorState, RangeSetBuilder},
+      {EditorState, EditorSelection, RangeSetBuilder},
       {markdown, markdownLanguage},
       {languages},
       {HighlightStyle, syntaxHighlighting, indentOnInput, syntaxTree},
@@ -129,6 +173,39 @@ export const MarkdownEditor = {
       },
     })
 
+    // Commands for the markdown formatting shortcuts. Each maps every selection
+    // through a pure helper, so multi-cursor edits stay correct.
+    const toggle = (marker) => (view) => {
+      view.dispatch(
+        view.state.changeByRange((range) => {
+          const r = toggleMarker(view.state.doc.toString(), range.from, range.to, marker)
+          return {
+            changes: {from: r.from, to: r.to, insert: r.insert},
+            range: EditorSelection.range(r.anchor, r.head),
+          }
+        })
+      )
+      return true
+    }
+    const insertLink = (view) => {
+      view.dispatch(
+        view.state.changeByRange((range) => {
+          const {insert, anchor, head} = wrapLink(view.state.doc.sliceString(range.from, range.to))
+          return {
+            changes: {from: range.from, to: range.to, insert},
+            range: EditorSelection.range(range.from + anchor, range.from + head),
+          }
+        })
+      )
+      return true
+    }
+    const markdownKeymap = keymap.of([
+      {key: "Mod-b", run: toggle("**"), preventDefault: true},
+      {key: "Mod-i", run: toggle("_"), preventDefault: true},
+      {key: "Mod-e", run: toggle("`"), preventDefault: true},
+      {key: "Mod-k", run: insertLink, preventDefault: true},
+    ])
+
     this.view = new EditorView({
       parent: this.el,
       state: EditorState.create({
@@ -136,6 +213,8 @@ export const MarkdownEditor = {
         extensions: [
           history(),
           indentOnInput(),
+          // Higher precedence than the default keymap so the shortcuts win.
+          markdownKeymap,
           keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
           EditorView.lineWrapping,
           markdown({base: markdownLanguage, codeLanguages: languages}),

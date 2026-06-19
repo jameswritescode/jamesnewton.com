@@ -71,3 +71,13 @@
 :where([data-admin-theme]) button:not(:disabled) {
   cursor: pointer;
 }
+
+/* Photo reorder: while a tile is being dragged the SortableGrid hook adds
+   `is-dragging` (one tick after dragstart, so the native drag image is captured
+   crisp). The source dims into a dashed placeholder "hole" so it's obvious which
+   tile you're holding as its neighbours FLIP-slide around it. */
+#photos [data-id].is-dragging {
+  opacity: 0.35;
+  outline: 2px dashed var(--admin-accent);
+  outline-offset: -2px;
+}

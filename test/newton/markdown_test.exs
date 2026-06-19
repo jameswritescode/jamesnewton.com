@@ -43,6 +43,18 @@ defmodule Newton.MarkdownTest do
     refute excerpt =~ "]"
   end
 
+  test "excerpt drops footnote reference markers" do
+    md = """
+    The retry pattern has three forms.[^retry] It depends on the failure mode.
+
+    [^retry]: Immediate, fixed-delay, and exponential backoff.
+    """
+
+    excerpt = Markdown.excerpt(md)
+    assert excerpt == "The retry pattern has three forms. It depends on the failure mode."
+    refute excerpt =~ "[^"
+  end
+
   test "excerpt strips inline links and code to plain text" do
     md = "A `code` bit and a [link](https://x.com)."
     assert Markdown.excerpt(md) == "A code bit and a link."

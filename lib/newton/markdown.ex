@@ -29,7 +29,7 @@ defmodule Newton.Markdown do
   @doc "Plain-text excerpt from the first paragraph, truncated at a word boundary."
   def excerpt(markdown) when is_binary(markdown) do
     markdown
-    |> MDEx.parse_document!()
+    |> MDEx.parse_document!(extension: @extension)
     |> first_paragraph_text()
     |> truncate(@excerpt_max_chars)
   end
@@ -55,6 +55,7 @@ defmodule Newton.Markdown do
   defp node_text(%MDEx.Code{literal: literal}), do: literal
   defp node_text(%MDEx.SoftBreak{}), do: " "
   defp node_text(%MDEx.LineBreak{}), do: " "
+  defp node_text(%MDEx.FootnoteReference{}), do: ""
   defp node_text(%{nodes: nodes}) when is_list(nodes), do: Enum.map_join(nodes, "", &node_text/1)
   defp node_text(_), do: ""
 

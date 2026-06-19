@@ -34,8 +34,11 @@ export const RippleCanvas = {
     const RIPPLE_PEAK_OPACITY = 0.3, CYCLE_DURATION = 8000, RIPPLE_WIDTH = 150;
     const BLOOM_SIGMA = 140, BLOOM_DURATION = 3600, BLOOM_SPAWN_INTERVAL = 720;
     const BLOOM_BASE_ALPHA = 0.18, BLOOM_PEAK_ALPHA = 1;
+    const FROWN_INFLUENCE = DOT_SPACING * 1.4, FROWN_PEAK = 0.5, FROWN_PERIOD = 3500;
 
     let width, height, cols, rows, maxDist;
+    let frown = null;
+    const hasFrown = !!document.querySelector("[data-frown]");
     const ripples = [];
     const blooms = [];
     let lastBloomSpawn = -Infinity;
@@ -49,6 +52,25 @@ export const RippleCanvas = {
       cols = Math.ceil(width / DOT_SPACING) + 1;
       rows = Math.ceil(height / DOT_SPACING) + 1;
       maxDist = Math.sqrt(width * width + height * height);
+      if (hasFrown) frown = frownPoints(width, height);
+    };
+    // Extra opacity for dots near the frown's features. `amp` (0..1) is the
+    // breathing amplitude; the boost is a gaussian falloff from the nearest eye
+    // or mouth point. Monochrome — drawn in the dot colour by the caller.
+    const frownBoost = (x, y, amp) => {
+      if (!frown) return 0;
+      let nearestSq = Infinity;
+      for (const p of frown.eyes) {
+        const dx = x - p.x, dy = y - p.y, dSq = dx * dx + dy * dy;
+        if (dSq < nearestSq) nearestSq = dSq;
+      }
+      for (const p of frown.mouth) {
+        const dx = x - p.x, dy = y - p.y, dSq = dx * dx + dy * dy;
+        if (dSq < nearestSq) nearestSq = dSq;
+      }
+      if (nearestSq > FROWN_INFLUENCE * FROWN_INFLUENCE) return 0;
+      const sigma = FROWN_INFLUENCE / 2;
+      return amp * Math.exp(-nearestSq / (2 * sigma * sigma));
     };
     const spawnRipple = (t) => ripples.push({ originX: Math.random()*width, originY: Math.random()*height, startTime: t });
     const spawnBloom = (t) => { blooms.push({ centerX: Math.random()*width, centerY: Math.random()*height, startTime: t }); lastBloomSpawn = t; };
@@ -106,6 +128,7 @@ export const RippleCanvas = {
         }));
         const sigmaSq2 = 2 * (RIPPLE_WIDTH / 3) * (RIPPLE_WIDTH / 3);
         const halfWidth = RIPPLE_WIDTH / 2;
+        const frownAmp = 0.6 + 0.4 * Math.sin((timestamp / FROWN_PERIOD) * 2 * Math.PI);
         for (let row = 0; row < rows; row++) {
           for (let col = 0; col < cols; col++) {
             const x = col * DOT_SPACING, y = row * DOT_SPACING;
@@ -119,9 +142,10 @@ export const RippleCanvas = {
             }
             const combinedEffect = totalEffect > 1 ? 1 : totalEffect;
             const opacity = behindAny ? baseOpacity + (ripplePeakOpacity - baseOpacity) * combinedEffect : baseOpacity;
+            const finalOpacity = Math.min(1, opacity + FROWN_PEAK * frownBoost(x, y, frownAmp));
             ctx.beginPath();
             ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${dot}, ${opacity})`;
+            ctx.fillStyle = `rgba(${dot}, ${finalOpacity})`;
             ctx.fill();
           }
         }
@@ -156,9 +180,11 @@ export const RippleCanvas = {
       ctx.fillRect(0, 0, width, height);
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
+          const x = col * DOT_SPACING, y = row * DOT_SPACING;
+          const opacity = Math.min(1, baseOpacity + FROWN_PEAK * frownBoost(x, y, 1));
           ctx.beginPath();
-          ctx.arc(col * DOT_SPACING, row * DOT_SPACING, DOT_RADIUS, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${dot}, ${baseOpacity})`;
+          ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${dot}, ${opacity})`;
           ctx.fill();
         }
       }

@@ -14,7 +14,7 @@ defmodule NewtonWeb.ErrorHTMLTest do
     assert conn.status == 404
     body = conn.resp_body
     assert body =~ "404"
-    assert body =~ "wandered off"
+    assert body =~ "find the page you were looking for"
     assert body =~ "Back home"
     # rendered inside the root layout (canvas) with the frown marker
     assert body =~ "rippleCanvas"
@@ -27,6 +27,6 @@ defmodule NewtonWeb.ErrorHTMLTest do
     assert {404, _headers, body} =
              assert_error_sent(404, fn -> get(conn, "/posts/does-not-exist") end)
 
-    assert body =~ "wandered off"
+    assert body =~ "find the page you were looking for"
   end
 end

@@ -2,25 +2,30 @@
 // ripple and a Konami "bloom" mode. Logic is unchanged; lifecycle is managed by
 // the LiveView hook so it cleans up on navigation.
 // Sampled feature points (canvas pixels) for a sad face centred on the viewport.
-// Eyes are two points above centre; the mouth is an inverted parabola (a frown:
-// high in the middle, drooping at the corners). Pure so it can be unit-tested.
+// Eyes are two points above centre; the mouth is a wide circular arc (a rounded
+// frown: high in the middle, corners drooping). Pure so it can be unit-tested.
 export function frownPoints(width, height) {
   const cx = width / 2;
-  const cy = height * 0.55; // a touch below centre, to sit under the message
-  const s = Math.min(width, height) * 0.45; // overall face scale
+  const cy = height / 2; // centred
+  const s = Math.min(width, height) * 0.85; // overall face scale
   const eyes = [
     { x: cx - s * 0.28, y: cy - s * 0.22 },
     { x: cx + s * 0.28, y: cy - s * 0.22 },
   ];
-  const mouthWidth = s * 0.85;
-  const mouthTop = cy + s * 0.18; // y of the mouth's high (middle) point
-  const droop = s * 0.28; // how far the corners fall below the middle
-  const N = 11;
+  // A large radius relative to the width keeps the frown wide and gently rounded
+  // rather than a sharp parabola; the arc's circle sits below the mouth so the
+  // middle is the high point and the corners droop.
+  const mouthWidth = s * 0.95;
+  const radius = mouthWidth * 0.75;
+  const mouthTop = cy + s * 0.2; // y of the mouth's high (middle) point
+  const arcCenterY = mouthTop + radius;
+  const phi = Math.asin(mouthWidth / 2 / radius); // half-angle subtended
+  const N = 13;
   const mouth = [];
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1);
-    const k = (t - 0.5) * 2; // -1 (left) .. 0 (middle) .. +1 (right)
-    mouth.push({ x: cx - mouthWidth / 2 + t * mouthWidth, y: mouthTop + droop * k * k });
+    const angle = -phi + t * 2 * phi;
+    mouth.push({ x: cx + radius * Math.sin(angle), y: arcCenterY - radius * Math.cos(angle) });
   }
   return { eyes, mouth };
 }
@@ -34,7 +39,8 @@ export const RippleCanvas = {
     const RIPPLE_PEAK_OPACITY = 0.3, CYCLE_DURATION = 8000, RIPPLE_WIDTH = 150;
     const BLOOM_SIGMA = 140, BLOOM_DURATION = 3600, BLOOM_SPAWN_INTERVAL = 720;
     const BLOOM_BASE_ALPHA = 0.18, BLOOM_PEAK_ALPHA = 1;
-    const FROWN_INFLUENCE = DOT_SPACING * 1.9, FROWN_PEAK = 0.9, FROWN_PERIOD = 3500;
+    const FROWN_EYE_INFLUENCE = DOT_SPACING * 2.8, FROWN_MOUTH_INFLUENCE = DOT_SPACING * 1.7;
+    const FROWN_PEAK = 0.9, FROWN_PERIOD = 3500;
 
     let width, height, cols, rows, maxDist;
     let frown = null;
@@ -57,20 +63,21 @@ export const RippleCanvas = {
     // Extra opacity for dots near the frown's features. `amp` (0..1) is the
     // breathing amplitude; the boost is a gaussian falloff from the nearest eye
     // or mouth point. Monochrome — drawn in the dot colour by the caller.
+    const featureBoost = (x, y, points, influence) => {
+      let nearestSq = Infinity;
+      for (const p of points) {
+        const dx = x - p.x, dy = y - p.y, dSq = dx * dx + dy * dy;
+        if (dSq < nearestSq) nearestSq = dSq;
+      }
+      if (nearestSq > influence * influence) return 0;
+      const sigma = influence / 2;
+      return Math.exp(-nearestSq / (2 * sigma * sigma));
+    };
     const frownBoost = (x, y, amp) => {
       if (!frown) return 0;
-      let nearestSq = Infinity;
-      for (const p of frown.eyes) {
-        const dx = x - p.x, dy = y - p.y, dSq = dx * dx + dy * dy;
-        if (dSq < nearestSq) nearestSq = dSq;
-      }
-      for (const p of frown.mouth) {
-        const dx = x - p.x, dy = y - p.y, dSq = dx * dx + dy * dy;
-        if (dSq < nearestSq) nearestSq = dSq;
-      }
-      if (nearestSq > FROWN_INFLUENCE * FROWN_INFLUENCE) return 0;
-      const sigma = FROWN_INFLUENCE / 2;
-      return amp * Math.exp(-nearestSq / (2 * sigma * sigma));
+      const eye = featureBoost(x, y, frown.eyes, FROWN_EYE_INFLUENCE);
+      const mouth = featureBoost(x, y, frown.mouth, FROWN_MOUTH_INFLUENCE);
+      return amp * Math.max(eye, mouth);
     };
     const spawnRipple = (t) => ripples.push({ originX: Math.random()*width, originY: Math.random()*height, startTime: t });
     const spawnBloom = (t) => { blooms.push({ centerX: Math.random()*width, centerY: Math.random()*height, startTime: t }); lastBloomSpawn = t; };

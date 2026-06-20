@@ -5,6 +5,7 @@
     <p class="error-message">Couldn't find the page you were looking for.</p>
     <p><.link href={~p"/"} class="error-home">← Back home</.link></p>
   </article>
+  <%!-- Inside #main so Swup adds/removes it with the page; the RippleCanvas
+        hook watches for it to draw a frown into the dot matrix. --%>
+  <div data-frown hidden></div>
 </main>
-<%!-- Tells the RippleCanvas hook to draw a frown into the dot matrix. --%>
-<div data-frown hidden></div>

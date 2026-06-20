@@ -44,7 +44,6 @@ export const RippleCanvas = {
 
     let width, height, cols, rows, maxDist;
     let frown = null;
-    const hasFrown = !!document.querySelector("[data-frown]");
     const ripples = [];
     const blooms = [];
     let lastBloomSpawn = -Infinity;
@@ -52,13 +51,21 @@ export const RippleCanvas = {
     const KONAMI_SEQUENCE = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
     let konamiProgress = 0;
 
+    // Frown mode is on whenever a [data-frown] marker is in the DOM (the 404
+    // page). The canvas lives outside #main and persists across Swup swaps, so
+    // this is re-evaluated on resize and after every Swup navigation — otherwise
+    // the frown would stick around after you leave the 404.
+    const updateFrown = () => {
+      frown = document.querySelector("[data-frown]") ? frownPoints(width, height) : null;
+    };
+
     const resize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
       cols = Math.ceil(width / DOT_SPACING) + 1;
       rows = Math.ceil(height / DOT_SPACING) + 1;
       maxDist = Math.sqrt(width * width + height * height);
-      if (hasFrown) frown = frownPoints(width, height);
+      updateFrown();
     };
     // Extra opacity for dots near the frown's features. `amp` (0..1) is the
     // breathing amplitude; the boost is a gaussian falloff from the nearest eye
@@ -218,9 +225,17 @@ export const RippleCanvas = {
       resize();
       if (reduceMotion.matches) renderStatic();
     };
+    // After a Swup page swap the canvas isn't re-mounted, so re-check whether the
+    // new page is a 404 (the [data-frown] marker rides inside #main). The
+    // animation loop reads `frown` each frame; the static render needs a repaint.
+    this._onSwupContent = () => {
+      updateFrown();
+      if (reduceMotion.matches) renderStatic();
+    };
 
     window.addEventListener("resize", this._onResize);
     window.addEventListener("keydown", this._onKonami);
+    document.addEventListener("swup:content:replace", this._onSwupContent);
     reduceMotion.addEventListener("change", this._onMotionChange);
     resize();
     applyMotionPreference();
@@ -230,6 +245,7 @@ export const RippleCanvas = {
     cancelAnimationFrame(this._raf);
     window.removeEventListener("resize", this._onResize);
     window.removeEventListener("keydown", this._onKonami);
+    document.removeEventListener("swup:content:replace", this._onSwupContent);
     this._reduceMotion.removeEventListener("change", this._onMotionChange);
   },
 };

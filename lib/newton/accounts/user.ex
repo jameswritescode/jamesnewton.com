@@ -9,6 +9,7 @@ defmodule Newton.Accounts.User do
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
+    has_many :credentials, Newton.Accounts.Credential
     timestamps(type: :utc_datetime)
   end
 

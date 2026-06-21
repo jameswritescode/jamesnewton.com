@@ -343,4 +343,27 @@ defmodule Newton.AccountsTest do
       refute inspect(%User{password: "123456"}) =~ "password: \"123456\""
     end
   end
+
+  describe "credentials" do
+    test "create, list, and delete are owner-scoped" do
+      user = user_fixture()
+      other = user_fixture()
+
+      {:ok, cred} =
+        Accounts.create_credential(user, %{
+          credential_id: <<1, 2, 3>>,
+          public_key: :erlang.term_to_binary(%{1 => 2}),
+          sign_count: 0,
+          label: "Laptop"
+        })
+
+      assert [%{label: "Laptop"}] = Accounts.list_user_credentials(user)
+      assert Accounts.list_user_credentials(other) == []
+
+      assert Accounts.get_credential_by_external_id(<<1, 2, 3>>).user_id == user.id
+      assert Accounts.delete_credential(other, cred.id) == :error
+      assert {:ok, _} = Accounts.delete_credential(user, cred.id)
+      assert Accounts.list_user_credentials(user) == []
+    end
+  end
 end

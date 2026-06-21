@@ -6,7 +6,7 @@ defmodule Newton.Accounts do
   import Ecto.Query, warn: false
   alias Newton.Repo
 
-  alias Newton.Accounts.{User, UserNotifier, UserToken}
+  alias Newton.Accounts.{User, UserNotifier, UserToken, Credential}
 
   ## Database getters
 
@@ -247,5 +247,45 @@ defmodule Newton.Accounts do
         {:ok, {user, tokens_to_expire}}
       end
     end)
+  end
+
+  ## Credentials
+
+  def list_user_credentials(%User{id: id}) do
+    Repo.all(from c in Credential, where: c.user_id == ^id, order_by: [desc: c.inserted_at])
+  end
+
+  @doc """
+  Looks up a credential by its WebAuthn credential ID, preloading `:user`.
+
+  Intentionally unscoped — returns credentials belonging to any user. This is
+  correct for the passkey authentication flow: the authenticator presents its
+  credential ID before we know who the user is, and the caller verifies identity
+  through the assertion signature rather than through an ownership check here.
+  """
+  def get_credential_by_external_id(credential_id) do
+    Repo.one(from c in Credential, where: c.credential_id == ^credential_id, preload: :user)
+  end
+
+  def create_credential(%User{id: user_id}, attrs) do
+    %Credential{user_id: user_id}
+    |> Credential.label_changeset(Map.take(attrs, [:label]))
+    |> Ecto.Changeset.put_change(:credential_id, attrs.credential_id)
+    |> Ecto.Changeset.put_change(:public_key, attrs.public_key)
+    |> Ecto.Changeset.put_change(:sign_count, attrs.sign_count)
+    |> Repo.insert()
+  end
+
+  def update_credential_sign_count(%Credential{} = cred, count, used_at) do
+    cred
+    |> Ecto.Changeset.change(sign_count: count, last_used_at: used_at)
+    |> Repo.update()
+  end
+
+  def delete_credential(%User{id: user_id}, id) do
+    case Repo.get_by(Credential, id: id, user_id: user_id) do
+      nil -> :error
+      cred -> Repo.delete(cred)
+    end
   end
 end

@@ -488,4 +488,35 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     assert has_element?(view, "#unsaved-guard[data-unsaved='false']")
   end
+
+  test "enabling and disabling the preview link on a saved draft", %{conn: conn} do
+    {view, post} = open_draft(conn)
+    view |> element("button", "Settings") |> render_click()
+
+    refute render(view) =~ "?p="
+
+    view |> element("#publish-drawer button", "Enable preview link") |> render_click()
+
+    updated = Newton.Blog.get_post!(post.id)
+    assert updated.preview_token
+    assert render(view) =~ "?p=#{updated.preview_token}"
+
+    view |> element("#publish-drawer button", "Turn off preview link") |> render_click()
+    assert is_nil(Newton.Blog.get_post!(post.id).preview_token)
+  end
+
+  test "the preview control is hidden once a post is published", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Pub",
+        slug: "pub-preview",
+        body_markdown: "b",
+        published_at: ~U[2026-01-01 00:00:00Z]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    view |> element("button", "Settings") |> render_click()
+
+    refute has_element?(view, "#publish-drawer button", "Enable preview link")
+  end
 end

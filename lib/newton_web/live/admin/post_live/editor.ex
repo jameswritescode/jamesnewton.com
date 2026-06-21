@@ -145,6 +145,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:noreply, assign(socket, :drawer_open, false)}
   end
 
+  def handle_event("enable_preview", _params, socket) do
+    {:ok, post} = Blog.enable_preview(socket.assigns.post)
+    {:noreply, assign(socket, :post, post)}
+  end
+
+  def handle_event("disable_preview", _params, socket) do
+    {:ok, post} = Blog.disable_preview(socket.assigns.post)
+    {:noreply, assign(socket, :post, post)}
+  end
+
   def handle_event("publish_now", _params, socket) do
     {:noreply, set_published(socket, DateTime.truncate(DateTime.utc_now(), :second))}
   end
@@ -424,6 +434,50 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           >
             View on site ↗
           </.link>
+        </div>
+
+        <div :if={is_nil(@published_at)} class="border-t border-(--admin-border) pt-3">
+          <div class="mb-1 text-[0.78rem] font-medium text-(--admin-text)">Preview link</div>
+          <%= cond do %>
+            <% is_nil(@post.id) -> %>
+              <p class="text-[0.75rem] text-(--admin-text-subtle)">
+                Save the draft to share a preview.
+              </p>
+            <% @post.preview_token -> %>
+              <input
+                id="preview-link-url"
+                type="text"
+                readonly
+                value={url(~p"/posts/#{@post.slug}?#{[p: @post.preview_token]}")}
+                class="w-full rounded-md border border-(--admin-border) bg-(--admin-surface) px-2 py-1 text-[0.75rem] text-(--admin-text-muted) focus:outline-none"
+              />
+              <div class="mt-2 flex gap-2">
+                <button
+                  id="copy-preview-link"
+                  type="button"
+                  phx-hook="CopyText"
+                  data-clipboard-text={url(~p"/posts/#{@post.slug}?#{[p: @post.preview_token]}")}
+                  class="rounded-md bg-(--admin-accent) px-3 py-1 text-[0.75rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+                >
+                  Copy
+                </button>
+                <button
+                  type="button"
+                  phx-click="disable_preview"
+                  class="rounded-md border border-(--admin-border) px-3 py-1 text-[0.75rem] hover:bg-(--admin-accent-soft)"
+                >
+                  Turn off preview link
+                </button>
+              </div>
+            <% true -> %>
+              <button
+                type="button"
+                phx-click="enable_preview"
+                class="rounded-md border border-(--admin-border) px-3 py-1 text-[0.75rem] hover:bg-(--admin-accent-soft)"
+              >
+                Enable preview link
+              </button>
+          <% end %>
         </div>
 
         <Components.drawer_footer

@@ -51,15 +51,16 @@ defmodule NewtonWeb.UserLive.Verify do
             Use a recovery code instead
           </button>
 
-          <form
+          <.form
             :if={@show_recovery}
+            for={%{}}
             action={~p"/login/verify/recovery"}
             method="post"
             class="mt-4 flex flex-col gap-2"
           >
-            <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
-            <label class="text-[0.78rem] text-(--admin-text-muted)">Recovery code</label>
+            <label for="recovery-code" class="text-[0.78rem] text-(--admin-text-muted)">Recovery code</label>
             <input
+              id="recovery-code"
               type="text"
               name="code"
               autocomplete="one-time-code"
@@ -73,7 +74,7 @@ defmodule NewtonWeb.UserLive.Verify do
             >
               Sign in with recovery code
             </button>
-          </form>
+          </.form>
         </div>
 
         <AdminLayouts.admin_flash_group flash={@flash} />

@@ -94,6 +94,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
        |> assign(:credentials, Accounts.list_user_credentials(socket.assigns.user))
        |> assign(:reg_challenge, nil)
        |> assign(:new_label, "")
+       |> assign(:new_recovery_codes, nil)
        |> put_flash(:info, "Passkey added.")}
     else
       _ -> {:noreply, put_flash(socket, :error, "Could not add that passkey.")}
@@ -228,9 +229,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
         </p>
 
         <Components.button phx-click="generate_recovery_codes">
-          {if @recovery_count > 0 and is_nil(@new_recovery_codes),
-            do: "Regenerate recovery codes",
-            else: "Generate recovery codes"}
+          {if @recovery_count > 0, do: "Regenerate recovery codes", else: "Generate recovery codes"}
         </Components.button>
       </section>
     </Layouts.admin>

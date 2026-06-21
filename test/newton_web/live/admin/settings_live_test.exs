@@ -75,5 +75,8 @@ defmodule NewtonWeb.Admin.SettingsLiveTest do
     html = view |> element("button", "Generate recovery codes") |> render_click()
     assert length(Regex.scan(~r/[A-Z0-9]{5}-[A-Z0-9]{5}/, html)) == 10
     assert Newton.Accounts.count_unused_recovery_codes(user) == 10
+
+    # the button now offers to regenerate
+    assert has_element?(view, "button", "Regenerate recovery codes")
   end
 end

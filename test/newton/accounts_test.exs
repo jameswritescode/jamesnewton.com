@@ -252,6 +252,28 @@ defmodule Newton.AccountsTest do
     end
   end
 
+  describe "update_user_password/3 (current-password checked)" do
+    test "rejects a wrong current password" do
+      user = user_fixture()
+
+      assert {:error, changeset} =
+               Accounts.update_user_password(user, "wrong", %{password: "new valid password"})
+
+      assert %{current_password: ["is not valid"]} = errors_on(changeset)
+    end
+
+    test "changes the password with the correct current password" do
+      user = user_fixture() |> set_password()
+
+      assert {:ok, {updated, _expired}} =
+               Accounts.update_user_password(user, valid_user_password(), %{
+                 password: "another valid password"
+               })
+
+      assert Accounts.get_user_by_email_and_password(updated.email, "another valid password")
+    end
+  end
+
   describe "generate_user_session_token/1" do
     setup do
       %{user: user_fixture()}

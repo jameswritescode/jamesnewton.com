@@ -49,6 +49,7 @@ defmodule NewtonWeb.Router do
       live "/photos/:id", GalleryLive.Show, :show
       live "/photos/:id/edit", GalleryLive.Show, :settings
       live "/photos/:id/photo/:photo_id", GalleryLive.Show, :photo
+      live "/settings", SettingsLive, :edit
     end
   end
 

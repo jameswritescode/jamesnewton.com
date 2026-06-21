@@ -167,6 +167,28 @@ defmodule Newton.Accounts do
     |> update_user_and_delete_all_tokens()
   end
 
+  @doc "Change the password after verifying the supplied current password."
+  def update_user_password(user, current_password, attrs) do
+    changeset =
+      user
+      |> User.password_changeset(attrs)
+      |> maybe_validate_current_password(user, current_password)
+
+    if changeset.valid? do
+      update_user_and_delete_all_tokens(changeset)
+    else
+      {:error, %{changeset | action: :update}}
+    end
+  end
+
+  defp maybe_validate_current_password(changeset, user, current_password) do
+    if User.valid_password?(user, current_password) do
+      changeset
+    else
+      Ecto.Changeset.add_error(changeset, :current_password, "is not valid")
+    end
+  end
+
   ## Session
 
   @doc """

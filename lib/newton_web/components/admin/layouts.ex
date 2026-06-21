@@ -11,12 +11,13 @@ defmodule NewtonWeb.Admin.Layouts do
     %{key: :dashboard, label: "Dashboard", path: "/admin"},
     %{key: :posts, label: "Posts", path: "/admin/posts"},
     %{key: :reading, label: "Reading", path: "/admin/reading"},
-    %{key: :photos, label: "Photos", path: "/admin/photos"}
+    %{key: :photos, label: "Photos", path: "/admin/photos"},
+    %{key: :settings, label: "Settings", path: "/admin/settings"}
   ]
 
   # Sections whose routes exist today render as links; the rest are inert
   # placeholders until their own plans land.
-  @built [:dashboard, :posts, :reading, :photos]
+  @built [:dashboard, :posts, :reading, :photos, :settings]
 
   attr :flash, :map, default: %{}
   attr :current, :atom, required: true, doc: "the active section key"

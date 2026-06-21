@@ -71,7 +71,15 @@ timestamps()
 
 ## Section 3 — Flow A: register a passkey (settings, over the socket)
 
-The user is already authenticated, so no cookie handoff is needed.
+Registration only **stores a new credential for the already-known user** — it
+never establishes or changes a session, so there's no auth cookie to set and
+therefore no controller round-trip ("handoff"): the whole ceremony can stay over
+the LiveView socket. (Login is different — Section 4 — because it *does* set the
+session cookie, which a socket can't do.) Registration also always happens while
+authenticated by construction: the settings page is in the `require_authenticated`
+admin `live_session`, so a signed-out visitor is redirected to `/login` and never
+reaches it. There is no "register while signed out" path — that would be sign-up
+(create account + log in), which this single-admin site doesn't support.
 
 1. Settings LiveView, on "Add a passkey", generates a **registration challenge**
    via `Wax.new_registration_challenge(opts)` and keeps it in socket assigns;

@@ -58,10 +58,15 @@ defmodule NewtonWeb.PostControllerTest do
       assert html_response(conn, 200) =~ "Secret Draft"
     end
 
-    test "a draft is visible with a valid ?p token and carries noindex", %{conn: conn, draft: draft} do
+    test "a draft is visible with a valid ?p token and carries noindex", %{
+      conn: conn,
+      draft: draft
+    } do
       {:ok, draft} = Blog.enable_preview(draft)
 
-      html = conn |> get(~p"/posts/#{draft.slug}?#{[p: draft.preview_token]}") |> html_response(200)
+      html =
+        conn |> get(~p"/posts/#{draft.slug}?#{[p: draft.preview_token]}") |> html_response(200)
+
       assert html =~ "Secret Draft"
       assert html =~ "Draft preview"
       assert html =~ ~s(name="robots")

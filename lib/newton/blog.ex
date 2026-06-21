@@ -62,7 +62,9 @@ defmodule Newton.Blog do
 
   @doc "Mint a preview token for a draft (idempotent). No-op once published."
   def enable_preview(%Post{published_at: nil} = post) do
-    token = post.preview_token || (32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false))
+    token =
+      post.preview_token || 32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
+
     post |> Ecto.Changeset.change(preview_token: token) |> Repo.update()
   end
 

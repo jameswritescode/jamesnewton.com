@@ -57,5 +57,37 @@ defmodule NewtonWeb.PostControllerTest do
 
       assert html_response(conn, 200) =~ "Secret Draft"
     end
+
+    test "a draft is visible with a valid ?p token and carries noindex", %{conn: conn, draft: draft} do
+      {:ok, draft} = Blog.enable_preview(draft)
+
+      html = conn |> get(~p"/posts/#{draft.slug}?#{[p: draft.preview_token]}") |> html_response(200)
+      assert html =~ "Secret Draft"
+      assert html =~ "Draft preview"
+      assert html =~ ~s(name="robots")
+      assert html =~ "noindex"
+    end
+
+    test "a draft 404s with a wrong or missing ?p token", %{conn: conn, draft: draft} do
+      {:ok, draft} = Blog.enable_preview(draft)
+
+      assert_error_sent 404, fn -> get(conn, ~p"/posts/#{draft.slug}?#{[p: "nope"]}") end
+      assert_error_sent 404, fn -> get(conn, ~p"/posts/#{draft.slug}") end
+    end
+
+    test "a published post renders without a token and is not noindex", %{conn: conn} do
+      {:ok, _} =
+        Blog.create_post(%{
+          slug: "live-one",
+          title: "Live One",
+          body_markdown: "Body.",
+          published_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      html = conn |> get(~p"/posts/live-one") |> html_response(200)
+      assert html =~ "Live One"
+      refute html =~ "noindex"
+      refute html =~ "Draft preview"
+    end
   end
 end

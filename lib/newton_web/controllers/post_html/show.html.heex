@@ -1,4 +1,7 @@
 <Layouts.app flash={@flash}>
+  <div :if={@preview} class="preview-banner">
+    Draft preview — this post isn't published. Link is private; please don't share it.
+  </div>
   <article class="post">
     <header>
       <h1 class="post-title">{@post.title}</h1>

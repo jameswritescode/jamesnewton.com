@@ -9,15 +9,44 @@ defmodule NewtonWeb.UserSessionController do
     %{"email" => email, "password" => password} = user_params
 
     if user = Accounts.get_user_by_email_and_password(email, password) do
-      conn
-      |> put_flash(:info, "Welcome back!")
-      |> UserAuth.log_in_user(user, user_params)
+      if Accounts.has_passkey?(user) do
+        conn
+        |> put_session(:pending_2fa_user_id, user.id)
+        |> put_session(:pending_2fa_remember_me, user_params["remember_me"] == "true")
+        |> redirect(to: "/login/verify")
+      else
+        conn |> put_flash(:info, "Welcome back!") |> UserAuth.log_in_user(user, user_params)
+      end
     else
       # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
       conn
       |> put_flash(:error, "Invalid email or password")
       |> put_flash(:email, String.slice(email, 0, 160))
       |> redirect(to: ~p"/login")
+    end
+  end
+
+  def recovery_login(conn, %{"code" => code}) do
+    case get_session(conn, :pending_2fa_user_id) do
+      nil ->
+        redirect(conn, to: ~p"/login")
+
+      user_id ->
+        user = Accounts.get_user!(user_id)
+
+        case Accounts.redeem_recovery_code(user, code) do
+          :ok ->
+            remember = get_session(conn, :pending_2fa_remember_me)
+
+            conn
+            |> put_flash(:info, "Welcome back!")
+            |> UserAuth.log_in_user(user, %{"remember_me" => to_string(remember)})
+
+          :error ->
+            conn
+            |> put_flash(:error, "That code didn't work. Try another.")
+            |> redirect(to: "/login/verify")
+        end
     end
   end
 

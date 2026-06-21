@@ -80,6 +80,79 @@ defmodule NewtonWeb.UserSessionControllerTest do
     end
   end
 
+  describe "password login with a passkey present (2FA gate)" do
+    setup %{user: user} do
+      user = set_password(user)
+
+      {:ok, _} =
+        Newton.Accounts.create_credential(user, %{
+          credential_id: <<5, 5, 5>>,
+          public_key: :erlang.term_to_binary(%{1 => 2}),
+          sign_count: 0,
+          label: "K"
+        })
+
+      %{user: user}
+    end
+
+    test "redirects to verify and does not log in", %{conn: conn, user: user} do
+      conn =
+        post(conn, ~p"/login", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      assert redirected_to(conn) == "/login/verify"
+      refute get_session(conn, :user_token)
+      assert get_session(conn, :pending_2fa_user_id) == user.id
+    end
+
+    test "recovery_login with a valid code completes the login", %{conn: conn, user: user} do
+      [code | _] = Newton.Accounts.generate_recovery_codes(user)
+
+      conn =
+        post(conn, ~p"/login", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      conn = post(conn, ~p"/login/verify/recovery", %{"code" => code})
+
+      assert redirected_to(conn) == ~p"/admin"
+      assert get_session(conn, :user_token)
+    end
+
+    test "recovery_login without a pending session is rejected", %{conn: conn} do
+      conn = post(conn, ~p"/login/verify/recovery", %{"code" => "WHATEVER"})
+      assert redirected_to(conn) == ~p"/login"
+      refute get_session(conn, :user_token)
+    end
+
+    test "recovery_login with a bad code stays on verify", %{conn: conn, user: user} do
+      _ = Newton.Accounts.generate_recovery_codes(user)
+
+      conn =
+        post(conn, ~p"/login", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      conn = post(conn, ~p"/login/verify/recovery", %{"code" => "00000-00000"})
+
+      assert redirected_to(conn) == "/login/verify"
+      refute get_session(conn, :user_token)
+    end
+  end
+
+  test "password login with no passkey still logs in directly", %{conn: conn, user: user} do
+    user = set_password(user)
+
+    conn =
+      post(conn, ~p"/login", %{
+        "user" => %{"email" => user.email, "password" => valid_user_password()}
+      })
+
+    assert get_session(conn, :user_token)
+    assert redirected_to(conn) == ~p"/admin"
+  end
+
   describe "passkey endpoints" do
     test "challenge returns a base64url challenge and stores it in the session", %{conn: conn} do
       conn = get(conn, ~p"/login/passkey/challenge")

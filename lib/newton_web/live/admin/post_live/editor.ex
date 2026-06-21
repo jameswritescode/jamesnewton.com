@@ -345,17 +345,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             {save_state_label(@save_state)}
           </span>
           <Layouts.status_badge status={Blog.publish_status(@published_at)} />
-          <button
-            type="button"
-            phx-click="toggle_drawer"
-            class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.8rem] text-(--admin-text) hover:bg-(--admin-accent-soft)"
-          >
+          <Components.button variant="secondary" phx-click="toggle_drawer">
             Settings
-          </button>
-          <button
+          </Components.button>
+          <Components.button
             type="submit"
             disabled={saving?(@published_at, @save_state)}
-            class="flex items-center gap-1.5 rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white hover:bg-(--admin-accent-hover) disabled:cursor-not-allowed disabled:opacity-70"
+            class="flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-70"
           >
             <span
               :if={saving?(@published_at, @save_state)}
@@ -363,7 +359,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             >
             </span>
             {if saving?(@published_at, @save_state), do: "Saving…", else: "Save"}
-          </button>
+          </Components.button>
         </div>
 
         <.input
@@ -452,31 +448,21 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
                 class="w-full rounded-md border border-(--admin-border) bg-(--admin-surface) px-2 py-1 text-[0.75rem] text-(--admin-text-muted) focus:outline-none"
               />
               <div class="mt-2 flex gap-2">
-                <button
+                <Components.button
                   id="copy-preview-link"
-                  type="button"
                   phx-hook="CopyText"
                   data-clipboard-text={url(~p"/posts/#{@post.slug}?#{[p: @post.preview_token]}")}
-                  class="rounded-md bg-(--admin-accent) px-3 py-1 text-[0.75rem] font-medium text-white hover:bg-(--admin-accent-hover)"
                 >
                   Copy
-                </button>
-                <button
-                  type="button"
-                  phx-click="disable_preview"
-                  class="rounded-md border border-(--admin-border) px-3 py-1 text-[0.75rem] hover:bg-(--admin-accent-soft)"
-                >
+                </Components.button>
+                <Components.button variant="secondary" phx-click="disable_preview">
                   Turn off preview link
-                </button>
+                </Components.button>
               </div>
             <% true -> %>
-              <button
-                type="button"
-                phx-click="enable_preview"
-                class="rounded-md border border-(--admin-border) px-3 py-1 text-[0.75rem] hover:bg-(--admin-accent-soft)"
-              >
+              <Components.button variant="secondary" phx-click="enable_preview">
                 Enable preview link
-              </button>
+              </Components.button>
           <% end %>
         </div>
 
@@ -485,22 +471,19 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           delete_event="delete"
           delete_confirm="Delete this post permanently?"
         >
-          <button
+          <Components.button
             :if={Blog.publish_status(@published_at) != :published}
-            type="button"
             phx-click="publish_now"
-            class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
           >
             Publish now
-          </button>
-          <button
+          </Components.button>
+          <Components.button
             :if={Blog.publish_status(@published_at) != :draft}
-            type="button"
+            variant="secondary"
             phx-click="unpublish"
-            class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] hover:bg-(--admin-accent-soft)"
           >
             Move to draft
-          </button>
+          </Components.button>
         </Components.drawer_footer>
       </Components.drawer>
     </Layouts.admin>

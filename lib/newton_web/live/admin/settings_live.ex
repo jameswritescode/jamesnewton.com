@@ -2,6 +2,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
   use NewtonWeb, :live_view
 
   alias Newton.Accounts
+  alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
 
   @impl true
@@ -124,7 +125,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
           phx-submit="save_password"
           class="flex flex-col gap-3"
         >
-          <.input
+          <Components.field
             name="current_password"
             type="password"
             label="Current password"
@@ -132,24 +133,19 @@ defmodule NewtonWeb.Admin.SettingsLive do
             autocomplete="current-password"
             errors={translate_errors(@password_form.errors, :current_password)}
           />
-          <.input
+          <Components.field
             field={@password_form[:password]}
             type="password"
             label="New password"
             autocomplete="new-password"
           />
-          <.input
+          <Components.field
             field={@password_form[:password_confirmation]}
             type="password"
             label="Confirm new password"
             autocomplete="new-password"
           />
-          <button
-            type="submit"
-            class="self-start rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white"
-          >
-            Update password
-          </button>
+          <Components.button type="submit">Update password</Components.button>
         </.form>
       </section>
 
@@ -168,15 +164,14 @@ defmodule NewtonWeb.Admin.SettingsLive do
                 Added {format_day(c.inserted_at)} · Last used {format_day(c.last_used_at)}
               </div>
             </div>
-            <button
-              type="button"
+            <Components.button
+              variant="secondary"
               phx-click="delete_passkey"
               phx-value-id={c.id}
               data-confirm="Remove this passkey?"
-              class="rounded-md border border-(--admin-border) px-2 py-1 text-[0.72rem] hover:bg-(--admin-accent-soft)"
             >
               Remove
-            </button>
+            </Components.button>
           </li>
         </ul>
 
@@ -185,7 +180,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
         </p>
 
         <form phx-change="set_label" class="flex flex-col gap-3">
-          <.input
+          <Components.field
             type="text"
             name="new_label"
             value={@new_label}
@@ -193,13 +188,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
             placeholder="e.g. My laptop"
           />
           <div id="passkey-register" phx-hook="PasskeyRegister" data-label={@new_label}>
-            <button
-              type="button"
-              phx-click="start_registration"
-              class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white"
-            >
-              Add a passkey
-            </button>
+            <Components.button phx-click="start_registration">Add a passkey</Components.button>
           </div>
         </form>
       </section>

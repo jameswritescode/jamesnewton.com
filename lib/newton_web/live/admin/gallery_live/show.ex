@@ -201,12 +201,9 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
         </.link>
         <h1 class="text-[1.35rem] font-semibold tracking-tight">{@group.title}</h1>
         <div class="flex-1"></div>
-        <.link
-          patch={~p"/admin/photos/#{@group.id}/edit"}
-          class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.8rem] text-(--admin-text) no-underline hover:bg-(--admin-accent-soft)"
-        >
+        <Components.button variant="secondary" patch={~p"/admin/photos/#{@group.id}/edit"}>
           Settings
-        </.link>
+        </Components.button>
       </div>
 
       <form
@@ -251,15 +248,11 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
           {upload_error_to_string(err)}
         </p>
 
-        <button
-          :if={@uploads.photos.entries != []}
-          type="submit"
-          class="mt-3 rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white hover:bg-(--admin-accent-hover)"
-        >
+        <Components.button :if={@uploads.photos.entries != []} type="submit" class="mt-3">
           Upload {length(@uploads.photos.entries)} photo{if length(@uploads.photos.entries) == 1,
             do: "",
             else: "s"}
-        </button>
+        </Components.button>
       </form>
 
       <div
@@ -317,21 +310,15 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
           <Components.field field={@photo_form[:alt]} type="textarea" label="Alt text" rows="2" />
 
           <div class="mt-2 flex items-center gap-2">
-            <button
-              type="button"
+            <Components.button
+              variant="danger"
               phx-click="delete_photo"
               data-confirm="Delete this photo?"
-              class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
             >
               Delete
-            </button>
+            </Components.button>
             <div class="flex-1"></div>
-            <button
-              type="submit"
-              class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
-            >
-              Save
-            </button>
+            <Components.button type="submit">Save</Components.button>
           </div>
         </.form>
       </Components.drawer>

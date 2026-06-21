@@ -1,8 +1,9 @@
 defmodule NewtonWeb.Admin.Components do
   @moduledoc """
   Reusable admin UI building blocks shared across the admin LiveViews:
-  a right-hand slide-over `drawer/1` and an admin-themed form `field/1`, plus a
-  `delete_button/1` and a `drawer_footer/1` action row.
+  a right-hand slide-over `drawer/1`, an admin-themed form `field/1`, a
+  token-styled `button/1` (with `save_button/1` and `delete_button/1` as named
+  variants), and a `drawer_footer/1` action row.
   """
   use NewtonWeb, :html
 
@@ -57,13 +58,16 @@ defmodule NewtonWeb.Admin.Components do
   A form field styled for the admin theme. Wraps the core `<.input>` so drawer
   fields share the post editor's surface/border/text colors in light and dark.
   """
-  attr :field, Phoenix.HTML.FormField, required: true
+  attr :field, Phoenix.HTML.FormField, default: nil
+  attr :name, :any, default: nil
+  attr :value, :any, default: nil
   attr :type, :string, default: "text"
   attr :label, :string, default: nil
   attr :options, :list, default: []
-  attr :rest, :global, include: ~w(rows placeholder autocomplete)
+  attr :errors, :list, default: []
+  attr :rest, :global, include: ~w(rows placeholder autocomplete readonly required)
 
-  def field(assigns) do
+  def field(%{field: %Phoenix.HTML.FormField{}} = assigns) do
     ~H"""
     <.input
       field={@field}
@@ -76,6 +80,60 @@ defmodule NewtonWeb.Admin.Components do
     """
   end
 
+  def field(assigns) do
+    ~H"""
+    <.input
+      name={@name}
+      value={@value}
+      type={@type}
+      label={@label}
+      options={@options}
+      errors={@errors}
+      class={field_class()}
+      {@rest}
+    />
+    """
+  end
+
+  @doc """
+  The admin's token-styled button. `variant` picks the look:
+
+    * `primary` (default) — accent fill, for the main action
+    * `secondary` — bordered, for a lesser action (e.g. "Move to draft")
+    * `danger` — bordered accent text, for destructive actions
+  """
+  attr :variant, :string, default: "primary", values: ~w(primary secondary danger)
+  attr :type, :string, default: "button"
+  attr :class, :any, default: nil
+  attr :rest, :global, include: ~w(disabled name value form href navigate patch method download)
+  slot :inner_block, required: true
+
+  def button(%{rest: rest} = assigns) do
+    assigns = assign(assigns, :computed_class, [button_class(assigns.variant), assigns.class])
+
+    if rest[:href] || rest[:navigate] || rest[:patch] do
+      ~H"""
+      <.link class={[@computed_class, "no-underline"]} {@rest}>{render_slot(@inner_block)}</.link>
+      """
+    else
+      ~H"""
+      <button type={@type} class={@computed_class} {@rest}>{render_slot(@inner_block)}</button>
+      """
+    end
+  end
+
+  defp button_class("primary"),
+    do:
+      "rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+
+  defp button_class("secondary"),
+    do:
+      "rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] hover:bg-(--admin-accent-soft)"
+
+  defp button_class("danger"),
+    do:
+      "rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
+
   @doc "Consistent destructive button used in admin edit drawers."
   attr :event, :string, required: true
   attr :id, :any, default: nil
@@ -84,15 +142,9 @@ defmodule NewtonWeb.Admin.Components do
 
   def delete_button(assigns) do
     ~H"""
-    <button
-      type="button"
-      phx-click={@event}
-      phx-value-id={@id}
-      data-confirm={@confirm}
-      class="rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
-    >
+    <.button variant="danger" phx-click={@event} phx-value-id={@id} data-confirm={@confirm}>
       {@label}
-    </button>
+    </.button>
     """
   end
 
@@ -136,12 +188,7 @@ defmodule NewtonWeb.Admin.Components do
 
   def save_button(assigns) do
     ~H"""
-    <button
-      type="submit"
-      class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
-    >
-      {@label}
-    </button>
+    <.button type="submit">{@label}</.button>
     """
   end
 

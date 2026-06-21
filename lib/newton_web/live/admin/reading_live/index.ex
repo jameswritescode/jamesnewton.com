@@ -125,12 +125,7 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
     <Layouts.admin flash={@flash} current={:reading}>
       <div class="mb-6 flex items-center justify-between">
         <h1 class="text-[1.35rem] font-semibold tracking-tight">Reading</h1>
-        <.link
-          patch={~p"/admin/reading/new"}
-          class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white no-underline hover:bg-(--admin-accent-hover)"
-        >
-          Add entry
-        </.link>
+        <Components.button patch={~p"/admin/reading/new"}>Add entry</Components.button>
       </div>
 
       <.reading_summary counts={@status_counts} />

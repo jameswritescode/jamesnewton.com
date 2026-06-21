@@ -11,20 +11,15 @@ defmodule NewtonWeb.Admin.Layouts do
     %{key: :dashboard, label: "Dashboard", path: "/admin"},
     %{key: :posts, label: "Posts", path: "/admin/posts"},
     %{key: :reading, label: "Reading", path: "/admin/reading"},
-    %{key: :photos, label: "Photos", path: "/admin/photos"},
-    %{key: :settings, label: "Settings", path: "/admin/settings"}
+    %{key: :photos, label: "Photos", path: "/admin/photos"}
   ]
-
-  # Sections whose routes exist today render as links; the rest are inert
-  # placeholders until their own plans land.
-  @built [:dashboard, :posts, :reading, :photos, :settings]
 
   attr :flash, :map, default: %{}
   attr :current, :atom, required: true, doc: "the active section key"
   slot :inner_block, required: true
 
   def admin(assigns) do
-    assigns = assign(assigns, sections: @sections, built: @built)
+    assigns = assign(assigns, sections: @sections)
 
     ~H"""
     <div class="flex min-h-screen">
@@ -37,12 +32,7 @@ defmodule NewtonWeb.Admin.Layouts do
         </div>
 
         <nav class="flex flex-1 flex-col gap-0.5">
-          <.nav_item
-            :for={section <- @sections}
-            section={section}
-            current={@current}
-            built={section.key in @built}
-          />
+          <.nav_item :for={section <- @sections} section={section} current={@current} />
         </nav>
 
         <div class="mt-[0.6rem] flex flex-col gap-0.5 border-t border-(--admin-border) pt-[0.6rem]">
@@ -58,6 +48,18 @@ defmodule NewtonWeb.Admin.Layouts do
             <span class="admin-dark:hidden">Light</span>
             <span class="hidden admin-dark:inline">Dark</span>
           </button>
+          <.link
+            navigate={~p"/admin/settings"}
+            class={[
+              "flex items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] no-underline transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)",
+              if(@current == :settings,
+                do: "bg-(--admin-accent-soft) font-medium text-(--admin-accent)",
+                else: "text-(--admin-text-muted)"
+              )
+            ]}
+          >
+            <.icon name="hero-cog-6-tooth-mini" class="size-4" /> Settings
+          </.link>
           <.link
             href={~p"/"}
             class="flex items-center gap-2 rounded-md px-[0.6rem] py-[0.4rem] text-[0.8rem] text-(--admin-text-muted) no-underline transition-colors hover:bg-(--admin-accent-soft) hover:text-(--admin-text)"
@@ -116,15 +118,6 @@ defmodule NewtonWeb.Admin.Layouts do
 
   attr :section, :map, required: true
   attr :current, :atom, required: true
-  attr :built, :boolean, required: true
-
-  defp nav_item(%{built: false} = assigns) do
-    ~H"""
-    <span class="rounded-md px-[0.6rem] py-[0.4rem] text-[0.825rem] text-(--admin-text-subtle)">
-      {@section.label}
-    </span>
-    """
-  end
 
   defp nav_item(assigns) do
     ~H"""

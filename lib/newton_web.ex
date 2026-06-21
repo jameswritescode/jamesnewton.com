@@ -84,8 +84,10 @@ defmodule NewtonWeb do
 
       # HTML escaping functionality
       import Phoenix.HTML
-      # Core UI components
-      import NewtonWeb.CoreComponents
+      # Core UI components. The generated daisyUI `button/1` is unused — the admin
+      # uses its own token-styled `NewtonWeb.Admin.Components.button/1` — so it's
+      # excluded to avoid an import/definition clash there.
+      import NewtonWeb.CoreComponents, except: [button: 1]
       import NewtonWeb.SiteComponents
 
       # Common modules used in templates

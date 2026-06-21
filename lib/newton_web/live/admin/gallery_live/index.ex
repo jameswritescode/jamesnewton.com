@@ -3,7 +3,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
 
   alias Newton.Gallery
   alias Newton.Gallery.PhotoGroup
-  alias NewtonWeb.Admin.{FormHelpers, Layouts}
+  alias NewtonWeb.Admin.{Components, FormHelpers, Layouts}
   alias NewtonWeb.Admin.GalleryLive.Components, as: GalleryComponents
 
   @impl true
@@ -90,12 +90,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
     <Layouts.admin flash={@flash} current={:photos}>
       <div class="mb-6 flex items-center justify-between">
         <h1 class="text-[1.35rem] font-semibold tracking-tight">Photos</h1>
-        <.link
-          patch={~p"/admin/photos/new"}
-          class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white no-underline hover:bg-(--admin-accent-hover)"
-        >
-          Add gallery
-        </.link>
+        <Components.button patch={~p"/admin/photos/new"}>Add gallery</Components.button>
       </div>
 
       <div

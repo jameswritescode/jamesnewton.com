@@ -1,6 +1,7 @@
 defmodule NewtonWeb.Admin.PostLive.Index do
   use NewtonWeb, :live_view
 
+  alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
 
   @impl true
@@ -28,12 +29,7 @@ defmodule NewtonWeb.Admin.PostLive.Index do
     <Layouts.admin flash={@flash} current={:posts}>
       <div class="mb-6 flex items-center justify-between">
         <h1 class="text-[1.35rem] font-semibold tracking-tight">Posts</h1>
-        <.link
-          navigate={~p"/admin/posts/new"}
-          class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white no-underline hover:bg-(--admin-accent-hover)"
-        >
-          New post
-        </.link>
+        <Components.button navigate={~p"/admin/posts/new"}>New post</Components.button>
       </div>
 
       <div class="mb-4 flex gap-1 text-[0.8rem]">

@@ -4,7 +4,9 @@ defmodule NewtonWeb.Router do
   import NewtonWeb.UserAuth
 
   pipeline :browser do
-    plug :accepts, ["html"]
+    # json is accepted for same-origin XHR endpoints in this scope (the passkey
+    # login challenge/verify); normal navigations still negotiate to html.
+    plug :accepts, ["html", "json"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {NewtonWeb.Layouts, :root}

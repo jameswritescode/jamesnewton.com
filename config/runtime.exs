@@ -16,6 +16,16 @@ import Config
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
+# Allow overriding the WebAuthn relying-party origin/id at boot (any env). The
+# compiled default assumes the dev server on :4000; set this when serving on a
+# different port (e.g. WEBAUTHN_ORIGIN=http://localhost:4001) so passkey origin
+# verification matches the page's actual origin.
+if origin = System.get_env("WEBAUTHN_ORIGIN") do
+  config :newton, :webauthn,
+    rp_id: System.get_env("WEBAUTHN_RP_ID") || "localhost",
+    origin: origin
+end
+
 if System.get_env("PHX_SERVER") do
   config :newton, NewtonWeb.Endpoint, server: true
 end

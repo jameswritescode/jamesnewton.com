@@ -21,6 +21,58 @@ defmodule NewtonWeb.UserSessionController do
     end
   end
 
+  # Issue a usernameless (discoverable-credential) authentication challenge and
+  # stash it in the session for the matching POST below to verify against.
+  def passkey_challenge(conn, _params) do
+    challenge = Newton.Webauthn.authentication_challenge()
+
+    conn
+    |> put_session(:passkey_challenge, challenge)
+    |> json(%{
+      challenge: Base.url_encode64(challenge.bytes, padding: false),
+      rpId: challenge.rp_id,
+      userVerification: "preferred"
+    })
+  end
+
+  def passkey_login(conn, %{
+        "id" => raw_id,
+        "authenticatorData" => auth_data_b64,
+        "clientDataJSON" => cdj_b64,
+        "signature" => sig_b64
+      }) do
+    challenge = get_session(conn, :passkey_challenge)
+
+    with false <- is_nil(challenge),
+         {:ok, cred_id} <- Base.url_decode64(raw_id, padding: false),
+         %{} = cred <- Accounts.get_credential_by_external_id(cred_id),
+         {:ok, auth_data_bin} <- Base.url_decode64(auth_data_b64, padding: false),
+         {:ok, sig} <- Base.url_decode64(sig_b64, padding: false),
+         {:ok, client_data} <- Base.url_decode64(cdj_b64, padding: false),
+         {:ok, auth_data} <-
+           Wax.authenticate(cred_id, auth_data_bin, sig, client_data, challenge, [
+             {cred_id, Newton.Webauthn.load_key(cred.public_key)}
+           ]),
+         true <- auth_data.sign_count >= cred.sign_count do
+      {:ok, _} =
+        Accounts.update_credential_sign_count(
+          cred,
+          auth_data.sign_count,
+          DateTime.truncate(DateTime.utc_now(), :second)
+        )
+
+      conn
+      |> delete_session(:passkey_challenge)
+      |> UserAuth.log_in_user_session(cred.user)
+      |> json(%{ok: true, to: UserAuth.signed_in_path(conn)})
+    else
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Passkey authentication failed."})
+    end
+  end
+
   def delete(conn, _params) do
     conn
     |> put_flash(:info, "Logged out successfully.")

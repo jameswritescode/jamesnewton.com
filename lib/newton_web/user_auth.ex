@@ -41,6 +41,16 @@ defmodule NewtonWeb.UserAuth do
   end
 
   @doc """
+  Establishes the logged-in session for `user` without redirecting.
+
+  For API-style logins (e.g. the passkey endpoint) that return JSON and let the
+  client navigate, rather than issuing a redirect themselves.
+  """
+  def log_in_user_session(conn, user, params \\ %{}) do
+    create_or_extend_session(conn, user, params)
+  end
+
+  @doc """
   Logs the user out.
 
   It clears all session data for safety. See renew_session.

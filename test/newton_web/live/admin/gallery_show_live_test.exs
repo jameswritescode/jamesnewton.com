@@ -92,7 +92,7 @@ defmodule NewtonWeb.Admin.GalleryShowLiveTest do
     photo = photo_fixture(group)
     {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}")
 
-    view |> element("a", "Settings") |> render_click()
+    view |> element(~s(a[href$="/edit"]), "Settings") |> render_click()
 
     assert_patch(view, ~p"/admin/photos/#{group.id}/edit")
     # Still on the gallery page: the photo grid and the settings drawer coexist.

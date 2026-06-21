@@ -38,7 +38,7 @@ defmodule NewtonWeb.UserLive.Login do
               <.input
                 field={f[:email]}
                 type="email"
-                autocomplete="username"
+                autocomplete="username webauthn"
                 spellcheck="false"
                 required
                 phx-mounted={JS.focus()}
@@ -72,6 +72,16 @@ defmodule NewtonWeb.UserLive.Login do
               Sign in
             </button>
           </.form>
+
+          <div id="passkey-login" phx-hook="PasskeyAuthenticate" class="mt-4">
+            <button
+              type="button"
+              id="passkey-button"
+              class="w-full rounded-md border border-(--admin-border) px-3 py-2 text-[0.85rem] font-medium text-(--admin-text) hover:bg-(--admin-accent-soft)"
+            >
+              Sign in with a passkey
+            </button>
+          </div>
         </div>
       </div>
 

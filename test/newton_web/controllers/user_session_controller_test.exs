@@ -79,4 +79,40 @@ defmodule NewtonWeb.UserSessionControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Logged out successfully"
     end
   end
+
+  describe "passkey endpoints" do
+    test "challenge returns a base64url challenge and stores it in the session", %{conn: conn} do
+      conn = get(conn, ~p"/login/passkey/challenge")
+      assert %{"challenge" => challenge, "rpId" => _} = json_response(conn, 200)
+      assert is_binary(challenge)
+      assert get_session(conn, :passkey_challenge)
+    end
+
+    test "login rejects an unknown credential", %{conn: conn} do
+      conn = get(conn, ~p"/login/passkey/challenge")
+
+      conn =
+        post(conn, ~p"/login/passkey", %{
+          "id" => Base.url_encode64(<<0, 0, 0>>, padding: false),
+          "authenticatorData" => "AA",
+          "clientDataJSON" => "AA",
+          "signature" => "AA"
+        })
+
+      assert json_response(conn, 401)
+      refute get_session(conn, :user_token)
+    end
+
+    test "login rejects when there is no challenge in the session", %{conn: conn} do
+      conn =
+        post(conn, ~p"/login/passkey", %{
+          "id" => Base.url_encode64(<<0, 0, 0>>, padding: false),
+          "authenticatorData" => "AA",
+          "clientDataJSON" => "AA",
+          "signature" => "AA"
+        })
+
+      assert json_response(conn, 401)
+    end
+  end
 end

@@ -87,6 +87,8 @@ defmodule NewtonWeb.Router do
     end
 
     post "/login", UserSessionController, :create
+    get "/login/passkey/challenge", UserSessionController, :passkey_challenge
+    post "/login/passkey", UserSessionController, :passkey_login
     delete "/logout", UserSessionController, :delete
   end
 end

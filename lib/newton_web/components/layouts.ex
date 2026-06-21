@@ -11,6 +11,9 @@ defmodule NewtonWeb.Layouts do
   # and other static content.
   embed_templates "layouts/*"
 
+  @doc "Prefix for the page <title>; `[DEV] ` in development, empty elsewhere."
+  def title_prefix, do: Application.get_env(:newton, :title_prefix, "")
+
   @doc "The site header used on every page."
   def site_header(assigns) do
     ~H"""

@@ -67,6 +67,9 @@ config :newton, NewtonWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :newton, dev_routes: true
 
+# Mark the browser tab so a dev instance is never mistaken for production.
+config :newton, :title_prefix, "[DEV] "
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
 

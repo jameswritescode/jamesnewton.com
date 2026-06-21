@@ -57,7 +57,10 @@ defmodule NewtonWeb.Admin.SettingsLiveTest do
     refute render(view) =~ "My Laptop"
   end
 
-  test "recovery codes section is hidden without a passkey and shown with one", %{conn: conn, user: user} do
+  test "recovery codes section is hidden without a passkey and shown with one", %{
+    conn: conn,
+    user: user
+  } do
     {:ok, _view, html} = live(conn, ~p"/admin/settings")
     refute html =~ "Recovery codes"
 

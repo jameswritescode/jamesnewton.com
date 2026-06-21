@@ -58,7 +58,9 @@ defmodule NewtonWeb.UserLive.Verify do
             method="post"
             class="mt-4 flex flex-col gap-2"
           >
-            <label for="recovery-code" class="text-[0.78rem] text-(--admin-text-muted)">Recovery code</label>
+            <label for="recovery-code" class="text-[0.78rem] text-(--admin-text-muted)">
+              Recovery code
+            </label>
             <input
               id="recovery-code"
               type="text"

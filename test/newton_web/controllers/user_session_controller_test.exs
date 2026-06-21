@@ -101,7 +101,7 @@ defmodule NewtonWeb.UserSessionControllerTest do
           "user" => %{"email" => user.email, "password" => valid_user_password()}
         })
 
-      assert redirected_to(conn) == "/login/verify"
+      assert redirected_to(conn) == ~p"/login/verify"
       refute get_session(conn, :user_token)
       assert get_session(conn, :pending_2fa_user_id) == user.id
     end
@@ -136,7 +136,7 @@ defmodule NewtonWeb.UserSessionControllerTest do
 
       conn = post(conn, ~p"/login/verify/recovery", %{"code" => "00000-00000"})
 
-      assert redirected_to(conn) == "/login/verify"
+      assert redirected_to(conn) == ~p"/login/verify"
       refute get_session(conn, :user_token)
     end
   end

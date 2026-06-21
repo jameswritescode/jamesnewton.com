@@ -86,6 +86,7 @@ defmodule NewtonWeb.Router do
       on_mount: [{NewtonWeb.UserAuth, :mount_current_scope}],
       root_layout: {NewtonWeb.Layouts, :admin_root} do
       live "/login", UserLive.Login, :new
+      live "/login/verify", UserLive.Verify, :new
     end
 
     post "/login", UserSessionController, :create

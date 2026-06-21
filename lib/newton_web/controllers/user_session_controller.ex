@@ -13,7 +13,7 @@ defmodule NewtonWeb.UserSessionController do
         conn
         |> put_session(:pending_2fa_user_id, user.id)
         |> put_session(:pending_2fa_remember_me, user_params["remember_me"] == "true")
-        |> redirect(to: "/login/verify")
+        |> redirect(to: ~p"/login/verify")
       else
         conn |> put_flash(:info, "Welcome back!") |> UserAuth.log_in_user(user, user_params)
       end
@@ -45,7 +45,7 @@ defmodule NewtonWeb.UserSessionController do
           :error ->
             conn
             |> put_flash(:error, "That code didn't work. Try another.")
-            |> redirect(to: "/login/verify")
+            |> redirect(to: ~p"/login/verify")
         end
     end
   end

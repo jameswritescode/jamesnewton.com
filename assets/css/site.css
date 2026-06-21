@@ -231,13 +231,18 @@ strong {
   margin: 1.5rem auto 0;
   padding: 0.75rem 1.25rem;
   background: var(--link);
-  color: var(--bg);
+  /* Near-black text in both themes — high contrast on the light accent fill
+     (in dark mode --bg already resolves to this, so it's unchanged there). */
+  color: var(--bg-dark);
   border-radius: var(--radius-md);
   text-align: center;
   font-size: 0.85rem;
 }
 
 .preview-banner strong {
+  /* Override the global `strong` colour (a light cream) so the label keeps the
+     banner's high-contrast near-black. */
+  color: inherit;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--label-tracking);

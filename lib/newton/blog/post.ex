@@ -11,6 +11,7 @@ defmodule Newton.Blog.Post do
     field :body_html, :string
     field :reading_time, :integer
     field :published_at, :utc_datetime
+    field :preview_token, :string
 
     timestamps(type: :utc_datetime)
   end
@@ -19,10 +20,21 @@ defmodule Newton.Blog.Post do
   def changeset(post, attrs) do
     post
     |> cast(attrs, [:slug, :title, :excerpt, :body_markdown, :published_at])
+    |> clear_preview_token_when_published()
     |> ensure_body()
     |> validate_required([:slug, :title])
     |> unique_constraint(:slug)
     |> render_derived_fields()
+  end
+
+  # A published post never carries a preview token — every publish path runs the
+  # changeset, so clearing it here covers them all.
+  defp clear_preview_token_when_published(changeset) do
+    if get_field(changeset, :published_at) do
+      put_change(changeset, :preview_token, nil)
+    else
+      changeset
+    end
   end
 
   # The body column is non-null and `cast` nils out empty strings, so a bodyless

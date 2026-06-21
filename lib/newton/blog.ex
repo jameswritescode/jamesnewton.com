@@ -60,6 +60,30 @@ defmodule Newton.Blog do
   @doc "Fetch any post by slug (admin), regardless of publish status."
   def get_post_by_slug!(slug), do: Repo.get_by!(Post, slug: slug)
 
+  @doc "Mint a preview token for a draft (idempotent). No-op once published."
+  def enable_preview(%Post{published_at: nil} = post) do
+    token = post.preview_token || (32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false))
+    post |> Ecto.Changeset.change(preview_token: token) |> Repo.update()
+  end
+
+  def enable_preview(%Post{} = post), do: {:ok, post}
+
+  @doc "Clear a post's preview token, invalidating any shared link."
+  def disable_preview(%Post{} = post) do
+    post |> Ecto.Changeset.change(preview_token: nil) |> Repo.update()
+  end
+
+  @doc "Fetch a post by slug only if `token` matches its preview token (constant-time)."
+  def get_post_by_preview_token(slug, token) when is_binary(token) do
+    case Repo.get_by(Post, slug: slug) do
+      %Post{preview_token: stored} = post when is_binary(stored) ->
+        if Plug.Crypto.secure_compare(token, stored), do: post, else: nil
+
+      _ ->
+        nil
+    end
+  end
+
   @doc "Delete a post."
   def delete_post(%Post{} = post), do: Repo.delete(post)
 

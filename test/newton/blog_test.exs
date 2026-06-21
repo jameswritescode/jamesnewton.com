@@ -150,4 +150,50 @@ defmodule Newton.BlogTest do
     assert Blog.publish_status(future) == :scheduled
     assert Blog.publish_status(past) == :published
   end
+
+  describe "draft preview tokens" do
+    test "enable_preview mints a token on a draft; disable clears it" do
+      {:ok, draft} = Blog.create_post(%{slug: "d1", title: "D1", body_markdown: "x"})
+      assert is_nil(draft.preview_token)
+
+      {:ok, shared} = Blog.enable_preview(draft)
+      assert is_binary(shared.preview_token)
+      assert byte_size(shared.preview_token) >= 32
+
+      {:ok, off} = Blog.disable_preview(shared)
+      assert is_nil(off.preview_token)
+    end
+
+    test "enable_preview is a no-op on a published post" do
+      {:ok, post} =
+        Blog.create_post(%{
+          slug: "p1",
+          title: "P1",
+          body_markdown: "x",
+          published_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      {:ok, post} = Blog.enable_preview(post)
+      assert is_nil(post.preview_token)
+    end
+
+    test "publishing a shared draft clears its token" do
+      {:ok, draft} = Blog.create_post(%{slug: "d2", title: "D2", body_markdown: "x"})
+      {:ok, shared} = Blog.enable_preview(draft)
+      assert shared.preview_token
+
+      {:ok, published} = Blog.update_post(shared, %{"published_at" => ~U[2026-01-01 00:00:00Z]})
+      assert is_nil(published.preview_token)
+    end
+
+    test "get_post_by_preview_token returns the post only for the right token" do
+      {:ok, draft} = Blog.create_post(%{slug: "d3", title: "D3", body_markdown: "x"})
+      {:ok, shared} = Blog.enable_preview(draft)
+
+      assert %{id: id} = Blog.get_post_by_preview_token("d3", shared.preview_token)
+      assert id == shared.id
+      assert is_nil(Blog.get_post_by_preview_token("d3", "wrong-token"))
+      assert is_nil(Blog.get_post_by_preview_token("d3", ""))
+    end
+  end
 end

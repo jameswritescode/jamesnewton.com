@@ -14,12 +14,13 @@ import {MarkdownEditor} from "./hooks/markdown_editor"
 import {ImageDimensions} from "./hooks/image_dimensions"
 import {SortableGrid} from "./hooks/sortable_grid"
 import {CopyText} from "./hooks/copy_text"
+import {PasskeyRegister} from "./hooks/passkey_register"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AdminTheme, AdminNav, UnsavedGuard, FlashDismiss, MarkdownEditor, ImageDimensions, SortableGrid, CopyText},
+  hooks: {...colocatedHooks, AdminTheme, AdminNav, UnsavedGuard, FlashDismiss, MarkdownEditor, ImageDimensions, SortableGrid, CopyText, PasskeyRegister},
 })
 
 // Match the loading bar to the admin accent, re-reading it when the theme flips.

@@ -40,4 +40,20 @@ defmodule NewtonWeb.Admin.SettingsLiveTest do
 
     assert Newton.Accounts.get_user_by_email_and_password(user.email, "a brand new password")
   end
+
+  test "lists and deletes passkeys", %{conn: conn, user: user} do
+    {:ok, cred} =
+      Newton.Accounts.create_credential(user, %{
+        credential_id: <<9, 9, 9>>,
+        public_key: :erlang.term_to_binary(%{1 => 2}),
+        sign_count: 0,
+        label: "My Laptop"
+      })
+
+    {:ok, view, html} = live(conn, ~p"/admin/settings")
+    assert html =~ "My Laptop"
+
+    view |> element("button[phx-value-id='#{cred.id}']") |> render_click()
+    refute render(view) =~ "My Laptop"
+  end
 end

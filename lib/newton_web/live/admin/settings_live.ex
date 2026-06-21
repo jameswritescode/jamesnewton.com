@@ -12,7 +12,10 @@ defmodule NewtonWeb.Admin.SettingsLive do
      socket
      |> assign(:page_title, "Settings")
      |> assign(:user, user)
-     |> assign(:password_form, password_form())}
+     |> assign(:password_form, password_form())
+     |> assign(:credentials, Accounts.list_user_credentials(user))
+     |> assign(:reg_challenge, nil)
+     |> assign(:new_label, "")}
   end
 
   defp password_form, do: to_form(Accounts.change_user_password(%Accounts.User{}), as: :user)
@@ -34,6 +37,79 @@ defmodule NewtonWeb.Admin.SettingsLive do
     end
   end
 
+  def handle_event("set_label", %{"new_label" => label}, socket) do
+    {:noreply, assign(socket, :new_label, label)}
+  end
+
+  def handle_event("start_registration", _params, socket) do
+    challenge = Newton.Webauthn.registration_challenge()
+    user = socket.assigns.user
+
+    creation_opts = %{
+      challenge: Base.url_encode64(challenge.bytes, padding: false),
+      rp: %{id: challenge.rp_id, name: "James Newton"},
+      user: %{
+        id: Base.url_encode64(<<user.id::64>>, padding: false),
+        name: user.email,
+        displayName: user.email
+      },
+      pubKeyCredParams: [%{type: "public-key", alg: -7}, %{type: "public-key", alg: -257}],
+      authenticatorSelection: %{residentKey: "required", userVerification: "preferred"},
+      excludeCredentials:
+        Enum.map(socket.assigns.credentials, fn c ->
+          %{type: "public-key", id: Base.url_encode64(c.credential_id, padding: false)}
+        end)
+    }
+
+    {:noreply,
+     socket
+     |> assign(:reg_challenge, challenge)
+     |> push_event("passkey_create", creation_opts)}
+  end
+
+  def handle_event("passkey_registered", params, socket) do
+    %{"rawId" => raw_id, "clientDataJSON" => cdj, "attestationObject" => att, "label" => label} =
+      params
+
+    challenge = socket.assigns.reg_challenge
+
+    with {:ok, att_obj} <- Base.url_decode64(att, padding: false),
+         {:ok, client_data} <- Base.url_decode64(cdj, padding: false),
+         {:ok, {auth_data, _}} <- Wax.register(att_obj, client_data, challenge),
+         {:ok, cred_id} <- Base.url_decode64(raw_id, padding: false) do
+      {:ok, _} =
+        Accounts.create_credential(socket.assigns.user, %{
+          credential_id: cred_id,
+          public_key:
+            Newton.Webauthn.dump_key(auth_data.attested_credential_data.credential_public_key),
+          sign_count: auth_data.sign_count,
+          label: if(label == "", do: default_label(), else: label)
+        })
+
+      {:noreply,
+       socket
+       |> assign(:credentials, Accounts.list_user_credentials(socket.assigns.user))
+       |> assign(:reg_challenge, nil)
+       |> assign(:new_label, "")
+       |> put_flash(:info, "Passkey added.")}
+    else
+      _ -> {:noreply, put_flash(socket, :error, "Could not add that passkey.")}
+    end
+  end
+
+  def handle_event("passkey_error", %{"message" => _m}, socket),
+    do: {:noreply, put_flash(socket, :error, "Passkey registration was cancelled.")}
+
+  def handle_event("delete_passkey", %{"id" => id}, socket) do
+    Accounts.delete_credential(socket.assigns.user, String.to_integer(id))
+    {:noreply, assign(socket, :credentials, Accounts.list_user_credentials(socket.assigns.user))}
+  end
+
+  defp default_label, do: "Passkey · " <> Calendar.strftime(DateTime.utc_now(), "%b %-d, %Y")
+
+  defp format_day(nil), do: "—"
+  defp format_day(%DateTime{} = dt), do: Calendar.strftime(dt, "%b %-d, %Y")
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -54,9 +130,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
             label="Current password"
             value=""
             autocomplete="current-password"
-            errors={
-              NewtonWeb.CoreComponents.translate_errors(@password_form.errors, :current_password)
-            }
+            errors={translate_errors(@password_form.errors, :current_password)}
           />
           <.input
             field={@password_form[:password]}
@@ -81,9 +155,54 @@ defmodule NewtonWeb.Admin.SettingsLive do
 
       <section class="max-w-md">
         <h2 class="mb-3 text-[0.95rem] font-medium">Passkeys</h2>
-        <p class="text-[0.82rem] text-(--admin-text-subtle)">
+
+        <ul :if={@credentials != []} id="passkey-list" class="mb-4 flex flex-col gap-2">
+          <li
+            :for={c <- @credentials}
+            id={"passkey-#{c.id}"}
+            class="flex items-center justify-between rounded-md border border-(--admin-border) px-3 py-2"
+          >
+            <div>
+              <div class="text-[0.85rem] text-(--admin-text)">{c.label}</div>
+              <div class="text-[0.72rem] text-(--admin-text-subtle)">
+                Added {format_day(c.inserted_at)} · Last used {format_day(c.last_used_at)}
+              </div>
+            </div>
+            <button
+              type="button"
+              phx-click="delete_passkey"
+              phx-value-id={c.id}
+              data-confirm="Remove this passkey?"
+              class="rounded-md border border-(--admin-border) px-2 py-1 text-[0.72rem] hover:bg-(--admin-accent-soft)"
+            >
+              Remove
+            </button>
+          </li>
+        </ul>
+
+        <p :if={@credentials == []} class="mb-4 text-[0.82rem] text-(--admin-text-subtle)">
           No passkeys yet. Your password still works as a sign-in method.
         </p>
+
+        <form phx-change="set_label" class="flex items-end gap-2">
+          <.input
+            type="text"
+            name="new_label"
+            value={@new_label}
+            label="New passkey name"
+            placeholder="e.g. My laptop"
+            class="flex-1 rounded-md border border-(--admin-border) bg-(--admin-surface) px-2 py-1 text-[0.85rem] text-(--admin-text) focus:outline-none"
+          />
+          <div id="passkey-register" phx-hook="PasskeyRegister" data-label={@new_label}>
+            <button
+              type="button"
+              phx-click="start_registration"
+              class="rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.8rem] font-medium text-white"
+            >
+              Add a passkey
+            </button>
+          </div>
+        </form>
       </section>
     </Layouts.admin>
     """

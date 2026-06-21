@@ -235,7 +235,6 @@ strong {
   border-radius: var(--radius-md);
   text-align: center;
   font-size: 0.85rem;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.22);
 }
 
 .preview-banner strong {

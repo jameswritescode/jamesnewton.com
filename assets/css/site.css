@@ -221,18 +221,37 @@ strong {
   padding: var(--container-pad-top) var(--container-pad-x) var(--container-pad-bottom);
 }
 
-/* Banner shown when viewing an unpublished draft via a private preview link. */
+/* Banner shown when viewing an unpublished draft via a private preview link.
+   A filled accent card (constrained to the post column) so it clearly outranks
+   the post itself without spanning the whole viewport. */
 .preview-banner {
   position: relative;
   z-index: 1;
   max-width: var(--container-width);
   margin: 1.5rem auto 0;
-  padding: 0.6rem 1rem;
-  border: 1px solid rgba(var(--dot), 0.3);
+  padding: 0.75rem 1.25rem;
+  background: var(--link);
+  color: var(--bg);
   border-radius: var(--radius-md);
-  font-size: 0.82rem;
-  color: var(--text-muted);
   text-align: center;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.22);
+}
+
+.preview-banner strong {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--label-tracking);
+}
+
+.preview-banner strong::after {
+  content: "·";
+  margin: 0 0.5rem;
+  opacity: 0.55;
+}
+
+.preview-banner span {
+  opacity: 0.9;
 }
 
 /* 404 page: centred under the frowning dot matrix. */

@@ -306,7 +306,12 @@ defmodule Newton.Accounts do
 
     rows =
       Enum.map(codes, fn code ->
-        %{user_id: user_id, code_hash: hash_recovery_code(code), inserted_at: now, updated_at: now}
+        %{
+          user_id: user_id,
+          code_hash: hash_recovery_code(code),
+          inserted_at: now,
+          updated_at: now
+        }
       end)
 
     {:ok, _} =
@@ -321,7 +326,10 @@ defmodule Newton.Accounts do
 
   @doc "How many of the user's recovery codes are still unused."
   def count_unused_recovery_codes(%User{id: user_id}) do
-    Repo.aggregate(from(r in RecoveryCode, where: r.user_id == ^user_id and is_nil(r.used_at)), :count)
+    Repo.aggregate(
+      from(r in RecoveryCode, where: r.user_id == ^user_id and is_nil(r.used_at)),
+      :count
+    )
   end
 
   @doc "Consume a matching unused recovery code; `:ok` if exactly one was spent, else `:error`."

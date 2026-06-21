@@ -92,7 +92,9 @@ defmodule NewtonWeb.UserSessionController do
 
       conn
       |> delete_session(:passkey_challenge)
-      |> UserAuth.log_in_user_session(cred.user)
+      # Passkey is a strong factor; persist the session by default, the same way
+      # password login does (its submit button always sends remember_me=true).
+      |> UserAuth.log_in_user_session(cred.user, %{"remember_me" => "true"})
       |> json(%{ok: true, to: UserAuth.signed_in_path(conn)})
     else
       _ ->

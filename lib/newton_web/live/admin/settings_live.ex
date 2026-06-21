@@ -184,14 +184,13 @@ defmodule NewtonWeb.Admin.SettingsLive do
           No passkeys yet. Your password still works as a sign-in method.
         </p>
 
-        <form phx-change="set_label" class="flex items-end gap-2">
+        <form phx-change="set_label" class="flex flex-col gap-3">
           <.input
             type="text"
             name="new_label"
             value={@new_label}
             label="New passkey name"
             placeholder="e.g. My laptop"
-            class="flex-1 rounded-md border border-(--admin-border) bg-(--admin-surface) px-2 py-1 text-[0.85rem] text-(--admin-text) focus:outline-none"
           />
           <div id="passkey-register" phx-hook="PasskeyRegister" data-label={@new_label}>
             <button

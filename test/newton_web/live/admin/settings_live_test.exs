@@ -56,4 +56,24 @@ defmodule NewtonWeb.Admin.SettingsLiveTest do
     view |> element("button[phx-value-id='#{cred.id}']") |> render_click()
     refute render(view) =~ "My Laptop"
   end
+
+  test "recovery codes section is hidden without a passkey and shown with one", %{conn: conn, user: user} do
+    {:ok, _view, html} = live(conn, ~p"/admin/settings")
+    refute html =~ "Recovery codes"
+
+    {:ok, _} =
+      Newton.Accounts.create_credential(user, %{
+        credential_id: <<3, 3, 3>>,
+        public_key: :erlang.term_to_binary(%{1 => 2}),
+        sign_count: 0,
+        label: "K"
+      })
+
+    {:ok, view, html} = live(conn, ~p"/admin/settings")
+    assert html =~ "Recovery codes"
+
+    html = view |> element("button", "Generate recovery codes") |> render_click()
+    assert length(Regex.scan(~r/[A-Z0-9]{5}-[A-Z0-9]{5}/, html)) == 10
+    assert Newton.Accounts.count_unused_recovery_codes(user) == 10
+  end
 end

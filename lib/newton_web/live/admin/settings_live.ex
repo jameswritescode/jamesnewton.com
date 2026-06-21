@@ -16,7 +16,9 @@ defmodule NewtonWeb.Admin.SettingsLive do
      |> assign(:password_form, password_form())
      |> assign(:credentials, Accounts.list_user_credentials(user))
      |> assign(:reg_challenge, nil)
-     |> assign(:new_label, "")}
+     |> assign(:new_label, "")
+     |> assign(:recovery_count, Accounts.count_unused_recovery_codes(user))
+     |> assign(:new_recovery_codes, nil)}
   end
 
   defp password_form, do: to_form(Accounts.change_user_password(%Accounts.User{}), as: :user)
@@ -100,6 +102,16 @@ defmodule NewtonWeb.Admin.SettingsLive do
 
   def handle_event("passkey_error", %{"message" => _m}, socket),
     do: {:noreply, put_flash(socket, :error, "Passkey registration was cancelled.")}
+
+  def handle_event("generate_recovery_codes", _params, socket) do
+    codes = Accounts.generate_recovery_codes(socket.assigns.user)
+
+    {:noreply,
+     socket
+     |> assign(:new_recovery_codes, codes)
+     |> assign(:recovery_count, length(codes))
+     |> put_flash(:info, "Recovery codes generated. Save them now — they won't be shown again.")}
+  end
 
   def handle_event("delete_passkey", %{"id" => id}, socket) do
     Accounts.delete_credential(socket.assigns.user, String.to_integer(id))
@@ -191,6 +203,35 @@ defmodule NewtonWeb.Admin.SettingsLive do
             <Components.button phx-click="start_registration">Add a passkey</Components.button>
           </div>
         </form>
+      </section>
+
+      <section :if={@credentials != []} class="mt-8 max-w-md">
+        <h2 class="mb-3 text-[0.95rem] font-medium">Recovery codes</h2>
+        <p class="mb-3 text-[0.82rem] text-(--admin-text-subtle)">
+          Use a recovery code to sign in if you lose access to your passkey.
+        </p>
+
+        <div :if={@new_recovery_codes} class="mb-3">
+          <div
+            id="recovery-codes"
+            class="grid grid-cols-2 gap-x-6 gap-y-1 rounded-md border border-(--admin-border) bg-(--admin-bg) p-3 font-mono text-[0.85rem] text-(--admin-text)"
+          >
+            <span :for={code <- @new_recovery_codes}>{code}</span>
+          </div>
+          <p class="mt-1 text-[0.72rem] text-(--admin-text-subtle)">
+            Save these now — they won't be shown again.
+          </p>
+        </div>
+
+        <p :if={!@new_recovery_codes} class="mb-3 text-[0.82rem] text-(--admin-text-muted)">
+          {@recovery_count} of 10 codes remaining.
+        </p>
+
+        <Components.button phx-click="generate_recovery_codes">
+          {if @recovery_count > 0 and is_nil(@new_recovery_codes),
+            do: "Regenerate recovery codes",
+            else: "Generate recovery codes"}
+        </Components.button>
       </section>
     </Layouts.admin>
     """

@@ -366,4 +366,44 @@ defmodule Newton.AccountsTest do
       assert Accounts.list_user_credentials(user) == []
     end
   end
+
+  describe "passkey presence + recovery codes" do
+    test "has_passkey? reflects stored credentials" do
+      user = user_fixture()
+      refute Accounts.has_passkey?(user)
+
+      {:ok, _} =
+        Accounts.create_credential(user, %{
+          credential_id: <<7, 7>>,
+          public_key: :erlang.term_to_binary(%{1 => 2}),
+          sign_count: 0,
+          label: "K"
+        })
+
+      assert Accounts.has_passkey?(user)
+    end
+
+    test "generate_recovery_codes returns 10 codes, replaces old ones, and counts" do
+      user = user_fixture()
+      codes = Accounts.generate_recovery_codes(user)
+      assert length(codes) == 10
+      assert Enum.all?(codes, &(&1 =~ ~r/^[A-Z0-9]{5}-[A-Z0-9]{5}$/))
+      assert Accounts.count_unused_recovery_codes(user) == 10
+
+      new_codes = Accounts.generate_recovery_codes(user)
+      assert Accounts.count_unused_recovery_codes(user) == 10
+      assert Accounts.redeem_recovery_code(user, hd(codes)) == :error
+      assert Accounts.redeem_recovery_code(user, hd(new_codes)) == :ok
+    end
+
+    test "redeem_recovery_code consumes a code exactly once and is input-lenient" do
+      user = user_fixture()
+      [code | _] = Accounts.generate_recovery_codes(user)
+
+      messy = String.downcase(String.replace(code, "-", " "))
+      assert Accounts.redeem_recovery_code(user, messy) == :ok
+      assert Accounts.redeem_recovery_code(user, code) == :error
+      assert Accounts.count_unused_recovery_codes(user) == 9
+    end
+  end
 end

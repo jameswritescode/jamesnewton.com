@@ -6,7 +6,7 @@ defmodule Newton.Accounts do
   import Ecto.Query, warn: false
   alias Newton.Repo
 
-  alias Newton.Accounts.{Credential, User, UserNotifier, UserToken}
+  alias Newton.Accounts.{Credential, RecoveryCode, User, UserNotifier, UserToken}
 
   ## Database getters
 
@@ -287,5 +287,72 @@ defmodule Newton.Accounts do
       nil -> :error
       cred -> Repo.delete(cred)
     end
+  end
+
+  @doc "True if the user has at least one passkey credential."
+  def has_passkey?(%User{id: id}), do: Repo.exists?(from c in Credential, where: c.user_id == ^id)
+
+  ## Recovery codes
+
+  # Unambiguous alphabet (no 0/O/1/I/L/U); 10 chars shown as `xxxxx-xxxxx`.
+  @recovery_alphabet ~c"23456789ABCDEFGHJKMNPQRSTVWXYZ"
+  @recovery_alphabet_length length(@recovery_alphabet)
+  @recovery_count 10
+
+  @doc "Replace the user's recovery codes with 10 fresh ones; returns the plaintext codes."
+  def generate_recovery_codes(%User{id: user_id}) do
+    codes = for _ <- 1..@recovery_count, do: random_recovery_code()
+    now = DateTime.truncate(DateTime.utc_now(), :second)
+
+    rows =
+      Enum.map(codes, fn code ->
+        %{user_id: user_id, code_hash: hash_recovery_code(code), inserted_at: now, updated_at: now}
+      end)
+
+    {:ok, _} =
+      Repo.transact(fn ->
+        Repo.delete_all(from r in RecoveryCode, where: r.user_id == ^user_id)
+        Repo.insert_all(RecoveryCode, rows)
+        {:ok, codes}
+      end)
+
+    codes
+  end
+
+  @doc "How many of the user's recovery codes are still unused."
+  def count_unused_recovery_codes(%User{id: user_id}) do
+    Repo.aggregate(from(r in RecoveryCode, where: r.user_id == ^user_id and is_nil(r.used_at)), :count)
+  end
+
+  @doc "Consume a matching unused recovery code; `:ok` if exactly one was spent, else `:error`."
+  def redeem_recovery_code(%User{id: user_id}, code) when is_binary(code) do
+    hash = hash_recovery_code(code)
+    now = DateTime.truncate(DateTime.utc_now(), :second)
+
+    {count, _} =
+      Repo.update_all(
+        from(r in RecoveryCode,
+          where: r.user_id == ^user_id and r.code_hash == ^hash and is_nil(r.used_at)
+        ),
+        set: [used_at: now, updated_at: now]
+      )
+
+    if count == 1, do: :ok, else: :error
+  end
+
+  defp random_recovery_code do
+    chars =
+      :crypto.strong_rand_bytes(10)
+      |> :binary.bin_to_list()
+      |> Enum.map(&Enum.at(@recovery_alphabet, rem(&1, @recovery_alphabet_length)))
+      |> List.to_string()
+
+    String.slice(chars, 0, 5) <> "-" <> String.slice(chars, 5, 5)
+  end
+
+  # Normalize (upcase, strip non-alphanumerics) before hashing so lenient input matches.
+  defp hash_recovery_code(code) do
+    normalized = code |> String.upcase() |> String.replace(~r/[^A-Z0-9]/, "")
+    :crypto.hash(:sha256, normalized)
   end
 end

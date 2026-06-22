@@ -14,6 +14,7 @@ defmodule Newton.Release do
   @app :newton
 
   @doc "Run all pending migrations for every repo in the app."
+  @spec migrate() :: [{:ok, list(), list()}]
   def migrate do
     load_app()
 
@@ -23,6 +24,7 @@ defmodule Newton.Release do
   end
 
   @doc "Roll a single repo back to `version`."
+  @spec rollback(module(), integer()) :: {:ok, list(), list()}
   def rollback(repo, version) do
     load_app()
     {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :down, to: version))
@@ -35,6 +37,8 @@ defmodule Newton.Release do
   Starts the repo itself (via `with_repo`) so it works under `bin/newton eval`,
   which boots a minimal node that does not start the application.
   """
+  @spec create_admin(String.t(), String.t()) ::
+          {:ok, %Newton.Accounts.User{}} | {:error, Ecto.Changeset.t()}
   def create_admin(email, password) do
     load_app()
 

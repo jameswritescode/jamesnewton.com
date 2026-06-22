@@ -19,11 +19,13 @@ defmodule Newton.Webauthn do
   - Relying-party ID:    `challenge.rp_id`   (string)
   """
 
+  @spec opts(keyword()) :: keyword()
   def opts(extra \\ []) do
     cfg = Application.fetch_env!(:newton, :webauthn)
     Keyword.merge([rp_id: cfg[:rp_id], origin: cfg[:origin]], extra)
   end
 
+  @spec registration_challenge() :: Wax.Challenge.t()
   def registration_challenge, do: Wax.new_registration_challenge(opts())
 
   @doc """
@@ -40,8 +42,12 @@ defmodule Newton.Webauthn do
   from the database after the authenticator returns its `credential_id`.  The challenge alone
   does not bind to any user's credentials — that binding happens at verification time.
   """
+  @spec authentication_challenge() :: Wax.Challenge.t()
   def authentication_challenge, do: Wax.new_authentication_challenge(opts(allow_credentials: []))
 
+  @spec dump_key(Wax.CoseKey.t()) :: binary()
   def dump_key(cose_key), do: :erlang.term_to_binary(cose_key)
+
+  @spec load_key(binary()) :: Wax.CoseKey.t()
   def load_key(bin), do: :erlang.binary_to_term(bin, [:safe])
 end

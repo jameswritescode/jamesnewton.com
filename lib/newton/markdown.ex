@@ -18,6 +18,7 @@ defmodule Newton.Markdown do
   ]
 
   @doc "Render Markdown to highlighted, escape-safe HTML."
+  @spec to_html(String.t()) :: String.t()
   def to_html(markdown) when is_binary(markdown) do
     MDEx.to_html!(markdown,
       extension: @extension,
@@ -27,6 +28,7 @@ defmodule Newton.Markdown do
   end
 
   @doc "Plain-text excerpt from the first paragraph, truncated at a word boundary."
+  @spec excerpt(String.t()) :: String.t()
   def excerpt(markdown) when is_binary(markdown) do
     markdown
     |> MDEx.parse_document!(extension: @extension)
@@ -35,6 +37,7 @@ defmodule Newton.Markdown do
   end
 
   @doc "Estimated reading time in whole minutes (minimum 1)."
+  @spec reading_time(String.t()) :: pos_integer()
   def reading_time(markdown) when is_binary(markdown) do
     words =
       markdown

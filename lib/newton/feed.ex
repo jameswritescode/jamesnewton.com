@@ -6,6 +6,7 @@ defmodule Newton.Feed do
   """
   alias Newton.{Blog, Gallery, Reading}
 
+  @spec recent(pos_integer()) :: [map()]
   def recent(limit \\ 10) do
     # Each source fetches at most `limit` rows — you never need more than that
     # from one type to fill the global top N — so the DB work stays bounded.

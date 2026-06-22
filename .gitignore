@@ -48,3 +48,6 @@ npm-debug.log
 
 # Source font fetched by the favicon generator (output SVG/PNGs are committed)
 /assets/favicon/Lora.ttf
+
+# Computer artifacts
+.DS_Store

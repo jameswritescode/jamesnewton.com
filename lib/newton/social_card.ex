@@ -35,8 +35,8 @@ defmodule Newton.SocialCard do
 
     footer_y = @height - @pad - 24
 
-    with {:ok, base} <- Image.new(@width, @height, color: p.bg),
-         {:ok, stripe} <- Image.new(@width, @stripe_height, color: p.fg),
+    with {:ok, base} <- Image.new(@width, @height, color: rgb(p.bg)),
+         {:ok, stripe} <- Image.new(@width, @stripe_height, color: rgb(p.fg)),
          {:ok, canvas} <- Image.compose(base, stripe, x: 0, y: @height - @stripe_height),
          {:ok, brand} <- text("James Newton", size: 50, color: p.fg),
          {:ok, title} <- text(post.title, size: title_size(post.title), color: p.fg, wrap: true),
@@ -48,6 +48,17 @@ defmodule Newton.SocialCard do
          {:ok, c4} <- Image.compose(c3, sub, x: @pad, y: footer_y) do
       Image.write(c4, :memory, suffix: ".png")
     end
+  end
+
+  # Image.new's :color option is typed as a number/pixel list (hex strings work at
+  # runtime via Pixel.to_srgb but aren't in the spec), so feed it RGB.
+  defp rgb("#" <> hex) do
+    [r, g, b] =
+      for pair <- [binary_part(hex, 0, 2), binary_part(hex, 2, 2), binary_part(hex, 4, 2)] do
+        String.to_integer(pair, 16)
+      end
+
+    [r, g, b]
   end
 
   defp text(string, opts) do

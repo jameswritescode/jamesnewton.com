@@ -1,10 +1,7 @@
 defmodule NewtonWeb.Helpers do
-  @type format_date_opt :: {:on_nil, String.t()}
+  @moduledoc "View helpers imported across the web layer."
 
-  @spec format_date(DateTime.t() | Date.t() | nil, [format_date_opt()]) :: String.t()
-  def format_date(date, opts \\ [])
-
-  def format_date(%DateTime{} = dt, _opts), do: Calendar.strftime(dt, "%B %-d, %Y")
-  def format_date(%Date{} = d, _opts), do: Calendar.strftime(d, "%B %-d, %Y")
-  def format_date(nil, opts), do: Keyword.get(opts, :on_nil, "")
+  @doc "See `Newton.Format.format_date/2`."
+  @spec format_date(DateTime.t() | Date.t() | nil, [Newton.Format.date_opt()]) :: String.t()
+  defdelegate format_date(date, opts \\ []), to: Newton.Format
 end

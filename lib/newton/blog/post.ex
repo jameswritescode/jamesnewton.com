@@ -17,6 +17,7 @@ defmodule Newton.Blog.Post do
   end
 
   @doc false
+  @spec changeset(%__MODULE__{}, map()) :: Ecto.Changeset.t()
   def changeset(post, attrs) do
     post
     |> cast(attrs, [:slug, :title, :excerpt, :body_markdown, :published_at])
@@ -48,6 +49,7 @@ defmodule Newton.Blog.Post do
   end
 
   @doc "Force re-render of derived fields (body_html, excerpt, reading_time) from existing body_markdown."
+  @spec rerender_changeset(%__MODULE__{}) :: Ecto.Changeset.t()
   def rerender_changeset(%__MODULE__{} = post) do
     post
     |> Ecto.Changeset.change()

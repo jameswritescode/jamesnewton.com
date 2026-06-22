@@ -17,14 +17,17 @@ defmodule Newton.Blog do
     :updated_at
   ]
 
+  @spec create_post(map()) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
   def create_post(attrs) do
     %Post{} |> Post.changeset(attrs) |> Repo.insert()
   end
 
+  @spec update_post(%Post{}, map()) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
   def update_post(%Post{} = post, attrs) do
     post |> Post.changeset(attrs) |> Repo.update()
   end
 
+  @spec rerender_post(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
   def rerender_post(%Post{} = post) do
     post |> Post.rerender_changeset() |> Repo.update()
   end
@@ -33,17 +36,20 @@ defmodule Newton.Blog do
   Published posts, newest first, as lightweight summaries (no body columns).
   Pass a limit to fetch only the most recent N (used by the home feed).
   """
+  @spec list_published_posts(non_neg_integer() | nil) :: [%Post{}]
   def list_published_posts(limit \\ nil) do
     from(p in published_query(), select: struct(p, @summary_fields))
     |> maybe_limit(limit)
     |> Repo.all()
   end
 
+  @spec get_published_post!(String.t()) :: %Post{}
   def get_published_post!(slug) do
     Repo.one!(from p in published_query(), where: p.slug == ^slug)
   end
 
   @doc "Admin post list, optionally filtered by status, newest-first."
+  @spec list_posts(:all | :drafts | :published) :: [%Post{}]
   def list_posts(filter \\ :all) do
     from(p in Post, order_by: [desc: coalesce(p.published_at, p.inserted_at)])
     |> filter_posts(filter)
@@ -55,12 +61,15 @@ defmodule Newton.Blog do
   defp filter_posts(query, _all), do: query
 
   @doc "Fetch any post by id (admin), regardless of publish status."
+  @spec get_post!(integer()) :: %Post{}
   def get_post!(id), do: Repo.get!(Post, id)
 
   @doc "Fetch any post by slug (admin), regardless of publish status."
+  @spec get_post_by_slug!(String.t()) :: %Post{}
   def get_post_by_slug!(slug), do: Repo.get_by!(Post, slug: slug)
 
   @doc "Mint a preview token for a draft (idempotent). No-op once published."
+  @spec enable_preview(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
   def enable_preview(%Post{published_at: nil} = post) do
     token =
       post.preview_token || 32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
@@ -71,11 +80,13 @@ defmodule Newton.Blog do
   def enable_preview(%Post{} = post), do: {:ok, post}
 
   @doc "Clear a post's preview token, invalidating any shared link."
+  @spec disable_preview(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
   def disable_preview(%Post{} = post) do
     post |> Ecto.Changeset.change(preview_token: nil) |> Repo.update()
   end
 
   @doc "Fetch a post by slug only if `token` matches its preview token (constant-time)."
+  @spec get_post_by_preview_token(String.t(), String.t()) :: %Post{} | nil
   def get_post_by_preview_token(slug, token) when is_binary(token) do
     case Repo.get_by(Post, slug: slug) do
       %Post{preview_token: stored} = post when is_binary(stored) ->
@@ -87,12 +98,15 @@ defmodule Newton.Blog do
   end
 
   @doc "Delete a post."
+  @spec delete_post(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
   def delete_post(%Post{} = post), do: Repo.delete(post)
 
   @doc "Build a post changeset for forms."
+  @spec change_post(%Post{}, map()) :: Ecto.Changeset.t()
   def change_post(%Post{} = post, attrs \\ %{}), do: Post.changeset(post, attrs)
 
   @doc "First free slug in the series untitled-post, untitled-post-2, …"
+  @spec next_untitled_slug() :: String.t()
   def next_untitled_slug do
     taken =
       Repo.all(from p in Post, where: like(p.slug, "untitled-post%"), select: p.slug)
@@ -106,6 +120,7 @@ defmodule Newton.Blog do
   end
 
   @doc "Derive publish status from a `published_at` value (or nil)."
+  @spec publish_status(DateTime.t() | nil) :: :draft | :scheduled | :published
   def publish_status(nil), do: :draft
 
   def publish_status(%DateTime{} = at) do
@@ -113,9 +128,11 @@ defmodule Newton.Blog do
   end
 
   @doc "Total number of posts."
+  @spec count_posts() :: non_neg_integer()
   def count_posts, do: Repo.aggregate(Post, :count)
 
   @doc "Number of draft posts (no publish date set)."
+  @spec count_drafts() :: non_neg_integer()
   def count_drafts do
     Repo.aggregate(from(p in Post, where: is_nil(p.published_at)), :count)
   end

@@ -33,6 +33,12 @@ defmodule NewtonWeb.Router do
     get "/photos", PhotoController, :index
   end
 
+  # Social card images. No :browser pipeline — these are PNGs, so we skip
+  # accepts/session/CSRF and let the controller set content-type + caching.
+  scope "/og", NewtonWeb do
+    get "/posts/:slug", OgImageController, :show
+  end
+
   scope "/admin", NewtonWeb.Admin do
     pipe_through [:browser, :require_authenticated_user]
 

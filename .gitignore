@@ -45,3 +45,6 @@ npm-debug.log
 
 # Visual brainstorming companion mockups
 .superpowers/
+
+# Source font fetched by the favicon generator (output SVG/PNGs are committed)
+/assets/favicon/Lora.ttf

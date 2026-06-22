@@ -25,6 +25,7 @@ defmodule Newton.Accounts.Scope do
 
   Returns nil if no user is given.
   """
+  @spec for_user(%Newton.Accounts.User{} | nil) :: %__MODULE__{} | nil
   def for_user(%User{} = user) do
     %__MODULE__{user: user}
   end

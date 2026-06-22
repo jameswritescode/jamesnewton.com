@@ -20,6 +20,8 @@ defmodule Newton.Accounts.UserNotifier do
   @doc """
   Deliver instructions to update a user email.
   """
+  @spec deliver_update_email_instructions(%Newton.Accounts.User{}, String.t()) ::
+          {:ok, Swoosh.Email.t()}
   def deliver_update_email_instructions(user, url) do
     deliver(user.email, "Update email instructions", """
 

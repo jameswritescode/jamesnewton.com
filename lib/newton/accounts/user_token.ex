@@ -38,6 +38,7 @@ defmodule Newton.Accounts.UserToken do
   and devices in the UI and allow users to explicitly expire any
   session they deem invalid.
   """
+  @spec build_session_token(%Newton.Accounts.User{}) :: {binary(), %__MODULE__{}}
   def build_session_token(user) do
     token = :crypto.strong_rand_bytes(@rand_size)
     dt = user.authenticated_at || DateTime.utc_now(:second)
@@ -52,6 +53,7 @@ defmodule Newton.Accounts.UserToken do
   The token is valid if it matches the value in the database and it has
   not expired (after @session_validity_in_days).
   """
+  @spec verify_session_token_query(binary()) :: {:ok, Ecto.Query.t()}
   def verify_session_token_query(token) do
     query =
       from token in by_token_and_context_query(token, "session"),
@@ -75,6 +77,7 @@ defmodule Newton.Accounts.UserToken do
   Users can easily adapt the existing code to provide other types of delivery methods,
   for example, by phone numbers.
   """
+  @spec build_email_token(%Newton.Accounts.User{}, String.t()) :: {String.t(), %__MODULE__{}}
   def build_email_token(user, context) do
     build_hashed_token(user, context, user.email)
   end
@@ -103,6 +106,7 @@ defmodule Newton.Accounts.UserToken do
   database and if it has not expired (after @change_email_validity_in_days).
   The context must always start with "change:".
   """
+  @spec verify_change_email_token_query(String.t(), String.t()) :: {:ok, Ecto.Query.t()} | :error
   def verify_change_email_token_query(token, "change:" <> _ = context) do
     case Base.url_decode64(token, padding: false) do
       {:ok, decoded_token} ->

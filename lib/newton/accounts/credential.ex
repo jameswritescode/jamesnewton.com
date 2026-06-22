@@ -13,6 +13,7 @@ defmodule Newton.Accounts.Credential do
   end
 
   @doc "Only the human label is form-assignable; key material is set by the server."
+  @spec label_changeset(%__MODULE__{}, map()) :: Ecto.Changeset.t()
   def label_changeset(credential, attrs) do
     credential
     |> cast(attrs, [:label])

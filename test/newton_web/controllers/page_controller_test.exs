@@ -57,4 +57,11 @@ defmodule NewtonWeb.PageControllerTest do
     feed_items = html |> String.split("feed-item-date") |> length() |> Kernel.-(1)
     assert feed_items == 5
   end
+
+  test "the page head references the theme-aware favicon", %{conn: conn} do
+    html = conn |> get(~p"/") |> html_response(200)
+    assert html =~ ~s(rel="icon")
+    assert html =~ "/favicon.svg"
+    assert html =~ ~s(rel="apple-touch-icon")
+  end
 end

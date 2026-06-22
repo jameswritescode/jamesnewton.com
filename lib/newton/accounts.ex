@@ -22,6 +22,7 @@ defmodule Newton.Accounts do
       nil
 
   """
+  @spec get_user_by_email(String.t()) :: %User{} | nil
   def get_user_by_email(email) when is_binary(email) do
     Repo.get_by(User, email: email)
   end
@@ -38,6 +39,7 @@ defmodule Newton.Accounts do
       nil
 
   """
+  @spec get_user_by_email_and_password(String.t(), String.t()) :: %User{} | nil
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
     user = Repo.get_by(User, email: email)
@@ -58,6 +60,7 @@ defmodule Newton.Accounts do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_user!(integer()) :: %User{}
   def get_user!(id), do: Repo.get!(User, id)
 
   ## User registration
@@ -74,6 +77,7 @@ defmodule Newton.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec register_user(map()) :: {:ok, %User{}} | {:error, Ecto.Changeset.t()}
   def register_user(attrs) do
     %User{}
     |> User.email_changeset(attrs)
@@ -88,6 +92,7 @@ defmodule Newton.Accounts do
   The user is in sudo mode when the last authentication was done no further
   than 20 minutes ago. The limit can be given as second argument in minutes.
   """
+  @spec sudo_mode?(%User{}, integer()) :: boolean()
   def sudo_mode?(user, minutes \\ -20)
 
   def sudo_mode?(%User{authenticated_at: ts}, minutes) when is_struct(ts, DateTime) do
@@ -107,6 +112,7 @@ defmodule Newton.Accounts do
       %Ecto.Changeset{data: %User{}}
 
   """
+  @spec change_user_email(%User{}, map(), keyword()) :: Ecto.Changeset.t()
   def change_user_email(user, attrs \\ %{}, opts \\ []) do
     User.email_changeset(user, attrs, opts)
   end
@@ -116,6 +122,7 @@ defmodule Newton.Accounts do
 
   If the token matches, the user email is updated and the token is deleted.
   """
+  @spec update_user_email(%User{}, String.t()) :: {:ok, %User{}} | {:error, :transaction_aborted}
   def update_user_email(user, token) do
     context = "change:#{user.email}"
 
@@ -143,6 +150,7 @@ defmodule Newton.Accounts do
       %Ecto.Changeset{data: %User{}}
 
   """
+  @spec change_user_password(%User{}, map(), keyword()) :: Ecto.Changeset.t()
   def change_user_password(user, attrs \\ %{}, opts \\ []) do
     User.password_changeset(user, attrs, opts)
   end
@@ -161,6 +169,8 @@ defmodule Newton.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_user_password(%User{}, map()) ::
+          {:ok, {%User{}, [%UserToken{}]}} | {:error, Ecto.Changeset.t()}
   def update_user_password(user, attrs) do
     user
     |> User.password_changeset(attrs)
@@ -168,6 +178,8 @@ defmodule Newton.Accounts do
   end
 
   @doc "Change the password after verifying the supplied current password."
+  @spec update_user_password(%User{}, String.t(), map()) ::
+          {:ok, {%User{}, [%UserToken{}]}} | {:error, Ecto.Changeset.t()}
   def update_user_password(user, current_password, attrs) do
     changeset =
       user
@@ -194,6 +206,7 @@ defmodule Newton.Accounts do
   @doc """
   Generates a session token.
   """
+  @spec generate_user_session_token(%User{}) :: binary()
   def generate_user_session_token(user) do
     {token, user_token} = UserToken.build_session_token(user)
     Repo.insert!(user_token)
@@ -205,6 +218,7 @@ defmodule Newton.Accounts do
 
   If the token is valid `{user, token_inserted_at}` is returned, otherwise `nil` is returned.
   """
+  @spec get_user_by_session_token(binary()) :: {%User{}, DateTime.t()} | nil
   def get_user_by_session_token(token) do
     {:ok, query} = UserToken.verify_session_token_query(token)
     Repo.one(query)
@@ -219,6 +233,8 @@ defmodule Newton.Accounts do
       {:ok, %{to: ..., body: ...}}
 
   """
+  @spec deliver_user_update_email_instructions(%User{}, String.t(), (String.t() -> String.t())) ::
+          {:ok, Swoosh.Email.t()} | {:error, term()}
   def deliver_user_update_email_instructions(%User{} = user, current_email, update_email_url_fun)
       when is_function(update_email_url_fun, 1) do
     {encoded_token, user_token} = UserToken.build_email_token(user, "change:#{current_email}")
@@ -230,6 +246,7 @@ defmodule Newton.Accounts do
   @doc """
   Deletes the signed token with the given context.
   """
+  @spec delete_user_session_token(binary()) :: :ok
   def delete_user_session_token(token) do
     Repo.delete_all(from(UserToken, where: [token: ^token, context: "session"]))
     :ok
@@ -251,6 +268,7 @@ defmodule Newton.Accounts do
 
   ## Credentials
 
+  @spec list_user_credentials(%User{}) :: [%Credential{}]
   def list_user_credentials(%User{id: id}) do
     Repo.all(from c in Credential, where: c.user_id == ^id, order_by: [desc: c.inserted_at])
   end
@@ -263,10 +281,12 @@ defmodule Newton.Accounts do
   credential ID before we know who the user is, and the caller verifies identity
   through the assertion signature rather than through an ownership check here.
   """
+  @spec get_credential_by_external_id(binary()) :: %Credential{} | nil
   def get_credential_by_external_id(credential_id) do
     Repo.one(from c in Credential, where: c.credential_id == ^credential_id, preload: :user)
   end
 
+  @spec create_credential(%User{}, map()) :: {:ok, %Credential{}} | {:error, Ecto.Changeset.t()}
   def create_credential(%User{id: user_id}, attrs) do
     %Credential{user_id: user_id}
     |> Credential.label_changeset(Map.take(attrs, [:label]))
@@ -276,12 +296,16 @@ defmodule Newton.Accounts do
     |> Repo.insert()
   end
 
+  @spec update_credential_sign_count(%Credential{}, non_neg_integer(), DateTime.t()) ::
+          {:ok, %Credential{}} | {:error, Ecto.Changeset.t()}
   def update_credential_sign_count(%Credential{} = cred, count, used_at) do
     cred
     |> Ecto.Changeset.change(sign_count: count, last_used_at: used_at)
     |> Repo.update()
   end
 
+  @spec delete_credential(%User{}, term()) ::
+          {:ok, %Credential{}} | {:error, Ecto.Changeset.t()} | :error
   def delete_credential(%User{id: user_id}, id) do
     case Repo.get_by(Credential, id: id, user_id: user_id) do
       nil -> :error
@@ -290,6 +314,7 @@ defmodule Newton.Accounts do
   end
 
   @doc "True if the user has at least one passkey credential."
+  @spec has_passkey?(%User{}) :: boolean()
   def has_passkey?(%User{id: id}), do: Repo.exists?(from c in Credential, where: c.user_id == ^id)
 
   ## Recovery codes
@@ -300,6 +325,7 @@ defmodule Newton.Accounts do
   @recovery_count 10
 
   @doc "Replace the user's recovery codes with 10 fresh ones; returns the plaintext codes."
+  @spec generate_recovery_codes(%User{}) :: [String.t()]
   def generate_recovery_codes(%User{id: user_id}) do
     codes = for _ <- 1..@recovery_count, do: random_recovery_code()
     now = DateTime.truncate(DateTime.utc_now(), :second)
@@ -325,6 +351,7 @@ defmodule Newton.Accounts do
   end
 
   @doc "How many of the user's recovery codes are still unused."
+  @spec count_unused_recovery_codes(%User{}) :: non_neg_integer()
   def count_unused_recovery_codes(%User{id: user_id}) do
     Repo.aggregate(
       from(r in RecoveryCode, where: r.user_id == ^user_id and is_nil(r.used_at)),
@@ -333,6 +360,7 @@ defmodule Newton.Accounts do
   end
 
   @doc "Consume a matching unused recovery code; `:ok` if exactly one was spent, else `:error`."
+  @spec redeem_recovery_code(%User{}, String.t()) :: :ok | :error
   def redeem_recovery_code(%User{id: user_id}, code) when is_binary(code) do
     hash = hash_recovery_code(code)
     now = DateTime.truncate(DateTime.utc_now(), :second)

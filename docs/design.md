@@ -6,9 +6,13 @@ The site aims for a warm, literary feel — Lora serif on a cream-on-warm palett
 
 ## Color tokens
 
-All colors live as CSS custom properties on `:root`. The light palette is the default. The dark palette is defined once as `--*-dark` variables; both the `@media (prefers-color-scheme: dark) :root:not(.light)` rule and the `:root.dark` rule remap the public tokens (`--bg`, `--text`, …) to those shared dark values. This means there's one source of truth for dark colors — the two triggers can't drift.
+All colors live as CSS custom properties on `:root`. **The public site is dark-only:** the root layout (`root.html.heex`) hard-sets `class="dark"` on `<html>`, so the `:root.dark` rule always wins and the dark palette is the only theme that ships. There's no `prefers-color-scheme` switching on the public site anymore.
 
-**Light mode** (warm cream on terracotta):
+The light palette below is **retained but dormant** — it's still the `:root` default in `assets/css/site.css`, and the `@media (prefers-color-scheme: dark) :root:not(.light)` rule and the matchMedia toggle still exist in git history, so light/dark switching can be restored by dropping the forced `class` (see the comments in `root.html.heex`). The dark palette is defined once as `--*-dark` variables that `:root.dark` remaps the public tokens (`--bg`, `--text`, …) to, so there's one source of truth for the dark colors.
+
+(The admin keeps its own independent light/dark, driven by `data-admin-theme` via a separate `admin_root` layout — unaffected by the public dark-only change.)
+
+**Light palette** (warm cream on terracotta) — *dormant; retained for a possible return to switching*:
 ```
 --bg: #aa4040;
 --text: #ffe8d6;
@@ -25,7 +29,7 @@ All colors live as CSS custom properties on `:root`. The light palette is the de
 --feed-hover: rgba(255, 232, 214, 0.08);
 ```
 
-**Dark mode** (soft cream on near-black):
+**Dark palette** (soft cream on near-black) — *active; the public site's only theme*:
 ```
 --bg: #151311;
 --text: #eed3ba;
@@ -161,7 +165,7 @@ We deliberately avoided the CSS-only cross-document approach (`@view-transition 
 ## Special content treatments
 
 - **Code fences**: `pre:has(code.language-xxx)::before` drops a small uppercase language badge in the top-right (pinned, doesn't scroll with horizontal overflow). Extending to a new language is one `::before` rule.
-- **Syntax highlighting**: rendered server-side via MDEx (using the Lumis highlighter with the `:html_linked` formatter). The highlighter emits semantic CSS class names — `keyword`, `string`, `comment`, `function`, `type`, `number`, and similar — which are mapped to the warm `--syntax-*`, `--link`, and `--text-muted` tokens in `assets/css/site.css`. The mapping flips automatically with light/dark via the same CSS custom property mechanism as the rest of the palette. Five tiers: keywords/decorators (buttery yellow `--syntax-keyword`, semi-bold 600), strings (peach `--link`), numbers/literals (amber `--syntax-amber`), types/built-ins/function-names (salmon `--syntax-rose` italic), comments (`--text-muted` italic). Everything else inherits body color. Do not introduce cool-tone token colors; the warm-only palette is load-bearing.
+- **Syntax highlighting**: rendered server-side via MDEx (using the Lumis highlighter with the `:html_linked` formatter). The highlighter emits semantic CSS class names — `keyword`, `string`, `comment`, `function`, `type`, `number`, and similar — which are mapped to the warm `--syntax-*`, `--link`, and `--text-muted` tokens in `assets/css/site.css`. The mapping rides the same CSS custom property mechanism as the rest of the palette (so it renders in the active dark palette, and would follow a theme switch if light/dark ever returns). Five tiers: keywords/decorators (buttery yellow `--syntax-keyword`, semi-bold 600), strings (peach `--link`), numbers/literals (amber `--syntax-amber`), types/built-ins/function-names (salmon `--syntax-rose` italic), comments (`--text-muted` italic). Everything else inherits body color. Do not introduce cool-tone token colors; the warm-only palette is load-bearing.
 - **Blockquote**: 2px left border in `var(--link)`, italic, slight opacity.
 - **Tables**: thin row borders in `rgba(var(--dot), 0.1)`, header borders slightly heavier. Uppercase letter-spaced header labels.
 - **Images**: 6px border-radius. `<figure>` wraps with centered 0.85rem figcaption below.

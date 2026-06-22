@@ -30,6 +30,16 @@ defmodule NewtonWeb.PostControllerTest do
     assert_error_sent 404, fn -> get(conn, ~p"/posts/does-not-exist") end
   end
 
+  test "a published post head exposes OG/Twitter tags pointing at its card", %{conn: conn} do
+    html = conn |> get(~p"/posts/three-ways-to-retry") |> html_response(200)
+
+    assert html =~ ~s(property="og:type" content="article")
+    assert html =~ ~s(property="og:title" content="Three Ways to Retry")
+    assert html =~ ~s(name="twitter:card" content="summary_large_image")
+    assert html =~ "/og/posts/three-ways-to-retry"
+    assert html =~ ~r{property="og:image" content="https?://}
+  end
+
   describe "draft visibility" do
     setup do
       {:ok, draft} =

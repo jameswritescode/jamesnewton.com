@@ -42,6 +42,13 @@ defmodule NewtonWeb.PageControllerTest do
     assert html =~ "<cite>Working in Public</cite>"
   end
 
+  test "the home page exposes default website OG tags", %{conn: conn} do
+    html = conn |> get(~p"/") |> html_response(200)
+
+    assert html =~ ~s(property="og:type" content="website")
+    assert html =~ "og-default.png"
+  end
+
   test "the home feed shows at most 5 items", %{conn: conn} do
     for i <- 1..6 do
       {:ok, _} =

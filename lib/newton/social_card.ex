@@ -7,11 +7,8 @@ defmodule Newton.SocialCard do
   @pad 80
   @content_width @width - 2 * @pad
 
-  @palettes %{
-    red: %{bg: "#aa4040", fg: "#ffe8d6", muted: "#f3c9b0"},
-    dark: %{bg: "#151311", fg: "#eed3ba", muted: "#ad9987"}
-  }
-  @default_palette :dark
+  # The site's single dark theme — bg / text / muted, matching site.css.
+  @theme %{bg: "#151311", fg: "#eed3ba", muted: "#ad9987"}
 
   # Vertical rhythm matched to the Figma design (ink-to-ink), measured from each
   # block's rendered bottom. The brand→title gap is intentionally larger than
@@ -22,17 +19,14 @@ defmodule Newton.SocialCard do
   @excerpt_max_chars 160
   @stripe_height 20
 
-  @spec post_card(
-          %{
-            title: String.t(),
-            excerpt: String.t() | nil,
-            published_on: Date.t() | nil,
-            reading_time: integer()
-          },
-          atom()
-        ) :: {:ok, binary()} | {:error, term()}
-  def post_card(post, palette \\ @default_palette) do
-    p = Map.fetch!(@palettes, palette)
+  @spec post_card(%{
+          title: String.t(),
+          excerpt: String.t() | nil,
+          published_on: Date.t() | nil,
+          reading_time: integer()
+        }) :: {:ok, binary()} | {:error, term()}
+  def post_card(post) do
+    p = @theme
 
     secondary =
       [Format.format_date(post.published_on), Format.format_reading_time(post.reading_time)]

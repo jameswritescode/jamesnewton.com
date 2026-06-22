@@ -14,6 +14,7 @@ defmodule Newton.Gallery.PhotoGroup do
   end
 
   @doc false
+  @spec changeset(%__MODULE__{} | Ecto.Changeset.t(), map()) :: Ecto.Changeset.t()
   def changeset(group, attrs) do
     group
     |> cast(attrs, [:slug, :title, :caption, :taken_on])

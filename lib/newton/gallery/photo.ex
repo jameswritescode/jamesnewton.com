@@ -15,6 +15,7 @@ defmodule Newton.Gallery.Photo do
   end
 
   @doc "Edit changeset: only the author-supplied alt text is mass-assignable."
+  @spec changeset(%__MODULE__{} | Ecto.Changeset.t(), map()) :: Ecto.Changeset.t()
   def changeset(photo, attrs) do
     photo
     |> cast(attrs, [:alt])
@@ -26,6 +27,7 @@ defmodule Newton.Gallery.Photo do
   and group are set by the server (not the editing form), so they are only cast
   here, never in `changeset/2`.
   """
+  @spec create_changeset(%__MODULE__{} | Ecto.Changeset.t(), map()) :: Ecto.Changeset.t()
   def create_changeset(photo, attrs) do
     photo
     |> cast(attrs, [:image_key, :alt, :position, :width, :height, :photo_group_id])

@@ -12,4 +12,9 @@ defmodule Newton.Format do
   def format_date(%DateTime{} = dt, _opts), do: Calendar.strftime(dt, "%B %-d, %Y")
   def format_date(%Date{} = d, _opts), do: Calendar.strftime(d, "%B %-d, %Y")
   def format_date(nil, opts), do: Keyword.get(opts, :on_nil, "")
+
+  @spec format_reading_time(integer()) :: String.t()
+  def format_reading_time(minutes) do
+    "#{minutes} minute read"
+  end
 end

@@ -8,7 +8,9 @@
     <header>
       <h1 class="post-title">{@post.title}</h1>
       <p class="post-byline">
-        {format_date(@post.published_at, on_nil: "Unpublished")} · {@post.reading_time} min read
+        {format_date(@post.published_at, on_nil: "Unpublished")} · {format_reading_time(
+          @post.reading_time
+        )}
       </p>
     </header>
 

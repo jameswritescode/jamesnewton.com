@@ -1,5 +1,6 @@
 defmodule Newton.SocialCard do
   @moduledoc "Renders 1200x630 Open Graph card PNGs (libvips via the image lib)."
+  alias Newton.Format
 
   @width 1200
   @height 630
@@ -29,7 +30,7 @@ defmodule Newton.SocialCard do
     p = Map.fetch!(@palettes, palette)
 
     secondary =
-      [Newton.Format.format_date(post.published_on), "#{post.reading_time} min read"]
+      [Format.format_date(post.published_on), Format.format_reading_time(post.reading_time)]
       |> Enum.reject(&(&1 == ""))
       |> Enum.join("  ·  ")
 

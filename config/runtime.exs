@@ -1,5 +1,17 @@
 import Config
 
+# Make the repo-bundled Lora font resolvable by libvips/Pango (social card
+# rendering), in dev and in releases alike, without an OS-level font install.
+fonts_dir = Path.join(:code.priv_dir(:newton), "fonts")
+fonts_conf = Path.join(System.tmp_dir!(), "newton-fonts.conf")
+
+File.write!(
+  fonts_conf,
+  File.read!(Path.join(fonts_dir, "fonts.conf")) |> String.replace("FONTS_DIR", fonts_dir)
+)
+
+System.put_env("FONTCONFIG_FILE", fonts_conf)
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration

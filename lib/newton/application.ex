@@ -12,8 +12,8 @@ defmodule Newton.Application do
       Newton.Repo,
       {DNSCluster, query: Application.get_env(:newton, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Newton.PubSub},
-      # Start a worker by calling: Newton.Worker.start_link(arg)
-      # {Newton.Worker, arg},
+      # Background work (e.g. regenerating a post's social card off the request path).
+      {Task.Supervisor, name: Newton.TaskSupervisor},
       # Start to serve requests, typically the last entry
       NewtonWeb.Endpoint
     ]

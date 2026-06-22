@@ -1,16 +1,9 @@
 import Config
 
-# Make the repo-bundled Lora font resolvable by libvips/Pango (social card
-# rendering), in dev and in releases alike, without an OS-level font install.
-fonts_dir = Path.join(:code.priv_dir(:newton), "fonts")
-fonts_conf = Path.join(System.tmp_dir!(), "newton-fonts.conf")
-
-File.write!(
-  fonts_conf,
-  File.read!(Path.join(fonts_dir, "fonts.conf")) |> String.replace("FONTS_DIR", fonts_dir)
-)
-
-System.put_env("FONTCONFIG_FILE", fonts_conf)
+# Social-card rendering (libvips/Pango) resolves Lora through fontconfig. In
+# releases the font is installed into a standard font dir with the cache built
+# (see Dockerfile); on macOS dev, libvips uses CoreText and Lora is a local
+# install — so no fontconfig wiring is needed here.
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the

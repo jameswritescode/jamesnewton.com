@@ -85,7 +85,7 @@ RUN mix release
 FROM ${RUNNER_IMAGE} AS final
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends libstdc++6 openssl libncurses6 locales ca-certificates \
+  && apt-get install -y --no-install-recommends libstdc++6 openssl libncurses6 locales ca-certificates fontconfig \
   && rm -rf /var/lib/apt/lists/*
 
 # Set the locale
@@ -95,6 +95,13 @@ RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
+
+# Social-card rendering (libvips/Pango) resolves fonts through fontconfig, so the
+# bundled Lora must live in a standard font dir with the cache built. fontconfig
+# (installed above) also provides /etc/fonts/fonts.conf, without which libvips
+# can't load any font and text layout degenerates into a multi-GB allocation.
+COPY priv/fonts/Lora.ttf /usr/local/share/fonts/Lora.ttf
+RUN fc-cache -f
 
 WORKDIR "/app"
 RUN chown nobody /app

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<%!-- Public site is dark-only: the dark theme is forced with the html class so
+there's no light flash and no system-preference switching. Restore from git
+history (drop the class, re-add the matchMedia toggle below) to bring light back. --%>
+<html lang="en" class="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <meta name="theme-color" content="#aa4040" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#151311" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#151311" />
     <link rel="icon" href={~p"/favicon.svg"} type="image/svg+xml" />
     <link rel="icon" href={~p"/favicon-32.png"} sizes="32x32" />
     <link rel="apple-touch-icon" href={~p"/apple-touch-icon.png"} />
@@ -38,14 +40,9 @@
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
-    <script nonce={assigns[:csp_nonce]}>
-      (() => {
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        const applyScheme = (e) => document.documentElement.classList.toggle('dark', e.matches);
-        applyScheme(mq);
-        mq.addEventListener('change', applyScheme);
-      })();
-    </script>
+    <%!-- Light/dark switching removed for the dark-only public site (see the html
+    tag above). The prefers-color-scheme toggle that set the `dark` class lived
+    here; restore it from git history if light mode returns. --%>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

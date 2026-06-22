@@ -1,6 +1,8 @@
 defmodule NewtonWeb.ContentSecurityPolicyTest do
   use NewtonWeb.ConnCase, async: true
 
+  import Newton.AccountsFixtures
+
   test "browser responses carry a CSP that restricts scripts to self + a nonce", %{conn: conn} do
     conn = get(conn, ~p"/")
 
@@ -12,8 +14,10 @@ defmodule NewtonWeb.ContentSecurityPolicyTest do
     refute csp =~ "script-src 'self' 'unsafe-inline'"
   end
 
-  test "the inline setup script carries the matching CSP nonce", %{conn: conn} do
-    conn = get(conn, ~p"/")
+  # The public site is dark-only with no inline scripts, so the nonce'd inline
+  # setup script now lives only in the admin layout (its theme toggle).
+  test "the admin inline setup script carries the matching CSP nonce", %{conn: conn} do
+    conn = conn |> log_in_user(user_fixture()) |> get(~p"/admin")
     html = html_response(conn, 200)
 
     [csp] = get_resp_header(conn, "content-security-policy")

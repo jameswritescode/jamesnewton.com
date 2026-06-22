@@ -97,7 +97,10 @@ html {
 
 html,
 .post-body pre code {
-  scrollbar-color: rgba(var(--dot), 0.22) transparent;
+  /* One (dark) theme: an explicit dark track, not `transparent`. Transparent
+     makes Firefox paint a default groove that follows the OS prefers-color-scheme,
+     which is exactly the two-theme behavior we don't want on a single-theme site. */
+  scrollbar-color: rgba(var(--dot), 0.22) var(--bg);
   scrollbar-width: thin;
 }
 

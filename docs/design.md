@@ -6,7 +6,7 @@ The site aims for a warm, literary feel — Lora serif on a cream-on-warm palett
 
 ## Color tokens
 
-All colors live as CSS custom properties on `:root`. **The public site is dark-only:** the root layout (`root.html.heex`) hard-sets `class="dark"` on `<html>`, so the `:root.dark` rule always wins and the dark palette is the only theme that ships. There's no `prefers-color-scheme` switching on the public site anymore.
+All colors live as CSS custom properties on `:root`. **The public site is dark-only — one theme, not two:** the root layout (`root.html.heex`) hard-sets `class="dark"` on `<html>` so the `:root.dark` rule always wins, and declares the single theme once with `<meta name="color-scheme" content="dark">` (which themes native UI dark and avoids a white first-paint flash). There's no `prefers-color-scheme` switching and no per-rule `color-scheme` juggling on the public site — it simply is dark.
 
 The light palette below is **retained but dormant** — it's still the `:root` default in `assets/css/site.css`, and the `@media (prefers-color-scheme: dark) :root:not(.light)` rule and the matchMedia toggle still exist in git history, so light/dark switching can be restored by dropping the forced `class` (see the comments in `root.html.heex`). The dark palette is defined once as `--*-dark` variables that `:root.dark` remaps the public tokens (`--bg`, `--text`, …) to, so there's one source of truth for the dark colors.
 
@@ -170,7 +170,7 @@ We deliberately avoided the CSS-only cross-document approach (`@view-transition 
 - **Tables**: thin row borders in `rgba(var(--dot), 0.1)`, header borders slightly heavier. Uppercase letter-spaced header labels.
 - **Images**: 6px border-radius. `<figure>` wraps with centered 0.85rem figcaption below.
 - **Inline code**: subtle background `rgba(var(--dot), 0.1)`, 4px radius.
-- **Scrollbars**: `scrollbar-gutter: stable` on `<html>` so opening the photo lightbox (which locks body scroll) doesn't reflow the page. `scrollbar-color` and `scrollbar-width: thin` apply to both `<html>` and `.post-body pre code` so code-block scrollbars match the page profile.
+- **Scrollbars**: `scrollbar-gutter: stable` on `<html>` so opening the photo lightbox (which locks body scroll) doesn't reflow the page. `scrollbar-color: rgba(var(--dot), 0.22) var(--bg)` and `scrollbar-width: thin` apply to both `<html>` and `.post-body pre code` so code-block scrollbars match the page profile. Because the public site is a single dark theme, the track is the page background (`var(--bg)`) — an **explicit** color, not `transparent`. That's the whole trick: a transparent track makes Firefox paint a default groove that follows the OS `prefers-color-scheme` regardless of the page, so on a forced-dark site it looked light under a light system setting. An explicit dark track renders the same in both Firefox and Chromium at any OS setting, with no `color-scheme` wrangling needed for the scrollbar (the single `<meta name="color-scheme" content="dark">` covers the rest of the native UI).
 
 ## Feed item variants
 

@@ -14,6 +14,7 @@ defmodule Newton.Reading.Entry do
   end
 
   @doc false
+  @spec changeset(%__MODULE__{}, map()) :: Ecto.Changeset.t()
   def changeset(entry, attrs) do
     entry
     |> cast(attrs, [:title, :author, :link, :note, :status, :finished_at])

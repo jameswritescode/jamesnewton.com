@@ -4,24 +4,35 @@ defmodule Newton.Reading do
   alias Newton.Reading.Entry
   alias Newton.Repo
 
+  @spec create_entry(map()) :: {:ok, %Entry{}} | {:error, Ecto.Changeset.t()}
   def create_entry(attrs) do
     %Entry{} |> Entry.changeset(attrs) |> Repo.insert()
   end
 
+  @spec get_entry!(integer()) :: %Entry{}
   def get_entry!(id), do: Repo.get!(Entry, id)
 
+  @spec update_entry(%Entry{}, map()) :: {:ok, %Entry{}} | {:error, Ecto.Changeset.t()}
   def update_entry(%Entry{} = entry, attrs) do
     entry |> Entry.changeset(attrs) |> Repo.update()
   end
 
+  @spec delete_entry(%Entry{}) :: {:ok, %Entry{}} | {:error, Ecto.Changeset.t()}
   def delete_entry(%Entry{} = entry), do: Repo.delete(entry)
 
+  @spec change_entry(%Entry{}, map()) :: Ecto.Changeset.t()
   def change_entry(%Entry{} = entry, attrs \\ %{}) do
     Entry.changeset(entry, attrs)
   end
 
   @statuses [:reading, :read, :listening, :listened]
 
+  @spec status_counts() :: %{
+          read: non_neg_integer(),
+          reading: non_neg_integer(),
+          listened: non_neg_integer(),
+          listening: non_neg_integer()
+        }
   def status_counts do
     counted =
       Entry
@@ -33,19 +44,23 @@ defmodule Newton.Reading do
     Map.new(@statuses, fn status -> {status, Map.get(counted, status, 0)} end)
   end
 
+  @spec list_entries() :: [%Entry{}]
   def list_entries do
     Repo.all(from e in Entry, order_by: [desc: e.finished_at])
   end
 
   @doc "Total number of reading entries."
+  @spec count_entries() :: non_neg_integer()
   def count_entries, do: Repo.aggregate(Entry, :count)
 
   @doc "Number of in-progress entries (currently reading or listening)."
+  @spec count_in_progress() :: non_neg_integer()
   def count_in_progress do
     Repo.aggregate(from(e in Entry, where: e.status in [:reading, :listening]), :count)
   end
 
   @doc "Most recently finished entries (excluding in-progress), newest first, limited."
+  @spec recent_finished(non_neg_integer()) :: [%Entry{}]
   def recent_finished(limit) do
     Repo.all(
       from e in Entry,
@@ -55,6 +70,7 @@ defmodule Newton.Reading do
     )
   end
 
+  @spec verb(:read | :reading | :listened | :listening) :: String.t()
   def verb(:read), do: "Read"
   def verb(:reading), do: "Reading"
   def verb(:listened), do: "Listened to"

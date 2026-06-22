@@ -90,6 +90,8 @@ defmodule NewtonWeb do
       import NewtonWeb.CoreComponents, except: [button: 1]
       import NewtonWeb.SiteComponents
 
+      import NewtonWeb.Helpers
+
       # Common modules used in templates
       alias NewtonWeb.Layouts
       alias Phoenix.LiveView.JS

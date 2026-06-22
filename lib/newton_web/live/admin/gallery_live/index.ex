@@ -104,6 +104,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
         >
           No galleries yet.
         </div>
+
         <div
           :for={{id, group} <- @streams.galleries}
           id={id}
@@ -117,17 +118,20 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
               class="size-full object-cover"
             />
           </div>
+
           <.link
             navigate={~p"/admin/photos/#{group.id}"}
             class="flex-1 text-[0.9rem] font-medium text-(--admin-text) no-underline after:absolute after:inset-0"
           >
             {group.title}
           </.link>
+
           <span class="text-[0.78rem] text-(--admin-text-subtle)">
             {length(group.photos)} photo{if length(group.photos) == 1, do: "", else: "s"}
           </span>
-          <span class="w-24 text-right text-[0.78rem] text-(--admin-text-subtle)">
-            {format_date(group.taken_on)}
+
+          <span class="w-36 text-right text-[0.78rem] text-(--admin-text-subtle)">
+            {format_date(group.taken_on, on_nil: "—")}
           </span>
         </div>
       </div>
@@ -141,7 +145,4 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
     </Layouts.admin>
     """
   end
-
-  defp format_date(nil), do: "—"
-  defp format_date(%Date{} = d), do: Calendar.strftime(d, "%b %-d, %Y")
 end

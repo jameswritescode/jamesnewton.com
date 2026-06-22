@@ -46,6 +46,7 @@ defmodule NewtonWeb.Admin.PostLive.Index do
         <div id="posts-empty" class="hidden p-5 text-[0.85rem] text-(--admin-text-subtle) only:block">
           No posts yet.
         </div>
+
         <div
           :for={{id, post} <- @streams.posts}
           id={id}
@@ -57,9 +58,11 @@ defmodule NewtonWeb.Admin.PostLive.Index do
           >
             {post.title}
           </.link>
+
           <Layouts.status_badge status={Newton.Blog.publish_status(post.published_at)} />
+
           <span class="hidden w-28 text-right text-[0.78rem] text-(--admin-text-subtle) sm:block">
-            {format_date(post.published_at)}
+            {format_date(post.published_at, on_nil: "—")}
           </span>
         </div>
       </div>
@@ -85,7 +88,4 @@ defmodule NewtonWeb.Admin.PostLive.Index do
     </.link>
     """
   end
-
-  defp format_date(nil), do: "—"
-  defp format_date(%DateTime{} = at), do: Calendar.strftime(at, "%b %-d, %Y")
 end

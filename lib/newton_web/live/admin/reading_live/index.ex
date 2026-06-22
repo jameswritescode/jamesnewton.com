@@ -153,11 +153,14 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
             >
               {entry.title}
             </.link>
+
             <span class="truncate text-[0.8rem] text-(--admin-text-subtle)">{entry.author}</span>
           </div>
+
           <Layouts.reading_badge status={entry.status} />
-          <span class="w-24 text-right text-[0.78rem] text-(--admin-text-subtle)">
-            {format_date(entry.finished_at)}
+
+          <span class="w-36 text-right text-[0.78rem] text-(--admin-text-subtle)">
+            {format_date(entry.finished_at, on_nil: "—")}
           </span>
         </div>
       </div>
@@ -284,7 +287,4 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
     </Components.drawer>
     """
   end
-
-  defp format_date(nil), do: "—"
-  defp format_date(%Date{} = d), do: Calendar.strftime(d, "%b %-d, %Y")
 end

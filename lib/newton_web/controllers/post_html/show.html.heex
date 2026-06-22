@@ -3,11 +3,12 @@
     <strong>Draft preview</strong>
     <span>Not published — please keep this link private.</span>
   </div>
+
   <article class="post">
     <header>
       <h1 class="post-title">{@post.title}</h1>
       <p class="post-byline">
-        {format_date(@post.published_at)} · {@post.reading_time} min read
+        {format_date(@post.published_at, on_nil: "Unpublished")} · {@post.reading_time} min read
       </p>
     </header>
 

@@ -8,9 +8,6 @@ defmodule NewtonWeb.PageHTML do
 
   embed_templates "page_html/*"
 
-  def format_date(%DateTime{} = dt), do: Calendar.strftime(dt, "%B %-d, %Y")
-  def format_date(%Date{} = d), do: Calendar.strftime(d, "%B %-d, %Y")
-
   defdelegate verb(status), to: Newton.Reading
   defdelegate image_url(key), to: Newton.Gallery
 

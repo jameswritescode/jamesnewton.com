@@ -6,7 +6,9 @@
     <meta name="csrf-token" content={get_csrf_token()} />
     <meta name="theme-color" content="#aa4040" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#151311" media="(prefers-color-scheme: dark)" />
-    <.live_title default="James Newton" prefix={title_prefix()}>{assigns[:page_title]}</.live_title>
+    <.live_title default="James Newton" prefix={title_prefix()}>
+      {assigns[:page_title]}
+    </.live_title>
     <meta :if={assigns[:page_robots]} name="robots" content={assigns[:page_robots]} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

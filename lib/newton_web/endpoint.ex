@@ -31,6 +31,10 @@ defmodule NewtonWeb.Endpoint do
     from: :newton,
     gzip: not code_reloading?,
     only: NewtonWeb.static_paths(),
+    # Digested top-level files (e.g. favicon-HASH.png, og-default-HASH.png) don't
+    # match the exact `:only` names, so allow them by prefix. Without this they
+    # 404 in production once phx.digest rewrites the URLs.
+    only_matching: ~w(favicon apple-touch-icon og-default robots),
     raise_on_missing_only: code_reloading?
 
   # Code reloading can be explicitly enabled under the

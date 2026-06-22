@@ -1,30 +1,18 @@
 :root {
-  --bg: #aa4040;
-  --text: #ffe8d6;
-  --text-subdued: #fde4ca;
-  --text-muted: #fce0c3;
-  --link: #ffc89c;
-  --strong: #fff5e8;
-  --syntax-keyword: #fff0c8;
-  --syntax-amber: #ffd089;
-  --syntax-rose: #ffc6b5;
-  --dot: 255, 232, 214;
-  --dot-base-opacity: 0.06;
+  /* The site has a single dark palette — there is no light/dark mode. */
+  --bg: #151311;
+  --text: #eed3ba;
+  --text-subdued: #c3ac98;
+  --text-muted: #ad9987;
+  --link: #e8a87c;
+  --strong: #f5e4cc;
+  --syntax-keyword: #f5dfa8;
+  --syntax-amber: #d9b577;
+  --syntax-rose: #d4988a;
+  --dot: 238, 211, 186;
+  --dot-base-opacity: 0.04;
   --ripple-peak-opacity: 0.3;
-  --feed-hover: rgba(255, 232, 214, 0.08);
-
-  --bg-dark: #151311;
-  --text-dark: #eed3ba;
-  --text-subdued-dark: #c3ac98;
-  --text-muted-dark: #ad9987;
-  --link-dark: #e8a87c;
-  --strong-dark: #f5e4cc;
-  --syntax-keyword-dark: #f5dfa8;
-  --syntax-amber-dark: #d9b577;
-  --syntax-rose-dark: #d4988a;
-  --dot-dark: 238, 211, 186;
-  --dot-base-opacity-dark: 0.04;
-  --feed-hover-dark: rgba(238, 211, 186, 0.06);
+  --feed-hover: rgba(238, 211, 186, 0.06);
 
   --container-width: 720px;
   --container-width-wide: 1040px;
@@ -42,38 +30,6 @@
 
   --dur-fast: 0.22s;
   --dur-default: 0.3s;
-}
-
-:root.dark {
-  --bg: var(--bg-dark);
-  --text: var(--text-dark);
-  --text-subdued: var(--text-subdued-dark);
-  --text-muted: var(--text-muted-dark);
-  --link: var(--link-dark);
-  --strong: var(--strong-dark);
-  --syntax-keyword: var(--syntax-keyword-dark);
-  --syntax-amber: var(--syntax-amber-dark);
-  --syntax-rose: var(--syntax-rose-dark);
-  --dot: var(--dot-dark);
-  --dot-base-opacity: var(--dot-base-opacity-dark);
-  --feed-hover: var(--feed-hover-dark);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --bg: var(--bg-dark);
-    --text: var(--text-dark);
-    --text-subdued: var(--text-subdued-dark);
-    --text-muted: var(--text-muted-dark);
-    --link: var(--link-dark);
-    --strong: var(--strong-dark);
-    --syntax-keyword: var(--syntax-keyword-dark);
-    --syntax-amber: var(--syntax-amber-dark);
-    --syntax-rose: var(--syntax-rose-dark);
-    --dot: var(--dot-dark);
-    --dot-base-opacity: var(--dot-base-opacity-dark);
-    --feed-hover: var(--feed-hover-dark);
-  }
 }
 
 html.is-changing .transition-fade {

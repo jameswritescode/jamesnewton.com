@@ -6,30 +6,11 @@ The site aims for a warm, literary feel — Lora serif on a cream-on-warm palett
 
 ## Color tokens
 
-All colors live as CSS custom properties on `:root`. **The public site is dark-only — one theme, not two:** the root layout (`root.html.heex`) hard-sets `class="dark"` on `<html>` so the `:root.dark` rule always wins, and declares the single theme once with `<meta name="color-scheme" content="dark">` (which themes native UI dark and avoids a white first-paint flash). There's no `prefers-color-scheme` switching and no per-rule `color-scheme` juggling on the public site — it simply is dark.
+All colors live as CSS custom properties on `:root` in `assets/css/site.css`. **The public site has a single dark palette — there is no light/dark mode.** It's declared once in the root layout (`root.html.heex`) with `<meta name="color-scheme" content="dark">` so native UI renders dark and there's no white first-paint flash. No forced class, no `prefers-color-scheme` switching, no `--*-dark` shadow variables — the tokens below are simply the colors.
 
-The light palette below is **retained but dormant** — it's still the `:root` default in `assets/css/site.css`, and the `@media (prefers-color-scheme: dark) :root:not(.light)` rule and the matchMedia toggle still exist in git history, so light/dark switching can be restored by dropping the forced `class` (see the comments in `root.html.heex`). The dark palette is defined once as `--*-dark` variables that `:root.dark` remaps the public tokens (`--bg`, `--text`, …) to, so there's one source of truth for the dark colors.
+(The admin keeps its own independent light/dark, driven by `data-admin-theme` via a separate `admin_root` layout — unrelated to the public palette.)
 
-(The admin keeps its own independent light/dark, driven by `data-admin-theme` via a separate `admin_root` layout — unaffected by the public dark-only change.)
-
-**Light palette** (warm cream on terracotta) — *dormant; retained for a possible return to switching*:
-```
---bg: #aa4040;
---text: #ffe8d6;
---text-subdued: #fde4ca;      /* body-adjacent, slightly dimmed — passes 4.5:1 */
---text-muted: #fce0c3;        /* labels, meta, dates — passes 4.5:1 */
---link: #ffc89c;
---strong: #fff5e8;
---syntax-keyword: #fff0c8;    /* code keywords — passes 6.3:1 */
---syntax-amber: #ffd089;      /* code numbers / literals — passes 4.7:1 */
---syntax-rose: #ffc6b5;       /* code types / function names — passes 4.5:1 */
---dot: 255, 232, 214;         /* RGB tuple for canvas rgba() */
---dot-base-opacity: 0.06;
---ripple-peak-opacity: 0.3;
---feed-hover: rgba(255, 232, 214, 0.08);
-```
-
-**Dark palette** (soft cream on near-black) — *active; the public site's only theme*:
+**Palette** (soft cream on near-black):
 ```
 --bg: #151311;
 --text: #eed3ba;
@@ -48,7 +29,7 @@ The light palette below is **retained but dormant** — it's still the `:root` d
 
 **Naming logic**:
 - `--bg` / `--text` are the foundation pair.
-- `--text-subdued` and `--text-muted` are pre-mixed dimmer cream values for body-adjacent prose and label-tier copy. They replace opacity blends so contrast stays predictable across both palettes (every tier passes 4.5:1).
+- `--text-subdued` and `--text-muted` are pre-mixed dimmer cream values for body-adjacent prose and label-tier copy. They replace opacity blends so contrast stays predictable — every tier passes 4.5:1.
 - `--link` is a hue-shifted accent — warmer than text, never a different color family.
 - `--strong` is the text color lifted slightly. Stays in the cream family; never a new hue.
 - `--syntax-keyword` / `--syntax-amber` / `--syntax-rose` form the code-block accent family: a buttery yellow for structural tokens (keywords, decorators), a warmer amber for numeric data, and a salmon-pink for named entities (types, function names). All three live in the warm gradient — no cool tones in code highlighting.
@@ -105,7 +86,7 @@ All layout values live as tokens on `:root` so a single change propagates:
 
 ## Opacity scale
 
-Most tier-shift work has moved off opacity blends and onto pre-mixed color tokens (`--text-subdued`, `--text-muted`) so contrast is predictable across both palettes. The one remaining opacity token is:
+Most tier-shift work has moved off opacity blends and onto pre-mixed color tokens (`--text-subdued`, `--text-muted`) so contrast is predictable. The one remaining opacity token is:
 
 - `--opacity-dim: 0.93` — body-ish prose slightly pulled back (link hover, book entries, blockquote softening).
 
@@ -165,12 +146,12 @@ We deliberately avoided the CSS-only cross-document approach (`@view-transition 
 ## Special content treatments
 
 - **Code fences**: `pre:has(code.language-xxx)::before` drops a small uppercase language badge in the top-right (pinned, doesn't scroll with horizontal overflow). Extending to a new language is one `::before` rule.
-- **Syntax highlighting**: rendered server-side via MDEx (using the Lumis highlighter with the `:html_linked` formatter). The highlighter emits semantic CSS class names — `keyword`, `string`, `comment`, `function`, `type`, `number`, and similar — which are mapped to the warm `--syntax-*`, `--link`, and `--text-muted` tokens in `assets/css/site.css`. The mapping rides the same CSS custom property mechanism as the rest of the palette (so it renders in the active dark palette, and would follow a theme switch if light/dark ever returns). Five tiers: keywords/decorators (buttery yellow `--syntax-keyword`, semi-bold 600), strings (peach `--link`), numbers/literals (amber `--syntax-amber`), types/built-ins/function-names (salmon `--syntax-rose` italic), comments (`--text-muted` italic). Everything else inherits body color. Do not introduce cool-tone token colors; the warm-only palette is load-bearing.
+- **Syntax highlighting**: rendered server-side via MDEx (using the Lumis highlighter with the `:html_linked` formatter). The highlighter emits semantic CSS class names — `keyword`, `string`, `comment`, `function`, `type`, `number`, and similar — which are mapped to the warm `--syntax-*`, `--link`, and `--text-muted` tokens in `assets/css/site.css`. The mapping uses the same palette tokens as the rest of the page. Five tiers: keywords/decorators (buttery yellow `--syntax-keyword`, semi-bold 600), strings (peach `--link`), numbers/literals (amber `--syntax-amber`), types/built-ins/function-names (salmon `--syntax-rose` italic), comments (`--text-muted` italic). Everything else inherits body color. Do not introduce cool-tone token colors; the warm-only palette is load-bearing.
 - **Blockquote**: 2px left border in `var(--link)`, italic, slight opacity.
 - **Tables**: thin row borders in `rgba(var(--dot), 0.1)`, header borders slightly heavier. Uppercase letter-spaced header labels.
 - **Images**: 6px border-radius. `<figure>` wraps with centered 0.85rem figcaption below.
 - **Inline code**: subtle background `rgba(var(--dot), 0.1)`, 4px radius.
-- **Scrollbars**: `scrollbar-gutter: stable` on `<html>` so opening the photo lightbox (which locks body scroll) doesn't reflow the page. `scrollbar-color: rgba(var(--dot), 0.22) var(--bg)` and `scrollbar-width: thin` apply to both `<html>` and `.post-body pre code` so code-block scrollbars match the page profile. Because the public site is a single dark theme, the track is the page background (`var(--bg)`) — an **explicit** color, not `transparent`. That's the whole trick: a transparent track makes Firefox paint a default groove that follows the OS `prefers-color-scheme` regardless of the page, so on a forced-dark site it looked light under a light system setting. An explicit dark track renders the same in both Firefox and Chromium at any OS setting, with no `color-scheme` wrangling needed for the scrollbar (the single `<meta name="color-scheme" content="dark">` covers the rest of the native UI).
+- **Scrollbars**: `scrollbar-gutter: stable` on `<html>` so opening the photo lightbox (which locks body scroll) doesn't reflow the page. `scrollbar-color: rgba(var(--dot), 0.22) var(--bg)` and `scrollbar-width: thin` apply to both `<html>` and `.post-body pre code` so code-block scrollbars match the page profile. Because the site is a single dark theme, the track is the page background (`var(--bg)`) — an **explicit** color, not `transparent`. That's the whole trick: a transparent track makes Firefox paint a default groove that follows the OS `prefers-color-scheme` regardless of the page, so on a single-theme dark site it would look light under a light system setting. An explicit dark track renders the same in both Firefox and Chromium at any OS setting, with no `color-scheme` wrangling needed for the scrollbar (the single `<meta name="color-scheme" content="dark">` covers the rest of the native UI).
 
 ## Feed item variants
 

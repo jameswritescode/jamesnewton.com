@@ -10,8 +10,17 @@ When a page is linked on Twitter/Discord/Slack/etc., show a rich preview. Every
 public page gets Open Graph + Twitter **meta tags** (title, description, image,
 url). **Posts** additionally get a **custom-generated card image** with the post
 **title** as the primary text and **published date · reading time** as secondary
-text, regenerated in the background when the title (or publish date) changes. A
-single static **default card** covers all other pages.
+text, **rendered on demand** at `GET /og/posts/:slug` from the live post. A single
+static **default card** covers all other pages.
+
+> **Revision (2026-06-21):** the original design stored a generated PNG per post
+> (an `og_image_key` column + a `Task.Supervisor` that regenerated the card in the
+> background on title/date changes + `Gallery.Storage`). It was replaced with an
+> **on-demand endpoint** (Section 3 below): the card is rendered from the post each
+> request and cached via HTTP headers. This removes the migration, the column, the
+> background job, the storage writes, and the staleness window — and the card can
+> never be out of date. Per-request render cost (tens of ms) is irrelevant because
+> OG images are fetched by crawlers when a link is *shared*, not on user navigations.
 
 ## Decisions (locked)
 
@@ -24,19 +33,22 @@ single static **default card** covers all other pages.
   proven Node `fontkit`+`sharp` pipeline (run as a generation step). No further
   work until the spike passes one way or the other.
 - **Card size:** 1200×630 (standard `summary_large_image`).
-- **Per-post card content:** brand background, **title** (Lora, large, wrapped +
-  truncated to fit), secondary line **"<Mon D, YYYY> · <N> min read"**, and a
-  small footer (`jamesnewton.com`).
-- **Color scheme:** decided **visually during the build** — generate samples in
-  both a warm-red palette (`#aa4040` bg, cream text) and a dark palette
-  (`#151311` bg, cream text); the user picks. The renderer is palette-parameterized.
-- **Regeneration trigger:** asynchronous via a supervised `Task` (a
-  `Task.Supervisor` in the app tree), fired from the Blog context after a post is
-  saved **when the title or `published_at` changed** (or no card exists yet).
-  Oban is out of scope unless we outgrow `Task`.
-- **Out of scope:** OG images for drafts/private previews (they're `noindex`);
-  regenerating on body-only edits (reading time may lag until the next
-  title/publish change); per-network image variants; animated cards.
+- **Per-post card content:** a **"James Newton"** brand mark top-left, the **title**
+  (Lora, font size scaled down by length, wrapping to a second line for long titles),
+  the **excerpt** beneath it (truncated to ~160 chars), and a bottom line
+  **"<Mon D, YYYY> · <N> min read"**. Flat background — a dot-matrix accent was
+  trialed and removed.
+- **Color scheme:** **dark** — bg `#151311`, cream text `#eed3ba`, muted secondary
+  `#ad9987` — with a 20px full-width cream accent stripe along the bottom edge. (A
+  warm-red palette was trialed; the site is going dark-only, so dark won.) The
+  renderer stays palette-parameterized (`red` + `dark` in `@palettes`) but defaults
+  to and only uses `dark`.
+- **Delivery:** rendered **on demand** by a thin controller at `GET /og/posts/:slug`
+  and returned as `image/png` with `Cache-Control` (no stored image, no DB column,
+  no background job). Always reflects the live post. Crawlers/CDN cache the bytes.
+- **Out of scope:** OG images for drafts/private previews (they're `noindex` — they
+  use the default card); per-network image variants; animated cards; a stored/CDN
+  copy of the per-post card.
 
 ## Section 1 — Feasibility spike (first task)
 
@@ -52,39 +64,44 @@ only `Newton.SocialCard`'s internals differ.
 
 A context module that renders card PNGs (pure, no DB):
 
-- `post_card(%{title, published_on, reading_time}, palette)` → `{:ok, binary}` —
-  composes the 1200×630 card: background fill, the title wrapped to the card width
-  in Lora (auto-shrink/truncate for very long titles), the secondary
-  date·reading-time line, and the footer. Returns PNG bytes.
-- `default_card(palette)` → `{:ok, binary}` — the static site card: "James Newton"
-  + a short tagline + the JN mark, same dimensions/palette.
-- A `palette` is a small struct/map (`bg`, `fg`, `muted`) so red vs dark is one
-  parameter; the chosen palette is then the module default.
+- `post_card(%{title, excerpt, published_on, reading_time}, palette)` →
+  `{:ok, binary}` — composes the 1200×630 card: background fill, the "James Newton"
+  brand mark, the length-scaled title wrapped to the card width in Lora, the excerpt
+  beneath it, and the bottom date·reading-time line. Returns PNG bytes.
+- A `palette` is a small map (`bg`, `fg`, `muted`); `dark` is the module default.
+- The **static site card is not rendered by this module** — it's a fixed Figma
+  export committed as `priv/static/og-default.png` (see Section 5). The renderer has
+  no `default_card/1`.
+- Date formatting is shared via `Newton.Format.format_date/1` (full month), not
+  duplicated here.
 
-Fonts: `priv/fonts/Lora-SemiBold.ttf` (+ regular if needed) committed; a
-`priv/fonts/fonts.conf` adds that dir and includes the system defaults; the app
-sets the fontconfig env (e.g. `FONTCONFIG_FILE`) **before vix initializes**
-(early in `Newton.Application.start/2` or via release env). The spike nails the
-exact incantation.
+Fonts: `priv/fonts/Lora.ttf` (the variable font) committed; a `priv/fonts/fonts.conf`
+adds that dir and includes the system defaults; `config/runtime.exs` sets
+`FONTCONFIG_FILE` **before vix initializes**. On macOS dev, libvips resolves fonts
+via CoreText (so Lora is also installed locally for rendering); on Linux/prod it
+resolves via fontconfig + the bundled font. The Pango font string is `font: "Lora"`
+with a separate `font_size:` integer.
 
-## Section 3 — Data model, storage & async regeneration
+## Section 3 — The on-demand image endpoint
 
-- **Migration:** add `og_image_key :string` (nullable) to `posts`. Not
-  mass-assignable (set only by the regen path).
-- **Storage:** reuse `Newton.Gallery.Storage` — render the PNG to a temp file,
-  `Storage.store(tmp, "og.png")` → key (served at `/media/<key>`). On regen,
-  store the new key, set it on the post, and `Storage.delete/1` the old key.
-- **Supervision:** add a `Task.Supervisor` (e.g. `Newton.TaskSupervisor`) to the
-  application children.
-- **Trigger (`Newton.Blog`):** `create_post/1` and `update_post/2`, on success,
-  check whether the changeset changed `:title` or `:published_at` (or the post has
-  no `og_image_key`). If so **and the post is published** (a public card only
-  matters for live posts), start an async task:
-  `Task.Supervisor.start_child(Newton.TaskSupervisor, fn -> Blog.regenerate_og_image(post) end)`.
-- **`Blog.regenerate_og_image/1`** (sync, the unit-testable core): builds the
-  card via `SocialCard.post_card/2` from the post's title/published_at/reading_time,
-  stores it, updates `og_image_key` (programmatic changeset, deletes the prior
-  key). Errors are logged and swallowed — a card failure must never break saving.
+A thin `NewtonWeb.OgImageController` serves `GET /og/posts/:slug`:
+
+- Loads the **published** post via `Blog.get_published_post!/1` (raises → 404 for
+  unknown or unpublished slugs).
+- Renders the card with `SocialCard.post_card/2` from the post's
+  title/excerpt/published_at/reading_time and streams the PNG with
+  `content-type: image/png` and `Cache-Control: public, max-age=3600`.
+- On the unlikely render error, falls back to streaming the static
+  `priv/static/og-default.png` rather than 500-ing, so a crawler still gets an image.
+
+**Routing:** the `/og` route is in its **own scope with no pipeline** — not the
+`:browser` pipeline, whose `plug :accepts, ["html", "json"]` would 406 an image
+request that sends `Accept: image/png`. The endpoint needs no session/CSRF/layout;
+the controller sets the response headers explicitly.
+
+No database column, no storage, no background job, no regeneration trigger — the
+card is computed from the live post on each request, so it is never stale. HTTP
+caching (and any future CDN/`Cachex` layer, if ever needed) covers repeat fetches.
 
 ## Section 4 — Meta tags (public layout)
 
@@ -101,59 +118,59 @@ tags driven by optional assigns with sensible defaults:
 
 `PostController.show` sets the assigns from the post: `og_title` = title,
 `og_description` = excerpt, `og_url` = canonical `url(~p"/posts/#{slug}")`,
-`og_image` = the post's card (`Endpoint.url() <> "/media/" <> og_image_key`) or the
-default card if the key is nil. Drafts/previews use the defaults (no private card).
+`og_image` = the post's live card URL `url(~p"/og/posts/#{slug}")` for published
+posts, or the default card `url(~p"/og-default.png")` for drafts/previews (noindex).
 All image/url values are **absolute** (crawlers require it).
 
 ## Section 5 — The default site card
 
-Generated **once** with `SocialCard.default_card/1` (via a one-off `mix run` during
-implementation) and committed as `priv/static/og-default.png`; add it to
-`NewtonWeb.static_paths()`. Non-post pages (home, /posts, /reading, /photos,
-/resume) reference it through the default `og:image`. Regenerated only by re-running
-the generator if the brand changes.
+A fixed brand image (the "JN" monogram lockup — "James Newton" / "Software &
+Photography" on the dark bg with the cream stripe), designed in Figma and committed
+as-is to `priv/static/og-default.png` (1200×630); add it to `NewtonWeb.static_paths()`.
+It's **not rendered** — it has no dynamic content, so generating it would only
+reproduce a worse copy of the export. Non-post pages (home, /posts, /reading,
+/photos, /resume) reference it through the default `og:image`. Replaced only by
+dropping in a new export if the brand changes.
 
 ## Error handling / edge cases
 
-- **Card render fails** (font/lib issue): `regenerate_og_image` logs and returns
-  without raising; the post keeps its old (or nil) `og_image_key`; saving is
-  unaffected; meta `og:image` falls back to the default card.
-- **No card yet** (older posts, or first publish before the async task finishes):
-  `og:image` falls back to the default until the task completes.
-- **Very long titles:** the renderer wraps and, past a max, reduces font size /
-  truncates with an ellipsis so text always fits 1200×630.
-- **Drafts / `?p` previews:** no per-post card (defaults), consistent with their
+- **Card render fails** (font/lib issue): the endpoint streams the static
+  `og-default.png` instead of 500-ing; the post page's meta tags are unaffected.
+- **Unknown / unpublished slug:** `Blog.get_published_post!/1` raises → 404. Post
+  pages only reference the endpoint for *published* posts, so this stays internal.
+- **Very long titles:** the renderer scales the font down by length and wraps to a
+  second line so text always fits 1200×630; the excerpt is truncated to ~160 chars.
+- **Drafts / `?p` previews:** no per-post card (default card), consistent with their
   `noindex` status.
-- **Reading-time staleness:** body-only edits don't trigger regen; the card's
-  reading time refreshes on the next title/publish change. Acceptable.
+- **Reading time:** always current — the card is rendered from the live post, so any
+  edit (including body-only) is reflected on the next crawl/cache expiry.
 
 ## Testing approach
 
 - **Spike:** manual visual confirmation (a rendered "Hello" PNG in Lora).
-- **`Newton.SocialCard`:** `post_card/2` and `default_card/1` return a valid PNG of
-  exactly 1200×630 (assert PNG magic bytes + dimensions via `Image`); long-title
-  input still produces a 1200×630 image (no overflow/crash).
-- **`Blog.regenerate_og_image/1`:** for a published post, sets a non-nil
-  `og_image_key` and the stored file exists; replaces+deletes a prior key.
-- **Trigger:** updating a published post's **title** results (synchronously, by
-  calling the regen core, or via the task with a sync await in test) in a refreshed
-  `og_image_key`; a body-only change does not.
+- **`Newton.SocialCard`:** `post_card/2` returns a valid PNG of exactly 1200×630
+  (assert PNG magic bytes + dimensions via `Image`); long-title and nil-excerpt
+  input still produce a 1200×630 image (no overflow/crash).
+- **`OgImageController`:** `GET /og/posts/:slug` for a published post returns a
+  `200` `image/png` of exactly 1200×630 with a `public` `Cache-Control`; an unknown
+  or unpublished slug returns `404`.
 - **Meta tags (controller):** a published post's `<head>` has `og:title` = title,
   `og:description` = excerpt, an absolute `og:image`, `og:type=article`,
   `twitter:card=summary_large_image`; the home page uses the default image and
   `og:type=website`.
-- **Visual:** render sample post cards + the default card in **both palettes**,
-  screenshot, user picks the palette (this resolves the color decision).
+- **Visual:** render sample post cards (short + long title), compare against the
+  Figma mockups, confirm the match. (Resolved: dark palette.)
 
 ## Unit breakdown
 
 - `mix.exs` — add `{:image, "~> ...""}` (and its `vix` dep).
 - `priv/fonts/Lora-SemiBold.ttf`, `priv/fonts/fonts.conf` — in-repo font + config.
-- `lib/newton/application.ex` — `Task.Supervisor` child + fontconfig env at boot.
-- `lib/newton/social_card.ex` — the renderer (`post_card/2`, `default_card/1`).
-- `priv/repo/migrations/*_add_og_image_key_to_posts.exs`, `lib/newton/blog/post.ex`
-  (field), `lib/newton/blog.ex` (trigger + `regenerate_og_image/1`).
-- `priv/static/og-default.png` — generated, committed; `NewtonWeb.static_paths()`.
+- `config/runtime.exs` — fontconfig env at boot (before vix initializes).
+- `lib/newton/social_card.ex` — the renderer (`post_card/2` only).
+- `lib/newton/format.ex` — shared `format_date/2`; `NewtonWeb.Helpers` delegates to it.
+- `lib/newton_web/controllers/og_image_controller.ex` — `GET /og/posts/:slug`.
+- `lib/newton_web/router.ex` — pipeline-less `/og` scope.
+- `priv/static/og-default.png` — committed Figma export; `NewtonWeb.static_paths()`.
 - `lib/newton_web/controllers/post_controller.ex` — OG assigns.
 - `lib/newton_web/components/layouts/root.html.heex` — meta tags.
 

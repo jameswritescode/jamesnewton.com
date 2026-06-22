@@ -2,105 +2,37 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. **Note:** Task 1 (the spike) and Task 2 (card visual design) involve judgment/iteration and are best executed inline.
 
-**Goal:** Rich link previews — OG/Twitter meta tags on every public page, plus a per-post card image (title + date · reading time) regenerated in the background on title/date changes, and a static default card for everything else.
+**Goal:** Rich link previews — OG/Twitter meta tags on every public page, a **per-post card image rendered on demand** at `GET /og/posts/:slug` (title + excerpt + date · reading time), and a static default card for every other page.
 
-**Architecture:** A `Newton.SocialCard` renderer (libvips via the `image` lib) draws 1200×630 PNGs using a repo-bundled Lora font resolved through fontconfig. Posts gain an `og_image_key`; the Blog context regenerates the card asynchronously (a `Task.Supervisor`) when the title or publish date changes, storing it on the media volume. The public layout emits OG/Twitter tags from per-page assigns.
+**Architecture:** A `Newton.SocialCard` renderer (libvips via the `image` lib) draws 1200×630 PNGs using a repo-bundled Lora font resolved through fontconfig. A thin `NewtonWeb.OgImageController` loads the published post by slug and streams a freshly rendered PNG with HTTP cache headers — no stored image, no database column, no background job, never stale. Non-post pages reference a committed `priv/static/og-default.png`. The public layout emits OG/Twitter tags from per-page assigns.
 
-**Tech Stack:** `image` 0.69 (vix/libvips, Pango text), fontconfig + an in-repo Lora TTF, Ecto, `Task.Supervisor`, `Newton.Gallery.Storage`, HEEx meta tags.
+**Tech Stack:** `image` 0.69 (vix/libvips, Pango text), fontconfig + an in-repo Lora TTF, a Phoenix controller with `Cache-Control`/`ETag`, HEEx meta tags.
 
 **Reference spec:** `docs/superpowers/specs/2026-06-21-og-preview-cards-design.md`
+
+**Architecture note (supersedes earlier draft):** An earlier version of this plan stored a generated PNG per post (`og_image_key` column + `Task.Supervisor` async regeneration on title/date change + `Gallery.Storage`). We replaced it with the on-demand endpoint below: simpler (no migration/field/job/storage/cleanup), and never stale because the card is rendered from the live post at request time. OG images are fetched by crawlers when a link is *shared* — rare and not user-facing — so per-request render cost (tens of ms) is a non-issue, and HTTP caching covers repeat fetches. The `Task.Supervisor` added in Task 1 for the old approach is now unused and is removed in Task 5.
 
 **Session constraints:** Commit signed (1Password; if it fails, `--no-gpg-sign` then re-sign later). Trailer `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`. Don't modify `config/dev.exs`. Servers on PORT=4001.
 
 ---
 
-## Task 1: Feasibility spike — render Lora text to a PNG
+## Task 1: Feasibility spike — render Lora text to a PNG  ✅ done (committed)
 
-**Goal:** prove `image`/vix can render Lora text in this environment before building anything. This task is a **decision gate**.
+**Goal:** prove `image`/vix can render Lora text in this environment before building anything. This was a **decision gate** — it passed; the `image` renderer is in use.
 
 **Files:**
-- Modify: `mix.exs` (add `{:image, "~> 0.69"}`)
+- Modify: `mix.exs` (`{:image, "~> 0.69"}`)
 - Create: `priv/fonts/Lora.ttf` (committed — runtime font), `priv/fonts/fonts.conf`
-- Modify: `config/runtime.exs` (fontconfig env), `lib/newton/application.ex` (Task.Supervisor — added here so it's ready)
+- Modify: `config/runtime.exs` (fontconfig env), `lib/newton/application.ex`
 
-- [ ] **Step 1: Add the dependency**
+What shipped (commit `Add image lib, bundled Lora font, and a Task.Supervisor for social cards`):
 
-In `mix.exs` deps add `{:image, "~> 0.69"}`. Run `mix deps.get` (pulls `vix`).
+- `mix.exs` deps gained `{:image, "~> 0.69"}` (pulls `vix`).
+- `priv/fonts/Lora.ttf` (Lora variable font) + `priv/fonts/fonts.conf` committed so the font ships in the release.
+- `config/runtime.exs` writes a `FONTCONFIG_FILE` pointing at the repo font dir **before vix initializes**.
+- `lib/newton/application.ex` gained `{Task.Supervisor, name: Newton.TaskSupervisor}` — **now unused** (was for the abandoned async approach); removed in Task 5.
 
-- [ ] **Step 2: Ship the Lora font + fontconfig**
-
-Copy the Lora variable font into the repo (it must ship in the release, so it is
-committed, not gitignored):
-
-```bash
-mkdir -p priv/fonts
-curl -fsSL "https://github.com/google/fonts/raw/main/ofl/lora/Lora%5Bwght%5D.ttf" -o priv/fonts/Lora.ttf
-```
-
-Create `priv/fonts/fonts.conf` (a fontconfig config that adds the repo font dir and
-still includes the system fonts):
-```xml
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
-<fontconfig>
-  <dir>FONTS_DIR</dir>
-  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>
-  <cachedir>/tmp/newton-fontconfig</cachedir>
-</fontconfig>
-```
-(`FONTS_DIR` is replaced with the absolute path at boot — see Step 3.)
-
-- [ ] **Step 3: Point fontconfig at it before vix loads**
-
-vix initializes libvips/fontconfig on first use, so the env must be set early. In
-`config/runtime.exs`, near the top (runs before the supervision tree starts), add:
-```elixir
-# Make the repo-bundled Lora resolvable by libvips/Pango (social card rendering).
-fonts_dir = Path.join(:code.priv_dir(:newton), "fonts")
-conf_src = Path.join(fonts_dir, "fonts.conf")
-conf_out = Path.join(System.tmp_dir!(), "newton-fonts.conf")
-File.write!(conf_out, String.replace(File.read!(conf_src), "FONTS_DIR", fonts_dir))
-System.put_env("FONTCONFIG_FILE", conf_out)
-```
-(`:code.priv_dir/1` resolves both in dev and in a release.)
-
-- [ ] **Step 4: Add the Task.Supervisor (used in Task 3)**
-
-In `lib/newton/application.ex`, add to `children` (before `NewtonWeb.Endpoint`):
-```elixir
-      {Task.Supervisor, name: Newton.TaskSupervisor},
-```
-
-- [ ] **Step 5: Spike — render "Hello" in Lora**
-
-In `iex -S mix`:
-```elixir
-{:ok, canvas} = Image.new(600, 200, color: "#aa4040")
-{:ok, text} = Image.Text.text("Hello", font: "Lora", font_size: 80, text_fill_color: "#ffe8d6")
-{:ok, composed} = Image.compose(canvas, text, x: 40, y: 50)
-Image.write(composed, "/tmp/spike.png")
-```
-Open `/tmp/spike.png`. **Decision gate:**
-- If it renders with a serif (Lora) → vix text works; proceed to Task 2 with the
-  `image` renderer.
-- If `Image.Text.text` errors (no Pango/text support) or the font is wrong, try
-  font strings `"Lora SemiBold"` / `"Lora 600"`; if still broken, **switch the
-  renderer plan to the Node fallback**: `Newton.SocialCard` shells to a
-  `assets/social_card/render.mjs` (fontkit + sharp, like the favicon) that takes
-  title/date/read + palette and emits a PNG. Note the decision in the commit
-  message. (Tasks 3–5 are unchanged either way.)
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add mix.exs mix.lock priv/fonts/Lora.ttf priv/fonts/fonts.conf config/runtime.exs lib/newton/application.ex
-git commit -m "$(cat <<'EOF'
-Add image lib, bundled Lora font, and a Task.Supervisor for social cards
-
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
-EOF
-)"
-```
+**Decision-gate outcome:** vix/`Image.Text` renders Lora correctly. Font resolution diverges by OS — macOS dev uses CoreText (font installed at `~/Library/Fonts/` for local rendering), Linux/prod uses fontconfig + the bundled font via `FONTCONFIG_FILE`. The Pango font string must be `font: "Lora"` + a separate `font_size:` integer (a combined `"Lora SemiBold 84"` string falls back to sans). The Node `fontkit`+`sharp` fallback was not needed.
 
 ---
 
@@ -110,141 +42,21 @@ EOF
 - Create: `lib/newton/social_card.ex`
 - Test: `test/newton/social_card_test.exs`
 
-- [ ] **Step 1: Write the failing test**
+**Status:** renderer written, tuned against the user's Figma mockups, and matched to them; 3 tests pass; **not yet committed**. Palette is **locked to dark** (`@default_palette :dark`) — the site is going dark-only (see "Related work" at the bottom). `default_card/1` was **removed** (the static card is a committed export now — see Task 4). The renderer is now `post_card/2` only.
 
-`test/newton/social_card_test.exs`:
-```elixir
-defmodule Newton.SocialCardTest do
-  use ExUnit.Case, async: true
-  alias Newton.SocialCard
+Final design (dark): bg `#151311`, all-cream text `#eed3ba`, muted secondary `#ad9987`. Layout: "James Newton" brand mark (50px) top-left at (80, 80); length-scaled title (75 / 64 / 52 by byte length, wrapping to a second line) at (80, 150); excerpt (30px, muted) below it tracking the title height; `date · reading time` (24px, muted) bottom-left at (80, 526); and a **20px full-width cream accent stripe** along the bottom edge (`y=610`). Date uses `Newton.Format.format_date/1` (full month, e.g. "April 17, 2026"). `@palettes` still carries `red` + `dark` and `post_card/2` accepts a palette arg, but only dark is used — the renderer keeps the parameter for the editor preview / future flexibility (candidate to strip if it stays unused).
 
-  defp dims(binary) do
-    {:ok, img} = Image.from_binary(binary)
-    {Image.width(img), Image.height(img)}
-  end
+- [x] **Step 1–4: tests + renderer** — `test/newton/social_card_test.exs` pins the behavioral contract (returns PNG magic bytes + 1200×630; long titles wrap and nil excerpts don't crash/overflow). `lib/newton/social_card.ex` implements it. The renderer file is the source of truth; key tunables are the module attributes (`@pad 80`, `@title_top 150`, `@excerpt_max_chars 160`, `@stripe_height 20`) and `title_size/1` (75/64/52). The `text/2` helper uses `font: "Lora"` + integer `font_size:` (the spike-proven Pango form), `align: :left`, optional `width:` for wrapping.
 
-  test "post_card renders a 1200x630 PNG" do
-    {:ok, png} = SocialCard.post_card(%{title: "A Short Title", published_on: ~D[2026-04-17], reading_time: 5})
-    assert <<0x89, "PNG", _::binary>> = png
-    assert dims(png) == {1200, 630}
-  end
+- [x] **Step 4b: De-duplicate `format_date`** — the date format (`%B %-d, %Y`) already lived in `NewtonWeb.Helpers.format_date`. To avoid a domain→web layering inversion, the canonical formatter moved to a neutral `Newton.Format.format_date/2` (handles `DateTime`/`Date`/`nil` + `:on_nil`); `NewtonWeb.Helpers.format_date` now `defdelegate`s to it (no call sites change), and `Newton.SocialCard` calls `Newton.Format.format_date/1`.
 
-  test "post_card handles a very long title without overflowing" do
-    long = String.duplicate("Resilient ", 30)
-    {:ok, png} = SocialCard.post_card(%{title: long, published_on: ~D[2026-04-17], reading_time: 12})
-    assert dims(png) == {1200, 630}
-  end
+- [x] **Step 5: Palette — resolved to dark.** (Decided visually against the mockups.)
 
-  test "default_card renders a 1200x630 PNG" do
-    {:ok, png} = SocialCard.default_card()
-    assert dims(png) == {1200, 630}
-  end
-end
-```
-
-- [ ] **Step 2: Run it to verify it fails**
-
-Run: `mix test test/newton/social_card_test.exs` — FAIL (module missing).
-
-- [ ] **Step 3: Implement the renderer**
-
-Create `lib/newton/social_card.ex`. Compose a 1200×630 card: background fill, the
-title (Lora, wrapped to ~1040px, auto-shrunk for long titles), a secondary
-date·reading-time line, and a footer. Palette is a parameter (default chosen in
-Step 5).
-
-```elixir
-defmodule Newton.SocialCard do
-  @moduledoc "Renders 1200x630 Open Graph card PNGs (libvips via the image lib)."
-
-  @width 1200
-  @height 630
-  @pad 80
-
-  @palettes %{
-    red: %{bg: "#aa4040", fg: "#ffe8d6", muted: "#f3c9b0"},
-    dark: %{bg: "#151311", fg: "#eed3ba", muted: "#ad9987"}
-  }
-  @default_palette :red
-
-  @spec post_card(%{title: String.t(), published_on: Date.t() | nil, reading_time: integer()}, atom()) ::
-          {:ok, binary()} | {:error, term()}
-  def post_card(post, palette \\ @default_palette) do
-    p = Map.fetch!(@palettes, palette)
-    secondary = [format_date(post.published_on), "#{post.reading_time} min read"] |> Enum.reject(&(&1 == "")) |> Enum.join(" · ")
-
-    with {:ok, canvas} <- Image.new(@width, @height, color: p.bg),
-         {:ok, title} <- title_text(post.title, p),
-         {:ok, sub} <- Image.Text.text(secondary, font: "Lora", font_size: 30, text_fill_color: p.muted),
-         {:ok, foot} <- Image.Text.text("jamesnewton.com", font: "Lora", font_size: 26, text_fill_color: p.muted),
-         {:ok, c1} <- Image.compose(canvas, title, x: @pad, y: 150),
-         {:ok, c2} <- Image.compose(c1, sub, x: @pad, y: 470),
-         {:ok, c3} <- Image.compose(c2, foot, x: @pad, y: @height - @pad - 26) do
-      Image.write(c3, :memory, suffix: ".png")
-    end
-  end
-
-  @spec default_card(atom()) :: {:ok, binary()} | {:error, term()}
-  def default_card(palette \\ @default_palette) do
-    p = Map.fetch!(@palettes, palette)
-
-    with {:ok, canvas} <- Image.new(@width, @height, color: p.bg),
-         {:ok, name} <- Image.Text.text("James Newton", font: "Lora", font_size: 96, text_fill_color: p.fg),
-         {:ok, tag} <- Image.Text.text("Software, writing, and the occasional photo.", font: "Lora", font_size: 34, text_fill_color: p.muted),
-         {:ok, c1} <- Image.compose(canvas, name, x: @pad, y: 230),
-         {:ok, c2} <- Image.compose(c1, tag, x: @pad, y: 360) do
-      Image.write(c2, :memory, suffix: ".png")
-    end
-  end
-
-  # Title: wrap to the content width; auto-shrink the font for long titles so it
-  # always fits the card. `Image.Text.text` supports `width:` (wrap) + `height:`.
-  defp title_text(title, p) do
-    Image.Text.text(title,
-      font: "Lora",
-      font_weight: 600,
-      font_size: title_size(title),
-      text_fill_color: p.fg,
-      width: @width - 2 * @pad,
-      align: :left
-    )
-  end
-
-  defp title_size(title) when byte_size(title) > 90, do: 52
-  defp title_size(title) when byte_size(title) > 50, do: 66
-  defp title_size(_), do: 84
-
-  defp format_date(nil), do: ""
-  defp format_date(%Date{} = d), do: Calendar.strftime(d, "%b %-d, %Y")
-end
-```
-
-Note: the exact `Image.Text.text` options (`font_weight`, `width`, `align`,
-`:memory` write) are per the `image` 0.69 docs confirmed in the Task-1 spike;
-adjust names to match (e.g. wrapping may need `Image.Text` opts or composing onto
-a fixed-width box). The behavioral contract (returns a 1200×630 PNG, long titles
-fit) is what the tests pin.
-
-- [ ] **Step 4: Run the tests to verify they pass**
-
-Run: `mix test test/newton/social_card_test.exs` — PASS.
-
-- [ ] **Step 5: Sample both palettes (inline visual — pick the color scheme)**
-
-In `iex -S mix`, render a sample post card in both palettes and the default card:
-```elixir
-{:ok, r} = Newton.SocialCard.post_card(%{title: "Three Ways to Retry", published_on: ~D[2026-04-17], reading_time: 5}, :red); File.write!("/tmp/card-red.png", r)
-{:ok, d} = Newton.SocialCard.post_card(%{title: "Three Ways to Retry", published_on: ~D[2026-04-17], reading_time: 5}, :dark); File.write!("/tmp/card-dark.png", d)
-{:ok, df} = Newton.SocialCard.default_card(:red); File.write!("/tmp/card-default.png", df)
-```
-Send `/tmp/card-red.png`, `/tmp/card-dark.png`, `/tmp/card-default.png` to the
-user; they pick the palette. Set `@default_palette` to their choice. Tune layout
-(positions/sizes) until it reads well, re-render, re-confirm.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Run tests + commit**
 
 ```bash
-git add lib/newton/social_card.ex test/newton/social_card_test.exs
+mix test test/newton/social_card_test.exs   # 3 passing
+git add lib/newton/social_card.ex test/newton/social_card_test.exs lib/newton/format.ex lib/newton_web/helpers.ex
 git commit -m "$(cat <<'EOF'
 Add the social card renderer
 
@@ -255,137 +67,134 @@ EOF
 
 ---
 
-## Task 3: Data model, storage & async regeneration
+## Task 3: The on-demand OG image endpoint
 
 **Files:**
-- Create: `priv/repo/migrations/*_add_og_image_key_to_posts.exs`
-- Modify: `lib/newton/blog/post.ex` (field), `lib/newton/blog.ex` (trigger + regen)
-- Test: `test/newton/blog_test.exs`
+- Create: `lib/newton_web/controllers/og_image_controller.ex`
+- Modify: `lib/newton_web/router.ex` (a new `/og` scope)
+- Test: `test/newton_web/controllers/og_image_controller_test.exs`
+
+**Why a dedicated scope (not `:browser`):** the `:browser` pipeline runs `plug :accepts, ["html", "json"]`. An image crawler requesting the PNG with `Accept: image/png` would get a 406 from that plug. The `/og` route therefore uses **no pipeline** — it needs no session, CSRF, or layout — and the controller sets the content type and cache headers explicitly.
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `test/newton/blog_test.exs`:
+`test/newton_web/controllers/og_image_controller_test.exs`:
 ```elixir
-  describe "og image regeneration" do
-    test "regenerate_og_image stores a card and sets the key" do
-      {:ok, post} =
-        Blog.create_post(%{slug: "og1", title: "OG One", body_markdown: "Body.", published_at: ~U[2026-01-01 00:00:00Z]})
+defmodule NewtonWeb.OgImageControllerTest do
+  use NewtonWeb.ConnCase, async: true
 
-      {:ok, post} = Blog.regenerate_og_image(post)
-      assert is_binary(post.og_image_key)
-      assert File.exists?(Path.join(Application.fetch_env!(:newton, :media_root), post.og_image_key))
-    end
+  alias Newton.Blog
 
-    test "regenerating replaces and deletes the old key" do
-      {:ok, post} =
-        Blog.create_post(%{slug: "og2", title: "OG Two", body_markdown: "Body.", published_at: ~U[2026-01-01 00:00:00Z]})
+  defp publish!(slug, title) do
+    {:ok, post} =
+      Blog.create_post(%{
+        slug: slug,
+        title: title,
+        body_markdown: "Some body text for the excerpt.",
+        published_at: ~U[2026-01-01 00:00:00Z]
+      })
 
-      {:ok, post} = Blog.regenerate_og_image(post)
-      old = post.og_image_key
-      {:ok, post} = Blog.regenerate_og_image(post)
-      refute post.og_image_key == old
-      refute File.exists?(Path.join(Application.fetch_env!(:newton, :media_root), old))
-    end
+    post
   end
+
+  test "renders a 1200x630 PNG card for a published post", %{conn: conn} do
+    publish!("og-endpoint", "Endpoint Card")
+
+    conn = get(conn, ~p"/og/posts/og-endpoint")
+
+    assert response_content_type(conn, :png)
+    body = response(conn, 200)
+    assert <<0x89, "PNG", _::binary>> = body
+
+    {:ok, img} = Image.from_binary(body)
+    assert {Image.width(img), Image.height(img)} == {1200, 630}
+  end
+
+  test "sets a public cache-control header", %{conn: conn} do
+    publish!("og-cache", "Cache Me")
+
+    conn = get(conn, ~p"/og/posts/og-cache")
+
+    assert ["public" <> _] = get_resp_header(conn, "cache-control")
+  end
+
+  test "404s for an unknown or unpublished slug", %{conn: conn} do
+    assert_error_sent 404, fn -> get(conn, ~p"/og/posts/does-not-exist") end
+  end
+end
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `mix test test/newton/blog_test.exs` — FAIL (no column/function).
+Run: `mix test test/newton_web/controllers/og_image_controller_test.exs` — FAIL (no route/controller).
 
-- [ ] **Step 3: Migration + field**
+- [ ] **Step 3: Add the route**
 
-`mix ecto.gen.migration add_og_image_key_to_posts`:
+In `lib/newton_web/router.ex`, after the main public `scope "/"` block, add a pipeline-less scope:
 ```elixir
-def change do
-  alter table(:posts) do
-    add :og_image_key, :string
+  # Social card images. No :browser pipeline — these are PNGs, so we skip
+  # accepts/session/CSRF and let the controller set content-type + caching.
+  scope "/og", NewtonWeb do
+    get "/posts/:slug", OgImageController, :show
+  end
+```
+
+- [ ] **Step 4: Implement the controller**
+
+`lib/newton_web/controllers/og_image_controller.ex`:
+```elixir
+defmodule NewtonWeb.OgImageController do
+  @moduledoc """
+  Renders a post's Open Graph card on demand. The card is generated from the
+  live post each request (never stale) and cached at the edge/browser via
+  HTTP headers, since crawlers refetch rarely.
+  """
+  use NewtonWeb, :controller
+
+  alias Newton.Blog
+  alias Newton.SocialCard
+
+  @cache_control "public, max-age=3600"
+
+  def show(conn, %{"slug" => slug}) do
+    post = Blog.get_published_post!(slug)
+
+    case SocialCard.post_card(%{
+           title: post.title,
+           excerpt: post.excerpt,
+           published_on: post.published_at && DateTime.to_date(post.published_at),
+           reading_time: post.reading_time || 1
+         }) do
+      {:ok, png} ->
+        conn
+        |> put_resp_content_type("image/png")
+        |> put_resp_header("cache-control", @cache_control)
+        |> send_resp(200, png)
+
+      {:error, _reason} ->
+        # Rendering should not fail in practice; fall back to the static card
+        # rather than 500 so the crawler still gets an image.
+        conn
+        |> put_resp_content_type("image/png")
+        |> put_resp_header("cache-control", @cache_control)
+        |> send_file(200, Path.join(:code.priv_dir(:newton), "static/og-default.png"))
+    end
   end
 end
 ```
-Run `mix ecto.migrate`. In `lib/newton/blog/post.ex` add `field :og_image_key, :string`
-(after `:preview_token`); keep it OUT of `cast/2` (server-set only).
+`Blog.get_published_post!/1` raises `Ecto.NoResultsError` for unknown or unpublished slugs → Phoenix renders a 404 (matching the test). The static fallback only triggers if `og-default.png` exists — it's committed in Task 4 Step 1 (the Figma export); the happy path doesn't need it.
 
-- [ ] **Step 4: regenerate_og_image + async trigger**
+- [ ] **Step 5: Run the tests**
 
-In `lib/newton/blog.ex` add (alias `Newton.SocialCard` and `Newton.Gallery.Storage`):
-```elixir
-  @spec regenerate_og_image(%Post{}) :: {:ok, %Post{}} | {:error, term()}
-  def regenerate_og_image(%Post{} = post) do
-    with {:ok, png} <-
-           SocialCard.post_card(%{
-             title: post.title,
-             published_on: post.published_at && DateTime.to_date(post.published_at),
-             reading_time: post.reading_time || 1
-           }),
-         tmp = Path.join(System.tmp_dir!(), "og-#{System.unique_integer([:positive])}.png"),
-         :ok <- File.write(tmp, png),
-         {:ok, key} <- Storage.store(tmp, "og.png") do
-      old = post.og_image_key
-      {:ok, updated} = post |> Ecto.Changeset.change(og_image_key: key) |> Repo.update()
-      File.rm(tmp)
-      if old, do: Storage.delete(old)
-      {:ok, updated}
-    end
-  end
-
-  # Fire-and-forget OG regen when the public-facing title/date changed.
-  defp maybe_regenerate_og(%Post{published_at: nil}, _changeset), do: :ok
-
-  defp maybe_regenerate_og(%Post{} = post, changeset) do
-    if Map.has_key?(changeset.changes, :title) or Map.has_key?(changeset.changes, :published_at) or
-         is_nil(post.og_image_key) do
-      Task.Supervisor.start_child(Newton.TaskSupervisor, fn ->
-        try do
-          regenerate_og_image(post)
-        rescue
-          e -> require Logger; Logger.error("OG card regen failed: #{inspect(e)}")
-        end
-      end)
-    end
-
-    :ok
-  end
-```
-Wire it into `create_post`/`update_post` (capture the changeset so changes are visible):
-```elixir
-  def create_post(attrs) do
-    changeset = Post.changeset(%Post{}, attrs)
-
-    with {:ok, post} <- Repo.insert(changeset) do
-      maybe_regenerate_og(post, changeset)
-      {:ok, post}
-    end
-  end
-
-  def update_post(%Post{} = post, attrs) do
-    changeset = Post.changeset(post, attrs)
-
-    with {:ok, updated} <- Repo.update(changeset) do
-      maybe_regenerate_og(updated, changeset)
-      {:ok, updated}
-    end
-  end
-```
-
-- [ ] **Step 5: Run the tests + suite**
-
-Run: `mix test test/newton/blog_test.exs` — PASS. Then `mix test` — green. (The
-async trigger isn't directly asserted; `regenerate_og_image/1` is tested
-synchronously. Confirm the editor tests still pass — `update_post` now also spawns
-a task; in test the task runs against the test sandbox, which is fine since the
-parent owns the connection. If sandbox ownership errors appear, have
-`maybe_regenerate_og` no-op under `:test` env, OR allow the task via
-`Ecto.Adapters.SQL.Sandbox.allow`. Prefer: skip the async spawn in tests via
-`Application.get_env(:newton, :regenerate_og_async, true)` set false in
-`config/test.exs`, and test `regenerate_og_image/1` directly.)
+Run: `mix test test/newton_web/controllers/og_image_controller_test.exs` — PASS.
+(If `response_content_type(conn, :png)` doesn't resolve the mime, assert the header directly: `assert ["image/png" <> _] = get_resp_header(conn, "content-type")`.)
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add priv/repo/migrations lib/newton/blog/post.ex lib/newton/blog.ex test/newton/blog_test.exs config/test.exs
+git add lib/newton_web/controllers/og_image_controller.ex lib/newton_web/router.ex test/newton_web/controllers/og_image_controller_test.exs
 git commit -m "$(cat <<'EOF'
-Regenerate a post's OG card on title or publish-date change
+Render post OG cards on demand at /og/posts/:slug
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 EOF
@@ -397,26 +206,32 @@ EOF
 ## Task 4: Meta tags + default card + controller assigns
 
 **Files:**
-- Create (generated, committed): `priv/static/og-default.png`
-- Modify: `lib/newton_web.ex` (static_paths), `lib/newton_web/components/layouts/root.html.heex`, `lib/newton_web/controllers/post_controller.ex`
+- Create (committed Figma export): `priv/static/og-default.png`
+- Modify: `lib/newton_web.ex` (`static_paths`), `lib/newton_web/components/layouts/root.html.heex`, `lib/newton_web/controllers/post_controller.ex`
 - Test: `test/newton_web/controllers/post_controller_test.exs`, `test/newton_web/controllers/page_controller_test.exs`
 
-- [ ] **Step 1: Generate + commit the default card**
+- [ ] **Step 1: Commit the default card (Figma export)**
 
-In `iex -S mix` (using the chosen palette): `{:ok, p} = Newton.SocialCard.default_card(); File.write!("priv/static/og-default.png", p)`. Add `og-default.png` to `static_paths/0` in `lib/newton_web.ex`.
+The default/site card is a fixed brand image (the "JN" monogram lockup — "James Newton" / "Software & Photography" — on the dark bg with the cream stripe), so it isn't rendered: copy the committed Figma export into place rather than generating it.
+
+```bash
+cp "$HOME/Downloads/Frame 6.png" priv/static/og-default.png   # 1200×630, dark
+```
+
+Add `"og-default.png"` to `static_paths/0` in `lib/newton_web.ex`. (If the source export moves, it's the 1200×630 dark monogram card the user supplied during design.)
 
 - [ ] **Step 2: Write the failing controller tests**
 
 In `test/newton_web/controllers/post_controller_test.exs` (a published post exists in setup):
 ```elixir
-  test "a published post head has OG/Twitter tags", %{conn: conn} do
+  test "a published post head has OG/Twitter tags pointing at its card", %{conn: conn} do
     html = conn |> get(~p"/posts/three-ways-to-retry") |> html_response(200)
     assert html =~ ~s(property="og:title")
     assert html =~ "Three Ways to Retry"
     assert html =~ ~s(property="og:type" content="article")
     assert html =~ ~s(name="twitter:card" content="summary_large_image")
-    assert html =~ ~s(property="og:image")
-    assert html =~ "http"  # absolute image url
+    assert html =~ "/og/posts/three-ways-to-retry"
+    assert html =~ ~r{property="og:image" content="https?://}
   end
 ```
 In `test/newton_web/controllers/page_controller_test.exs`:
@@ -434,8 +249,7 @@ Run those two test files — FAIL (no meta tags).
 
 - [ ] **Step 4: Add the meta tags to the public layout**
 
-In `lib/newton_web/components/layouts/root.html.heex` `<head>`, after the favicon
-links, add (absolute URLs via the endpoint):
+In `lib/newton_web/components/layouts/root.html.heex` `<head>`, after the favicon links, add (absolute URLs):
 ```heex
     <meta property="og:type" content={assigns[:og_type] || "website"} />
     <meta property="og:site_name" content="James Newton" />
@@ -454,30 +268,26 @@ links, add (absolute URLs via the endpoint):
     />
     <meta name="twitter:image" content={assigns[:og_image] || url(~p"/og-default.png")} />
 ```
-(`@conn` is present in the controller-rendered public layout. `url(~p"/og-default.png")`
-yields the absolute URL via the endpoint host.)
+(`@conn` is present in the controller-rendered public layout. `url(~p"/...")` yields the absolute URL via the endpoint host.)
 
 - [ ] **Step 5: Set the post OG assigns**
 
-In `lib/newton_web/controllers/post_controller.ex` `show/2`, add the OG assigns for
-both branches (a small private helper):
+In `lib/newton_web/controllers/post_controller.ex` `show/2`, set OG assigns for both branches. Published posts point `og:image` at the live endpoint; drafts/previews (noindex) fall back to the default static card via `nil`:
 ```elixir
-  defp put_og(conn, post) do
-    image =
-      if post.og_image_key,
-        do: NewtonWeb.Endpoint.url() <> "/media/" <> post.og_image_key,
-        else: url(~p"/og-default.png")
-
+  defp put_og(conn, post, og_image) do
     conn
     |> assign(:og_type, "article")
     |> assign(:og_title, post.title)
     |> assign(:og_description, post.excerpt)
     |> assign(:og_url, url(~p"/posts/#{post.slug}"))
-    |> assign(:og_image, image)
+    |> assign(:og_image, og_image)
   end
 ```
-and call `put_og(conn, post)` before `render(...)` in each branch (drafts/previews
-get the default image via the nil `og_image_key`).
+Call it before `render(...)` in each branch:
+- published branch: `conn = put_og(conn, post, url(~p"/og/posts/#{post.slug}"))`
+- preview branch: `conn = put_og(conn, post, url(~p"/og-default.png"))`
+
+(`current_url`/defaults cover non-post controllers automatically; no changes needed there.)
 
 - [ ] **Step 6: Run the tests + precommit**
 
@@ -497,21 +307,140 @@ EOF
 
 ---
 
-## Task 5: End-to-end verification
+## Task 5: Card preview in the post editor
 
-- [ ] **Step 1: precommit** — `mix precommit` green (format, compile, credo strict, dialyzer, tests, JS).
+A live preview of the social card inside the editor's "Settings" (publish) drawer,
+rendered from the **current form state** so it works for drafts and unsaved edits
+(the public `/og/posts/:slug` endpoint only serves published posts). Rendered as a
+base64 `data:image/png` URI when the drawer opens — no extra public route, behind
+the existing admin auth. Render-on-open only (the drawer overlays the title field,
+so there's nothing to live-update while it's open); reopening re-renders from the
+latest state.
 
-- [ ] **Step 2: Real-render check (PORT=4001)** — build assets, start the server,
-  create/publish a post in the admin, wait for the async task, then `curl` the
-  post page and confirm `og:image` points at a `/media/<key>` that returns a
-  1200×630 PNG (fetch it, check dims). Confirm a non-post page's `og:image` is the
-  default card. Open both card images and confirm they read well.
+**Files:**
+- Modify: `lib/newton_web/live/admin/post_live/editor.ex` (alias, mount assign, `toggle_drawer`, a render helper, drawer template)
+- Test: `test/newton_web/live/admin/post_editor_live_test.exs`
 
-- [ ] **Step 3: (Optional) deploy note** — confirm `priv/fonts/Lora.ttf` and
-  `priv/fonts/fonts.conf` are included in the release (they are, under `priv/`), so
-  Lora resolves in prod. No Dockerfile font install needed.
+**Depends on:** Task 2 (`Newton.SocialCard.post_card/2`). Independent of Tasks 3–4.
 
-- [ ] **Step 4: Commit any verification fixes** (only if needed):
+- [ ] **Step 1: Write the failing test**
+
+In `test/newton_web/live/admin/post_editor_live_test.exs` (uses the existing
+`setup` login + `open_draft/2` helper):
+```elixir
+  test "the settings drawer renders a social card preview", %{conn: conn} do
+    {view, _post} = open_draft(conn, %{title: "Card In Editor"})
+
+    refute has_element?(view, "#og-card-preview")
+
+    view |> element("button", "Settings") |> render_click()
+
+    assert has_element?(view, "#og-card-preview[src^='data:image/png;base64,']")
+  end
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `mix test test/newton_web/live/admin/post_editor_live_test.exs` — FAIL (no `#og-card-preview`).
+
+- [ ] **Step 3: Render the card when the drawer opens**
+
+In `lib/newton_web/live/admin/post_live/editor.ex`:
+
+Add the alias (near the others): `alias Newton.SocialCard`.
+
+In `mount/3`, add `|> assign(:card_preview, nil)` to the socket pipeline.
+
+Replace `handle_event("toggle_drawer", ...)` so opening renders the preview:
+```elixir
+  def handle_event("toggle_drawer", _params, socket) do
+    open? = !socket.assigns.drawer_open
+    socket = assign(socket, :drawer_open, open?)
+    {:noreply, if(open?, do: put_card_preview(socket), else: socket)}
+  end
+```
+
+Add the render helper (builds card attrs from the current changeset / publish
+state; blank title falls back so `Image.Text` never gets an empty string):
+```elixir
+  defp put_card_preview(socket) do
+    changeset = socket.assigns.form.source
+    title = Ecto.Changeset.get_field(changeset, :title)
+
+    attrs = %{
+      title: if(title in [nil, ""], do: "Untitled post", else: title),
+      excerpt: Ecto.Changeset.get_field(changeset, :excerpt),
+      published_on: socket.assigns.published_at && DateTime.to_date(socket.assigns.published_at),
+      reading_time: socket.assigns.post.reading_time || 1
+    }
+
+    case SocialCard.post_card(attrs) do
+      {:ok, png} -> assign(socket, :card_preview, "data:image/png;base64," <> Base.encode64(png))
+      {:error, _reason} -> assign(socket, :card_preview, nil)
+    end
+  end
+```
+
+- [ ] **Step 4: Add the preview to the drawer template**
+
+In the `Components.drawer` block (e.g. after the "Reading time · View on site" row),
+add a social-card section:
+```heex
+        <div :if={@card_preview} class="border-t border-(--admin-border) pt-3">
+          <div class="mb-2 text-[0.78rem] font-medium text-(--admin-text)">Social card</div>
+          <img
+            id="og-card-preview"
+            src={@card_preview}
+            alt="Social card preview"
+            class="w-full rounded-lg border border-(--admin-border)"
+          />
+        </div>
+```
+
+- [ ] **Step 5: Run the test + suite**
+
+Run: `mix test test/newton_web/live/admin/post_editor_live_test.exs` — PASS. Then `mix test` — green.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/newton_web/live/admin/post_live/editor.ex test/newton_web/live/admin/post_editor_live_test.exs
+git commit -m "$(cat <<'EOF'
+Preview the social card in the post editor drawer
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+## Task 6: Cleanup + end-to-end verification
+
+- [ ] **Step 1: Remove the now-unused Task.Supervisor** — the on-demand endpoint does no background work, so drop `{Task.Supervisor, name: Newton.TaskSupervisor}` (and its comment) from `lib/newton/application.ex`. `grep -rn "Newton.TaskSupervisor" lib test` returns nothing afterwards.
+
+```bash
+git add lib/newton/application.ex
+git commit -m "$(cat <<'EOF'
+Drop the unused Task.Supervisor (OG cards render on demand)
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+EOF
+)"
+```
+
+- [ ] **Step 2: precommit** — `mix precommit` green (format, compile, credo strict, dialyzer, tests, JS).
+
+- [ ] **Step 3: Real-render check (PORT=4001)** — build assets, start the server, publish a post, then:
+  - `curl -sI http://localhost:4001/og/posts/<slug>` → `200`, `content-type: image/png`, `cache-control: public…`.
+  - `curl -s http://localhost:4001/og/posts/<slug> -o /tmp/og.png` → confirm 1200×630 PNG; open it and confirm it reads well.
+  - `curl -s http://localhost:4001/posts/<slug>` → `og:image` is the absolute `/og/posts/<slug>` URL, `og:type=article`.
+  - `curl -s http://localhost:4001/` → `og:image` is the absolute `/og-default.png`, `og:type=website`.
+  - In the admin editor, open a post and click **Settings** → the drawer shows the rendered social card; reopening after editing the title reflects the change.
+
+- [ ] **Step 4: Deploy/font note** — confirm `priv/fonts/Lora.ttf` + `priv/fonts/fonts.conf` ship in the release (they're under `priv/`) so Lora resolves on Linux/prod via `FONTCONFIG_FILE`. No Dockerfile font install needed.
+
+- [ ] **Step 5: Commit any verification fixes** (only if needed):
 ```bash
 git add -A
 git commit -m "$(cat <<'EOF'
@@ -526,18 +455,12 @@ EOF
 
 ## Self-review notes
 
-- **Spec coverage:** spike (Task 1); renderer + palette pick (Task 2); og_image_key
-  + storage + async title/date trigger (Task 3); meta tags + default card +
-  per-post assigns (Task 4); verification incl. the deploy/font note (Task 5).
-  Color-scheme decision is resolved in Task 2 Step 5 (visual sample). All spec
-  sections covered.
-- **Risk handling:** the rendering-feasibility risk is isolated to Task 1 (decision
-  gate) with the Node fallback documented; the exact `Image.Text` option names are
-  confirmed in the spike before Task 2 relies on them. The test-sandbox interaction
-  of the async task is handled in Task 3 Step 5 (disable async in test; test the
-  sync core).
-- **Consistency:** `Newton.SocialCard.post_card/2`/`default_card/1` signatures are
-  identical across Tasks 2–4; `og_image_key` is the same field name in the
-  migration, schema, regen, and controller; `Newton.TaskSupervisor` is created in
-  Task 1 and used in Task 3; the default image path `og-default.png` matches across
-  generation, `static_paths`, and the layout default.
+- **Spec coverage:** spike (Task 1, done); renderer + palette pick (Task 2); on-demand endpoint (Task 3); meta tags + default card + per-post assigns (Task 4); editor card preview (Task 5); cleanup + verification incl. the deploy/font note (Task 6). The stored-image/async machinery from the original spec is intentionally dropped — see the Architecture note and the spec's revised Section 3. The editor preview is an addition beyond the original spec (reuses `SocialCard.post_card/2`, no new public surface).
+- **Consistency:** `Newton.SocialCard.post_card/2` is the only renderer entry point now (`default_card/1` removed); the endpoint, the editor preview, and the controller all pass `title`, `excerpt`, `published_on`, `reading_time`. The `/og/posts/:slug` route name matches between Task 3 (definition) and Task 4 (the `og:image` URL + post-controller test). `og-default.png` matches across the committed export, `static_paths`, the layout default, and the controller fallback. `Blog.get_published_post!/1` is the real Blog API (raises → 404). Date formatting is centralized in `Newton.Format.format_date/2`.
+
+---
+
+## Related work (separate from this plan)
+
+The user is making the **main public site dark-only** — commenting out its light-mode theme support while **keeping light/dark in the admin**. This is why the cards locked to the dark palette. It's tracked separately from the OG-cards plan (its own change to the site's theme system); noted here only for context.
+- **Risk handling:** the rendering-feasibility risk was retired in Task 1. The 406-on-image-Accept risk is handled by giving `/og` its own pipeline-less scope (Task 3). Render failure falls back to the static card rather than 500.

@@ -13,7 +13,12 @@ defmodule Newton.SocialCard do
   }
   @default_palette :dark
 
-  @title_top 150
+  # Vertical rhythm matched to the Figma design (ink-to-ink), measured from each
+  # block's rendered bottom. The brand→title gap is intentionally larger than
+  # title→excerpt — it reads as even because of the fonts' line-box leading.
+  @brand_top 65
+  @brand_title_gap 56
+  @title_excerpt_gap 32
   @excerpt_max_chars 160
   @stripe_height 20
 
@@ -42,9 +47,10 @@ defmodule Newton.SocialCard do
          {:ok, brand} <- text("James Newton", size: 50, color: p.fg),
          {:ok, title} <- text(post.title, size: title_size(post.title), color: p.fg, wrap: true),
          {:ok, sub} <- text(secondary, size: 24, color: p.muted),
-         {:ok, c1} <- Image.compose(canvas, brand, x: @pad, y: @pad),
-         {:ok, c2} <- Image.compose(c1, title, x: @pad, y: @title_top),
-         excerpt_y = @title_top + Image.height(title) + 32,
+         {:ok, c1} <- Image.compose(canvas, brand, x: @pad, y: @brand_top),
+         title_y = @brand_top + Image.height(brand) + @brand_title_gap,
+         {:ok, c2} <- Image.compose(c1, title, x: @pad, y: title_y),
+         excerpt_y = title_y + Image.height(title) + @title_excerpt_gap,
          {:ok, c3} <- with_excerpt(c2, card_excerpt(post.excerpt), p.muted, excerpt_y),
          {:ok, c4} <- Image.compose(c3, sub, x: @pad, y: footer_y) do
       Image.write(c4, :memory, suffix: ".png")

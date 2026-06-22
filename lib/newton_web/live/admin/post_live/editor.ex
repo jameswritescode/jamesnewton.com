@@ -5,6 +5,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias Newton.Blog.Post
   alias Newton.Gallery
   alias Newton.Gallery.Storage
+  alias Newton.SocialCard
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.Layouts
@@ -16,6 +17,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:ok,
      socket
      |> assign(:drawer_open, false)
+     |> assign(:card_preview, nil)
      |> assign(:save_state, :saved)
      |> assign(:autosave_params, nil)
      |> assign(:autosave_timer, nil)
@@ -138,7 +140,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   def handle_event("toggle_drawer", _params, socket) do
-    {:noreply, assign(socket, :drawer_open, !socket.assigns.drawer_open)}
+    open? = !socket.assigns.drawer_open
+    socket = assign(socket, :drawer_open, open?)
+    {:noreply, if(open?, do: put_card_preview(socket), else: socket)}
   end
 
   def handle_event("close_drawer", _params, socket) do
@@ -262,6 +266,25 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp reschedule_autosave_timer(socket) do
     if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
     assign(socket, :autosave_timer, Process.send_after(self(), :autosave, @autosave_debounce_ms))
+  end
+
+  # Render the social card from the current form state (works for drafts/unsaved
+  # edits, unlike the published-only public endpoint) and stash it as a data URI.
+  defp put_card_preview(socket) do
+    changeset = socket.assigns.form.source
+    title = Ecto.Changeset.get_field(changeset, :title)
+
+    attrs = %{
+      title: if(title in [nil, ""], do: "Untitled post", else: title),
+      excerpt: Ecto.Changeset.get_field(changeset, :excerpt),
+      published_on: socket.assigns.published_at && DateTime.to_date(socket.assigns.published_at),
+      reading_time: socket.assigns.post.reading_time || 1
+    }
+
+    case SocialCard.post_card(attrs) do
+      {:ok, png} -> assign(socket, :card_preview, "data:image/png;base64," <> Base.encode64(png))
+      {:error, _reason} -> assign(socket, :card_preview, nil)
+    end
   end
 
   defp save_state_label(:unsaved), do: "Unsaved changes…"
@@ -430,6 +453,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           >
             View on site ↗
           </.link>
+        </div>
+
+        <div :if={@card_preview} class="border-t border-(--admin-border) pt-3">
+          <div class="mb-2 text-[0.78rem] font-medium text-(--admin-text)">Social card</div>
+          <img
+            id="og-card-preview"
+            src={@card_preview}
+            alt="Social card preview"
+            class="w-full rounded-lg border border-(--admin-border)"
+          />
         </div>
 
         <div :if={is_nil(@published_at)} class="border-t border-(--admin-border) pt-3">

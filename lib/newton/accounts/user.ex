@@ -24,7 +24,8 @@ defmodule Newton.Accounts.User do
       uniqueness of the email, useful when displaying live validations.
       Defaults to `true`.
   """
-  @spec email_changeset(%__MODULE__{} | Ecto.Changeset.t(), map(), keyword()) :: Ecto.Changeset.t()
+  @spec email_changeset(%__MODULE__{} | Ecto.Changeset.t(), map(), keyword()) ::
+          Ecto.Changeset.t()
   def email_changeset(user, attrs, opts \\ []) do
     user
     |> cast(attrs, [:email])
@@ -73,7 +74,8 @@ defmodule Newton.Accounts.User do
       validations on a LiveView form), this option can be set to `false`.
       Defaults to `true`.
   """
-  @spec password_changeset(%__MODULE__{} | Ecto.Changeset.t(), map(), keyword()) :: Ecto.Changeset.t()
+  @spec password_changeset(%__MODULE__{} | Ecto.Changeset.t(), map(), keyword()) ::
+          Ecto.Changeset.t()
   def password_changeset(user, attrs, opts \\ []) do
     user
     |> cast(attrs, [:password])

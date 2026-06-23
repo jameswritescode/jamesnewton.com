@@ -77,17 +77,25 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
     uploaded =
       consume_uploaded_entries(socket, :photos, fn %{path: path}, entry ->
         {:ok, key} = Storage.store(path, entry.client_name)
+
+        thumb_key =
+          case Gallery.store_thumbnail(path) do
+            {:ok, tk} -> tk
+            {:error, _} -> nil
+          end
+
         {w, h} = Map.get(dimensions, entry.client_name, {nil, nil})
-        {:ok, {key, w, h}}
+        {:ok, {key, thumb_key, w, h}}
       end)
 
     photos =
       uploaded
       |> Enum.with_index(base)
-      |> Enum.map(fn {{key, w, h}, position} ->
+      |> Enum.map(fn {{key, thumb_key, w, h}, position} ->
         {:ok, photo} =
           Gallery.add_photo(group, %{
             image_key: key,
+            thumb_key: thumb_key,
             alt: "",
             position: position,
             width: w,

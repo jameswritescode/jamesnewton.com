@@ -122,4 +122,25 @@ defmodule NewtonWeb.Admin.GalleryShowLiveTest do
 
     assert_raise Ecto.NoResultsError, fn -> Gallery.get_group!(group.id) end
   end
+
+  test "uploading a real image stores a thumbnail key", %{conn: conn} do
+    group = group_fixture()
+    {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}")
+
+    {:ok, img} = Image.new(800, 600, color: [10, 20, 30])
+    {:ok, png} = Image.write(img, :memory, suffix: ".png")
+
+    photo =
+      file_input(view, "#upload-form", :photos, [
+        %{name: "real.png", content: png, type: "image/png"}
+      ])
+
+    render_hook(view, "set_dimensions", %{"name" => "real.png", "width" => 800, "height" => 600})
+    render_upload(photo, "real.png")
+    view |> element("#upload-form") |> render_submit()
+
+    [created] = Gallery.get_group!(group.id).photos
+    assert is_binary(created.thumb_key)
+    assert String.ends_with?(created.thumb_key, ".webp")
+  end
 end

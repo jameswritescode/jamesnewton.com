@@ -1,12 +1,26 @@
 defmodule Newton.Gallery do
   @moduledoc "Photo groups and photos; resolves image keys to URLs."
   import Ecto.Query, warn: false
-  alias Newton.Gallery.{Photo, PhotoGroup, Storage}
+  alias Newton.Gallery.{Photo, PhotoGroup, Storage, Thumbnail}
   alias Newton.Repo
 
   @spec create_group(map()) :: {:ok, %PhotoGroup{}} | {:error, Ecto.Changeset.t()}
   def create_group(attrs) do
     %PhotoGroup{} |> PhotoGroup.changeset(attrs) |> Repo.insert()
+  end
+
+  @doc """
+  Generate a WebP thumbnail of the image at `source_path`, store it, and return
+  its key. Cleans up the temp file. Returns `{:error, _}` if the source can't be
+  thumbnailed (callers fall back to serving the original).
+  """
+  @spec store_thumbnail(Path.t()) :: {:ok, String.t()} | {:error, term()}
+  def store_thumbnail(source_path) do
+    with {:ok, tmp} <- Thumbnail.generate(source_path),
+         {:ok, key} <- Storage.store(tmp, "thumb.webp") do
+      File.rm(tmp)
+      {:ok, key}
+    end
   end
 
   @spec add_photo(%PhotoGroup{}, map()) :: {:ok, %Photo{}} | {:error, Ecto.Changeset.t()}

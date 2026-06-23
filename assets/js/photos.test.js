@@ -121,4 +121,24 @@ describe("photo lightbox", () => {
 
     expect(img.src).toContain("x.jpg") // stays on the only photo, never crosses into gallery 1
   })
+
+  it("loads the original from data-full, not the grid thumbnail", () => {
+    document.body.innerHTML = `
+      <div class="photo-grid" id="grid-a">
+        <button class="photo-button" data-index="0" data-full="orig.jpg">
+          <img src="thumb.webp" alt="A" />
+        </button>
+      </div>
+      <div class="photo-overlay" id="photoOverlay" inert>
+        <button type="button" class="photo-overlay-close" aria-label="Close">&times;</button>
+        <img class="photo-overlay-img" id="photoOverlayImg" alt="" />
+      </div>`
+    initPhotos()
+
+    click(document.querySelector(".photo-button"))
+
+    const full = document.getElementById("photoOverlayImg")
+    expect(full.getAttribute("src")).toBe("orig.jpg")
+    expect(full.alt).toBe("A")
+  })
 })

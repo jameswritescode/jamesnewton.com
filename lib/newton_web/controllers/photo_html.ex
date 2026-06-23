@@ -7,4 +7,5 @@ defmodule NewtonWeb.PhotoHTML do
   def format_month(%Date{} = d), do: Calendar.strftime(d, "%B %Y")
 
   defdelegate image_url(key), to: Newton.Gallery
+  defdelegate thumb_url(photo), to: Newton.Gallery
 end

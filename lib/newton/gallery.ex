@@ -129,4 +129,9 @@ defmodule Newton.Gallery do
   def image_url("http://" <> _ = url), do: url
   def image_url("https://" <> _ = url), do: url
   def image_url(key) when is_binary(key), do: "/media/" <> key
+
+  @doc "The URL to display for a photo in the grid."
+  @spec thumb_url(%Photo{}) :: String.t()
+  def thumb_url(%Photo{thumb_key: thumb_key, image_key: image_key}),
+    do: image_url(thumb_key || image_key)
 end

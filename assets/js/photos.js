@@ -54,7 +54,7 @@ function initLightbox() {
   const show = (btn) => {
     currentButton = btn;
     const img = btn.querySelector("img");
-    full.src = img.src;
+    full.src = btn.dataset.full || img.src;
     full.alt = img.alt;
   };
   const open = (btn) => {

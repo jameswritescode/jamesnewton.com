@@ -16,10 +16,11 @@
           type="button"
           class="photo-button"
           data-index={index}
+          data-full={image_url(photo.image_key)}
           aria-label={"Enlarge: #{photo.alt}"}
         >
           <img
-            src={image_url(photo.image_key)}
+            src={thumb_url(photo)}
             loading="lazy"
             decoding="async"
             alt={photo.alt}

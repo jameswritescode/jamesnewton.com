@@ -114,13 +114,18 @@ defmodule Newton.GalleryTest do
 
   test "delete_group/1 removes the group, its photos, and their files" do
     group = group_fixture()
-    key = stored_image()
-    photo = photo_fixture(group, %{image_key: key})
+    image_key = store_original()
+    {:ok, thumb_key} = Gallery.store_thumbnail(media_path(image_key))
+    photo = photo_fixture(group, %{image_key: image_key, thumb_key: thumb_key})
+
+    assert File.exists?(media_path(image_key))
+    assert File.exists?(media_path(thumb_key))
 
     {:ok, _} = Gallery.delete_group(group)
     assert_raise Ecto.NoResultsError, fn -> Gallery.get_group!(group.id) end
     assert_raise Ecto.NoResultsError, fn -> Gallery.get_photo!(photo.id) end
-    refute File.exists?(Path.join(media_root(), key))
+    refute File.exists?(media_path(image_key))
+    refute File.exists?(media_path(thumb_key))
   end
 
   test "reorder_photos/2 sets position to match the given id order" do
@@ -156,7 +161,40 @@ defmodule Newton.GalleryTest do
     assert photo.thumb_key == "t.webp"
   end
 
+  test "delete_photo removes both the original and the thumbnail files" do
+    group = group_fixture()
+    image_key = store_original()
+    {:ok, thumb_key} = Gallery.store_thumbnail(media_path(image_key))
+
+    {:ok, photo} =
+      Gallery.add_photo(group, %{
+        image_key: image_key,
+        thumb_key: thumb_key,
+        alt: "",
+        position: 0
+      })
+
+    assert File.exists?(media_path(image_key))
+    assert File.exists?(media_path(thumb_key))
+
+    {:ok, _} = Gallery.delete_photo(photo)
+
+    refute File.exists?(media_path(image_key))
+    refute File.exists?(media_path(thumb_key))
+  end
+
+  defp store_original do
+    {:ok, img} = Image.new(1200, 900, color: [9, 9, 9])
+    src = Path.join(System.tmp_dir!(), "orig-#{System.unique_integer([:positive])}.png")
+    {:ok, _} = Image.write(img, src)
+    {:ok, key} = Storage.store(src, "orig.png")
+    File.rm(src)
+    key
+  end
+
   defp media_root, do: Application.fetch_env!(:newton, :media_root)
+
+  defp media_path(key), do: Path.join(media_root(), key)
 
   defp stored_image do
     root = media_root()

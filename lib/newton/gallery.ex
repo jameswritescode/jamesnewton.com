@@ -50,9 +50,16 @@ defmodule Newton.Gallery do
 
   @spec delete_group(%PhotoGroup{}) :: {:ok, %PhotoGroup{}} | {:error, Ecto.Changeset.t()}
   def delete_group(%PhotoGroup{} = group) do
-    group = Repo.preload(group, :photos)
-    Enum.each(group.photos, &Storage.delete(&1.image_key))
-    Repo.delete(group)
+    photos = Repo.preload(group, :photos).photos
+
+    with {:ok, deleted} <- Repo.delete(group) do
+      Enum.each(photos, fn photo ->
+        Storage.delete(photo.image_key)
+        Storage.delete(photo.thumb_key)
+      end)
+
+      {:ok, deleted}
+    end
   end
 
   @spec get_photo!(term()) :: %Photo{}
@@ -68,8 +75,11 @@ defmodule Newton.Gallery do
 
   @spec delete_photo(%Photo{}) :: {:ok, %Photo{}} | {:error, Ecto.Changeset.t()}
   def delete_photo(%Photo{} = photo) do
-    Storage.delete(photo.image_key)
-    Repo.delete(photo)
+    with {:ok, deleted} <- Repo.delete(photo) do
+      Storage.delete(deleted.image_key)
+      Storage.delete(deleted.thumb_key)
+      {:ok, deleted}
+    end
   end
 
   @spec next_position(%PhotoGroup{}) :: non_neg_integer()

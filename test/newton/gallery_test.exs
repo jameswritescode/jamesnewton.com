@@ -147,6 +147,15 @@ defmodule Newton.GalleryTest do
     assert Gallery.get_photo!(a.id).position in 0..1
   end
 
+  test "add_photo persists a thumb_key" do
+    group = group_fixture()
+
+    {:ok, photo} =
+      Gallery.add_photo(group, %{image_key: "k.jpg", thumb_key: "t.webp", alt: "", position: 0})
+
+    assert photo.thumb_key == "t.webp"
+  end
+
   defp media_root, do: Application.fetch_env!(:newton, :media_root)
 
   defp stored_image do

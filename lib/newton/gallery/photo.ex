@@ -5,6 +5,7 @@ defmodule Newton.Gallery.Photo do
 
   schema "photos" do
     field :image_key, :string
+    field :thumb_key, :string
     field :alt, :string, default: ""
     field :position, :integer, default: 0
     field :width, :integer
@@ -30,7 +31,7 @@ defmodule Newton.Gallery.Photo do
   @spec create_changeset(%__MODULE__{} | Ecto.Changeset.t(), map()) :: Ecto.Changeset.t()
   def create_changeset(photo, attrs) do
     photo
-    |> cast(attrs, [:image_key, :alt, :position, :width, :height, :photo_group_id])
+    |> cast(attrs, [:image_key, :thumb_key, :alt, :position, :width, :height, :photo_group_id])
     |> validate_required([:image_key, :position])
   end
 end

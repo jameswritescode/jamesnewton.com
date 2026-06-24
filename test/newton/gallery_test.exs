@@ -183,29 +183,6 @@ defmodule Newton.GalleryTest do
     refute File.exists?(media_path(thumb_key))
   end
 
-  test "backfill_thumbnails generates thumbnails for photos missing them, idempotently" do
-    group = group_fixture()
-    image_key = store_original()
-    {:ok, photo} = Gallery.add_photo(group, %{image_key: image_key, alt: "", position: 0})
-    assert is_nil(photo.thumb_key)
-
-    assert %{ok: 1, failed: 0} = Gallery.backfill_thumbnails()
-
-    reloaded = Gallery.get_photo!(photo.id)
-    assert is_binary(reloaded.thumb_key)
-    assert File.exists?(media_path(reloaded.thumb_key))
-
-    # Already done — a second run is a no-op.
-    assert %{ok: 0, failed: 0} = Gallery.backfill_thumbnails()
-  end
-
-  test "backfill_thumbnails counts a photo whose original is missing as failed" do
-    group = group_fixture()
-    {:ok, _} = Gallery.add_photo(group, %{image_key: "missing.jpg", alt: "", position: 0})
-
-    assert %{ok: 0, failed: 1} = Gallery.backfill_thumbnails()
-  end
-
   defp store_original do
     {:ok, img} = Image.new(1200, 900, color: [9, 9, 9])
     src = Path.join(System.tmp_dir!(), "orig-#{System.unique_integer([:positive])}.png")

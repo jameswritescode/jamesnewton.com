@@ -4,7 +4,7 @@ import {UnsavedGuard} from "./unsaved_guard"
 function mount(unsaved) {
   document.body.innerHTML = `
     <div id="unsaved-guard" data-unsaved="${unsaved}"></div>
-    <a id="nav" href="/admin/posts" data-phx-link="redirect">Posts</a>
+    <a id="nav" href="#posts" data-phx-link="redirect">Posts</a>
   `
   const el = document.getElementById("unsaved-guard")
   const hook = Object.create(UnsavedGuard)

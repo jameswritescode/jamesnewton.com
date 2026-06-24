@@ -36,9 +36,12 @@ defmodule NewtonWeb.Admin.GalleryShowLiveTest do
     group = group_fixture()
     {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}")
 
+    {:ok, img} = Image.new(1200, 800, color: [9, 9, 9])
+    {:ok, jpeg} = Image.write(img, :memory, suffix: ".jpg")
+
     photo =
       file_input(view, "#upload-form", :photos, [
-        %{name: "shot.jpg", content: "fakeimage", type: "image/jpeg"}
+        %{name: "shot.jpg", content: jpeg, type: "image/jpeg"}
       ])
 
     render_hook(view, "set_dimensions", %{"name" => "shot.jpg", "width" => 1200, "height" => 800})
@@ -48,6 +51,7 @@ defmodule NewtonWeb.Admin.GalleryShowLiveTest do
     [created] = Gallery.get_group!(group.id).photos
     assert created.width == 1200
     assert created.height == 800
+    assert created.thumb_key
     assert has_element?(view, "#photo-#{created.id}")
   end
 

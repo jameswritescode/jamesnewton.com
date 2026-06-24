@@ -8,19 +8,30 @@ defmodule Newton.Release do
       bin/newton eval 'Newton.Release.create_admin("you@example.com", "a-strong-password")'
   """
 
+  require Logger
+
   alias Newton.Accounts.User
   alias Newton.Repo
 
   @app :newton
 
   @doc "Run all pending migrations for every repo in the app."
-  @spec migrate() :: [{:ok, list(), list()}]
+  @spec migrate() :: :ok
   def migrate do
     load_app()
 
     for repo <- repos() do
       {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
     end
+
+    # TEMPORARY: backfill thumbnails for photos uploaded before this feature.
+    # Remove this block after the first deploy that includes it (Task 7).
+    {:ok, counts, _} =
+      Ecto.Migrator.with_repo(Repo, fn _repo -> Newton.Gallery.backfill_thumbnails() end)
+
+    Logger.info("thumbnail backfill complete: #{counts.ok} ok, #{counts.failed} failed")
+
+    :ok
   end
 
   @doc "Roll a single repo back to `version`."

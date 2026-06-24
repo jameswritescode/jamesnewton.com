@@ -1,6 +1,7 @@
 defmodule Newton.Gallery do
   @moduledoc "Photo groups and photos; resolves image keys to URLs."
   import Ecto.Query, warn: false
+  require Logger
   alias Newton.Gallery.{Photo, PhotoGroup, Storage, Thumbnail}
   alias Newton.Repo
 
@@ -144,4 +145,34 @@ defmodule Newton.Gallery do
   @spec thumb_url(%Photo{}) :: String.t()
   def thumb_url(%Photo{thumb_key: thumb_key, image_key: image_key}),
     do: image_url(thumb_key || image_key)
+
+  @doc """
+  Generate + store a thumbnail for every photo that doesn't have one yet.
+  Idempotent (skips photos with a `thumb_key`); logs and continues past
+  per-photo failures. Returns counts.
+  """
+  @spec backfill_thumbnails() :: %{ok: non_neg_integer(), failed: non_neg_integer()}
+  def backfill_thumbnails do
+    Photo
+    |> where([p], is_nil(p.thumb_key))
+    |> Repo.all()
+    |> Enum.reduce(%{ok: 0, failed: 0}, fn photo, acc ->
+      source = Path.join(media_root(), photo.image_key)
+
+      with true <- File.exists?(source),
+           {:ok, key} <- store_thumbnail(source),
+           {:ok, _} <- photo |> Ecto.Changeset.change(thumb_key: key) |> Repo.update() do
+        Map.update!(acc, :ok, &(&1 + 1))
+      else
+        failure ->
+          Logger.error(
+            "thumbnail backfill failed for photo #{photo.id} (#{photo.image_key}): #{inspect(failure)}"
+          )
+
+          Map.update!(acc, :failed, &(&1 + 1))
+      end
+    end)
+  end
+
+  defp media_root, do: Application.fetch_env!(:newton, :media_root)
 end

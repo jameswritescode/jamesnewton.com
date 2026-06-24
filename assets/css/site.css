@@ -1,5 +1,6 @@
 :root {
   /* The site has a single dark palette — there is no light/dark mode. */
+  color-scheme: dark;
   --bg: #151311;
   --text: #eed3ba;
   --text-subdued: #c3ac98;
@@ -51,12 +52,13 @@ html {
   scrollbar-gutter: stable;
 }
 
-html,
-.post-body pre code {
-  /* One (dark) theme: an explicit dark track, not `transparent`. Transparent
-     makes Firefox paint a default groove that follows the OS prefers-color-scheme,
-     which is exactly the two-theme behavior we don't want on a single-theme site. */
+html {
   scrollbar-color: rgba(var(--dot), 0.22) var(--bg);
+  scrollbar-width: thin;
+}
+
+.post-body pre code {
+  scrollbar-color: rgba(var(--dot), 0.22) transparent;
   scrollbar-width: thin;
 }
 
@@ -67,6 +69,10 @@ html,
 
 ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-corner {
+  background: var(--bg);
+}
+
+.post-body pre code::-webkit-scrollbar-track {
   background: transparent;
 }
 

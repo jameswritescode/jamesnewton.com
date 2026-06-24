@@ -8,8 +8,6 @@ defmodule Newton.Release do
       bin/newton eval 'Newton.Release.create_admin("you@example.com", "a-strong-password")'
   """
 
-  require Logger
-
   alias Newton.Accounts.User
   alias Newton.Repo
 
@@ -23,26 +21,6 @@ defmodule Newton.Release do
     for repo <- repos() do
       {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
     end
-  end
-
-  @doc """
-  Generate WebP thumbnails for photos that don't have one yet.
-
-  Run this on the **app machine**, not via the release command — the media
-  volume (`media_root`) is only mounted on the app machine, so the release
-  machine can't read the originals. From a running release:
-
-      bin/newton eval 'Newton.Release.backfill_thumbnails()'
-  """
-  @spec backfill_thumbnails() :: %{ok: non_neg_integer(), failed: non_neg_integer()}
-  def backfill_thumbnails do
-    load_app()
-
-    {:ok, counts, _} =
-      Ecto.Migrator.with_repo(Repo, fn _repo -> Newton.Gallery.backfill_thumbnails() end)
-
-    Logger.info("thumbnail backfill complete: #{counts.ok} ok, #{counts.failed} failed")
-    counts
   end
 
   @doc "Roll a single repo back to `version`."

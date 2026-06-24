@@ -42,6 +42,24 @@ defmodule NewtonWeb.PageControllerTest do
     assert html =~ "<cite>Working in Public</cite>"
   end
 
+  test "the home feed photo item uses the thumbnail, not the original", %{conn: conn} do
+    {:ok, group} =
+      Newton.Gallery.create_group(%{slug: "sierra", title: "Sierra", taken_on: ~D[2026-05-01]})
+
+    {:ok, _} =
+      Newton.Gallery.add_photo(group, %{
+        image_key: "orig.jpg",
+        thumb_key: "thumb.webp",
+        alt: "",
+        position: 0
+      })
+
+    html = conn |> get(~p"/") |> html_response(200)
+
+    assert html =~ ~s(src="/media/thumb.webp")
+    refute html =~ "/media/orig.jpg"
+  end
+
   test "the home page exposes default website OG tags", %{conn: conn} do
     html = conn |> get(~p"/") |> html_response(200)
 

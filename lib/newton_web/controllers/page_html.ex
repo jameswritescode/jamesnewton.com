@@ -10,6 +10,7 @@ defmodule NewtonWeb.PageHTML do
 
   defdelegate verb(status), to: Newton.Reading
   defdelegate image_url(key), to: Newton.Gallery
+  defdelegate thumb_url(photo), to: Newton.Gallery
 
   attr :item, :map, required: true
 
@@ -46,7 +47,7 @@ defmodule NewtonWeb.PageHTML do
       date={format_date(@item.date)}
       aria-label={"Photos from #{@item.payload.title}, #{format_date(@item.date)}"}
     >
-      <img :if={@first} class="feed-item-photo" src={image_url(@first.image_key)} alt="" />
+      <img :if={@first} class="feed-item-photo" src={thumb_url(@first)} alt="" />
     </.feed_item>
     """
   end

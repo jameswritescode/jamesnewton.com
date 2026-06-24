@@ -293,7 +293,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
         >
           <.link patch={~p"/admin/photos/#{@group.id}/photo/#{photo.id}"} class="block size-full">
             <img
-              src={Gallery.image_url(photo.image_key)}
+              src={Gallery.thumb_url(photo)}
               alt={photo.alt}
               class="size-full object-cover"
             />
@@ -312,10 +312,18 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
         <:title>Photo</:title>
 
         <img
-          src={Gallery.image_url(@editing_photo.image_key)}
+          src={Gallery.thumb_url(@editing_photo)}
           alt={@editing_photo.alt}
           class="aspect-square w-full rounded-lg object-cover"
         />
+
+        <.link
+          href={Gallery.image_url(@editing_photo.image_key)}
+          target="_blank"
+          class="text-[0.78rem] text-(--admin-accent) no-underline hover:underline"
+        >
+          View image ↗
+        </.link>
 
         <.form
           for={@photo_form}

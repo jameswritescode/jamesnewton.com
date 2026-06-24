@@ -113,7 +113,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
           <div class="size-10 shrink-0 overflow-hidden rounded-md bg-(--admin-bg)">
             <img
               :if={cover = List.first(group.photos)}
-              src={Gallery.image_url(cover.image_key)}
+              src={Gallery.thumb_url(cover)}
               alt=""
               class="size-full object-cover"
             />

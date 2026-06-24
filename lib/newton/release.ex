@@ -16,22 +16,33 @@ defmodule Newton.Release do
   @app :newton
 
   @doc "Run all pending migrations for every repo in the app."
-  @spec migrate() :: :ok
+  @spec migrate() :: [{:ok, list(), list()}]
   def migrate do
     load_app()
 
     for repo <- repos() do
       {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
     end
+  end
 
-    # TEMPORARY: backfill thumbnails for photos uploaded before this feature.
-    # Remove this block after the first deploy that includes it (Task 7).
+  @doc """
+  Generate WebP thumbnails for photos that don't have one yet.
+
+  Run this on the **app machine**, not via the release command — the media
+  volume (`media_root`) is only mounted on the app machine, so the release
+  machine can't read the originals. From a running release:
+
+      bin/newton eval 'Newton.Release.backfill_thumbnails()'
+  """
+  @spec backfill_thumbnails() :: %{ok: non_neg_integer(), failed: non_neg_integer()}
+  def backfill_thumbnails do
+    load_app()
+
     {:ok, counts, _} =
       Ecto.Migrator.with_repo(Repo, fn _repo -> Newton.Gallery.backfill_thumbnails() end)
 
     Logger.info("thumbnail backfill complete: #{counts.ok} ok, #{counts.failed} failed")
-
-    :ok
+    counts
   end
 
   @doc "Roll a single repo back to `version`."

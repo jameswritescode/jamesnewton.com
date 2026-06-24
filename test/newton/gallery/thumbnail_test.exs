@@ -26,6 +26,15 @@ defmodule Newton.Gallery.ThumbnailTest do
     assert Image.height(thumb) == 750
   end
 
+  test "downscales a portrait image on its long (height) edge" do
+    {:ok, thumb_path} = Thumbnail.generate(source(3000, 4000))
+    cleanup(thumb_path)
+
+    {:ok, thumb} = Image.open(thumb_path)
+    assert Image.width(thumb) == 750
+    assert Image.height(thumb) == 1000
+  end
+
   test "does not upscale an image already under the cap" do
     {:ok, thumb_path} = Thumbnail.generate(source(400, 300))
     cleanup(thumb_path)

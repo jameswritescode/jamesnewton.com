@@ -1,6 +1,8 @@
 defmodule NewtonWeb.Admin.GalleryLive.Show do
   use NewtonWeb, :live_view
 
+  require Logger
+
   alias Newton.Gallery
   alias Newton.Gallery.Storage
   alias NewtonWeb.Admin.{Components, FormHelpers, Layouts}
@@ -80,8 +82,15 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
 
         thumb_key =
           case Gallery.store_thumbnail(path) do
-            {:ok, tk} -> tk
-            {:error, _} -> nil
+            {:ok, tk} ->
+              tk
+
+            {:error, reason} ->
+              Logger.warning(
+                "thumbnail generation failed for #{entry.client_name}: #{inspect(reason)}"
+              )
+
+              nil
           end
 
         {w, h} = Map.get(dimensions, entry.client_name, {nil, nil})

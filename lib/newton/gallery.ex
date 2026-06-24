@@ -17,10 +17,10 @@ defmodule Newton.Gallery do
   """
   @spec store_thumbnail(Path.t()) :: {:ok, String.t()} | {:error, term()}
   def store_thumbnail(source_path) do
-    with {:ok, tmp} <- Thumbnail.generate(source_path),
-         {:ok, key} <- Storage.store(tmp, "thumb.webp") do
+    with {:ok, tmp} <- Thumbnail.generate(source_path) do
+      result = Storage.store(tmp, "thumb.webp")
       File.rm(tmp)
-      {:ok, key}
+      result
     end
   end
 

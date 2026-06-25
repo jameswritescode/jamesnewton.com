@@ -31,6 +31,7 @@ defmodule NewtonWeb.Router do
     get "/blog/:slug", PageController, :blog_redirect
     get "/reading", ReadingController, :index
     get "/photos", PhotoController, :index
+    get "/links", LinksController, :index
   end
 
   # Social card images. No :browser pipeline — these are PNGs, so we skip

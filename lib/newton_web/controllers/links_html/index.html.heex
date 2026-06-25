@@ -1,0 +1,19 @@
+<main id="main" class="links" aria-label="Links">
+  <ul class="links-menu" role="list">
+    <li :for={link <- @links}>
+      <a
+        class="links-item"
+        href={link.url}
+        data-name={link.name}
+        data-url={link.url}
+        data-desc={link.description}
+        {if external?(link.url), do: [target: "_blank", rel: "noopener noreferrer"], else: []}
+      >
+        {link.name}
+      </a>
+    </li>
+    <li>
+      <a class="links-item links-item--home" href={~p"/"} data-no-swup>JN.SYS [HOME]</a>
+    </li>
+  </ul>
+</main>

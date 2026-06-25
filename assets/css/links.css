@@ -77,6 +77,8 @@
 
 .links-item:hover,
 .links-item:focus-visible {
+  /* The magenta colour + glow is the focus indicator; it replaces (not just
+     removes) the default outline, so focus stays clearly visible. */
   color: var(--links-magenta-soft);
   text-shadow: 0 0 12px var(--links-magenta), 0 0 3px var(--links-magenta);
   outline: none;

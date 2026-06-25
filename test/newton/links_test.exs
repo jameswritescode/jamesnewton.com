@@ -2,10 +2,8 @@ defmodule Newton.LinksTest do
   use ExUnit.Case, async: true
   alias Newton.Links
 
-  test "all/0 returns a non-empty list led by GITHUB (the readout default)" do
-    links = Links.all()
-    assert links != []
-    assert List.first(links).name == "GITHUB"
+  test "all/0 is led by GITHUB (the readout default)" do
+    assert Links.all() |> List.first() |> Map.fetch!(:name) == "GITHUB"
   end
 
   test "all/0 includes each launch link" do

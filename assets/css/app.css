@@ -6,6 +6,7 @@
    still overrides preflight on the public site, while Tailwind *utilities*
    (used by the neutral admin) reliably win over it. */
 @import "./site.css" layer(components);
+@import "./links.css" layer(components);
 /* Admin design system (token-driven, scoped to [data-admin-theme] / .admin-*). */
 @import "./admin.css";
 @source "../css";

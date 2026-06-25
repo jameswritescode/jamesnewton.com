@@ -1,0 +1,148 @@
+/* assets/css/links.css
+   The HACKERS "Gibson" /links page. Everything is scoped under .links so it
+   cannot leak into the rest of the site. Single dark scene; its own palette. */
+.links {
+  --links-cyan: #19c9ff;
+  --links-magenta: #ff31d9;
+  --links-magenta-soft: #ff5cc8;
+  --links-green: #b6ff00;
+  --links-bg: #020207;
+  --links-mono: "SF Mono", "JetBrains Mono", "Courier New", monospace;
+  --links-display: "Arial Narrow", "Roboto Condensed", "Helvetica Neue", system-ui, sans-serif;
+
+  position: relative;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background: var(--links-bg);
+  color: var(--links-cyan);
+  display: flex;
+  align-items: center;
+}
+
+/* atmospheric techy background (real scrolling code comes in Phase C) */
+.links-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 18%, #1a0736 0%, var(--links-bg) 60%),
+    repeating-linear-gradient(90deg, transparent 0 26px, rgba(58, 160, 184, 0.05) 26px 27px);
+  pointer-events: none;
+}
+
+.links-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+}
+
+.links-console {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 0 clamp(20px, 6vw, 80px);
+}
+
+.links-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.links-item {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--links-display);
+  font-weight: 700;
+  font-size: clamp(28px, 4.5vw, 44px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--links-cyan);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.6), 0 0 2px rgba(0, 229, 255, 0.8);
+  line-height: 1;
+  transition: color 0.1s ease, text-shadow 0.1s ease;
+}
+
+.links-arrow {
+  margin-left: 0.4em;
+  font-size: 0.7em;
+  opacity: 0.8;
+}
+
+.links-item:hover,
+.links-item:focus-visible {
+  color: var(--links-magenta-soft);
+  text-shadow: 0 0 12px var(--links-magenta), 0 0 3px var(--links-magenta);
+  outline: none;
+}
+
+.links-item--home {
+  color: var(--links-magenta-soft);
+  text-shadow: 0 0 10px rgba(255, 49, 217, 0.6);
+}
+
+.links-item--home .links-arrow {
+  margin-left: 0;
+  margin-right: 0.4em;
+}
+
+.links-readout {
+  width: clamp(240px, 28vw, 320px);
+  border: 1.5px solid var(--links-magenta);
+  box-shadow: 0 0 16px rgba(255, 49, 217, 0.33), inset 0 0 18px rgba(255, 49, 217, 0.13);
+  background: rgba(26, 2, 32, 0.8);
+  padding: 18px;
+  font-family: var(--links-mono);
+}
+
+.links-readout-label {
+  color: var(--links-magenta-soft);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 8px var(--links-magenta);
+  margin-bottom: 10px;
+}
+
+.links-readout-name {
+  color: #8ff6ff;
+  font-family: var(--links-display);
+  font-size: 20px;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px var(--links-cyan);
+  margin-bottom: 8px;
+}
+
+.links-readout-url {
+  color: var(--links-green);
+  font-size: 12px;
+  word-break: break-all;
+  margin-bottom: 10px;
+}
+
+.links-readout-desc {
+  color: #bfe9f2;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.links-readout-status {
+  margin-top: 14px;
+  color: var(--links-magenta-soft);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+}
+
+@media (max-width: 640px) {
+  .links-console {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+}

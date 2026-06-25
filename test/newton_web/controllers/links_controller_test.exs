@@ -23,4 +23,13 @@ defmodule NewtonWeb.LinksControllerTest do
     html = conn |> get(~p"/links") |> html_response(200)
     assert html =~ "JN.SYS"
   end
+
+  test "GET /links seeds the readout panel with the first link (works without JS)", %{conn: conn} do
+    html = conn |> get(~p"/links") |> html_response(200)
+    first = Newton.Links.all() |> List.first()
+
+    assert html =~ ~s(data-readout="name">#{first.name}</div>)
+    assert html =~ ~s(data-readout="url">#{first.url}</div>)
+    assert html =~ ~s(data-readout="desc">#{first.description}</div>)
+  end
 end

@@ -1,19 +1,41 @@
 <main id="main" class="links" aria-label="Links">
-  <ul class="links-menu" role="list">
-    <li :for={link <- @links}>
-      <a
-        class="links-item"
-        href={link.url}
-        data-name={link.name}
-        data-url={link.url}
-        data-desc={link.description}
-        {if external?(link.url), do: [target: "_blank", rel: "noopener noreferrer"], else: []}
-      >
-        {link.name}
-      </a>
-    </li>
-    <li>
-      <a class="links-item links-item--home" href={~p"/"} data-no-swup>JN.SYS [HOME]</a>
-    </li>
-  </ul>
+  <div class="links-bg" aria-hidden="true"></div>
+  <div class="links-scanlines" aria-hidden="true"></div>
+
+  <div class="links-console">
+    <ul class="links-menu" role="list">
+      <li :for={link <- @links}>
+        <a
+          class="links-item"
+          href={link.url}
+          data-name={link.name}
+          data-url={link.url}
+          data-desc={link.description}
+          {if external?(link.url), do: [target: "_blank", rel: "noopener noreferrer"], else: []}
+        >
+          {link.name}<span class="links-arrow" aria-hidden="true">&#9654;</span>
+        </a>
+      </li>
+      <li>
+        <a
+          class="links-item links-item--home"
+          href={~p"/"}
+          data-no-swup
+          data-name="JN.SYS"
+          data-url="/"
+          data-desc="Disconnect. Return to jamesnewton.com."
+        >
+          <span class="links-arrow" aria-hidden="true">&#9664;</span>JN.SYS [HOME]
+        </a>
+      </li>
+    </ul>
+
+    <aside :if={@first_link} class="links-readout" aria-hidden="true">
+      <div class="links-readout-label">// READOUT</div>
+      <div class="links-readout-name" data-readout="name">{@first_link.name}</div>
+      <div class="links-readout-url" data-readout="url">{@first_link.url}</div>
+      <div class="links-readout-desc" data-readout="desc">{@first_link.description}</div>
+      <div class="links-readout-status">&gt; CONNECTION READY</div>
+    </aside>
+  </div>
 </main>

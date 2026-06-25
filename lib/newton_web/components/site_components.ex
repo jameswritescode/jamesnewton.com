@@ -13,6 +13,10 @@ defmodule NewtonWeb.SiteComponents do
       <a href="/reading">Reading</a>
       <span class="site-nav-sep" aria-hidden="true">·</span>
       <a href="/resume">Resume</a>
+      <span class="site-nav-sep" aria-hidden="true">·</span>
+      <%!-- Full navigation (no Swup) so the /links takeover replaces the whole page,
+            rather than swapping #main and leaving the site header behind. --%>
+      <a href="/links" data-no-swup>Links</a>
     </nav>
     """
   end

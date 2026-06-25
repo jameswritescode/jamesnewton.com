@@ -28,6 +28,7 @@ import Swup from "../vendor/swup"
 import {RippleCanvas} from "./hooks/ripple_canvas"
 import {initPhotos, teardownPhotos} from "./photos"
 import {initLinks} from "./links"
+import {initPixelTransition} from "./pixel_transition"
 import {focusAfterNavigation} from "./navigation"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
@@ -67,6 +68,7 @@ swup.hooks.on("content:replace", () => {
 // Initial page load (Swup doesn't fire content:replace for the first page).
 initPhotos()
 initLinks()
+initPixelTransition()
 scrollToHash()
 
 // Show progress bar on live navigation and form submits

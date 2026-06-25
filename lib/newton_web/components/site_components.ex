@@ -16,7 +16,7 @@ defmodule NewtonWeb.SiteComponents do
       <span class="site-nav-sep" aria-hidden="true">·</span>
       <%!-- Full navigation (no Swup) so the /links takeover replaces the whole page,
             rather than swapping #main and leaving the site header behind. --%>
-      <a href="/links" data-no-swup>Links</a>
+      <a href="/links" data-no-swup data-pixel>Links</a>
     </nav>
     """
   end

@@ -100,6 +100,14 @@ describe("onPixelClick", () => {
     expect(out).not.toHaveBeenCalled()
   })
 
+  it("does nothing when the event was already default-prevented", () => {
+    const out = vi.fn()
+    const link = {getAttribute: () => "/links"}
+    const e = clickEvent(link, {defaultPrevented: true})
+    onPixelClick(e, {win: fakeWin(), storage: fakeStorage(), out})
+    expect(out).not.toHaveBeenCalled()
+  })
+
   it("does nothing under reduced-motion (lets the browser navigate)", () => {
     const out = vi.fn()
     const link = {getAttribute: () => "/links"}

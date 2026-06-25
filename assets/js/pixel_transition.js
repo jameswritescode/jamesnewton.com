@@ -121,6 +121,8 @@ function runMosaic(canvas, direction, win, done) {
 
 // Guard against re-entry: a second click (or overlapping in/out) must not stack
 // overlays or queue a second navigation while a transition is already running.
+// `pixelOut` intentionally never resets this — the page navigates away and the
+// module is re-evaluated on the next load. `pixelIn` resets it on completion.
 let running = false
 
 export function pixelOut(href, {doc = document, win = window} = {}) {

@@ -1,42 +1,29 @@
-<main id="main" class="links" aria-label="Links">
-  <div class="links-bg" aria-hidden="true"></div>
-  <div class="links-scanlines" aria-hidden="true"></div>
+<%!-- The site-styled fallback page. The Gibson cinematic does NOT read this
+markup — it reads the #gibson-links JSON island below, so the visible page and
+the tower menu are free to present the same links differently. Most visitors
+never see this page; it serves no-JS/no-WebGL browsers, crawlers, and
+?fallback. --%>
+<Layouts.app flash={@flash}>
+  <article class="post" aria-label="Links">
+    <header>
+      <h1 class="post-title">Links</h1>
+      <p class="post-byline">Where to find me elsewhere.</p>
+    </header>
 
-  <div class="links-console">
-    <ul class="links-menu" role="list">
-      <li :for={link <- @links}>
-        <a
-          class="links-item"
-          href={link.url}
-          data-name={link.name}
-          data-url={link.url}
-          data-desc={link.description}
-          {if external?(link.url), do: [target: "_blank", rel: "noopener noreferrer"], else: []}
-        >
-          {link.name}<span class="links-arrow" aria-hidden="true">&#9654;</span>
-        </a>
-      </li>
-      <li>
-        <a
-          class="links-item links-item--home"
-          href={~p"/"}
-          data-no-swup
-          data-pixel
-          data-name="JN.SYS"
-          data-url="/"
-          data-desc="Disconnect. Return to jamesnewton.com."
-        >
-          <span class="links-arrow" aria-hidden="true">&#9664;</span>JN.SYS [HOME]
-        </a>
-      </li>
-    </ul>
+    <.feed>
+      <.feed_item
+        :for={link <- @links}
+        href={link.url}
+        {if external?(link.url), do: [target: "_blank", rel: "noopener noreferrer"], else: []}
+      >
+        <span class="links-name">{link.name}</span>
+        <p :if={link.description} class="feed-item-excerpt">{link.description}</p>
+      </.feed_item>
+    </.feed>
+  </article>
 
-    <aside :if={@first_link} class="links-readout" aria-hidden="true">
-      <div class="links-readout-label">// READOUT</div>
-      <div class="links-readout-name" data-readout="name">{@first_link.name}</div>
-      <div class="links-readout-url" data-readout="url">{@first_link.url}</div>
-      <div class="links-readout-desc" data-readout="desc">{@first_link.description}</div>
-      <div class="links-readout-status">&gt; CONNECTION READY</div>
-    </aside>
-  </div>
-</main>
+  <%!-- Data island, not executable script: the Gibson's link manifest. --%>
+  <script type="application/json" id="gibson-links">
+    <%= raw(gibson_manifest(@links)) %>
+  </script>
+</Layouts.app>

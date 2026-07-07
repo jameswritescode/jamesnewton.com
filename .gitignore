@@ -51,3 +51,5 @@ npm-debug.log
 
 # Computer artifacts
 .DS_Store
+
+/node_modules/

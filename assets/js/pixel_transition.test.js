@@ -1,10 +1,12 @@
-import {describe, it, expect, vi} from "vitest"
+import {describe, it, expect, vi, beforeEach} from "vitest"
 import {
   shuffledOrder,
   prefersReducedMotion,
   shouldMosaicIn,
   consumeInFlag,
   onPixelClick,
+  setMosaicInHook,
+  finishMosaicIn,
 } from "./pixel_transition"
 
 function fakeStorage(initial = {}) {
@@ -55,17 +57,18 @@ describe("prefersReducedMotion", () => {
 })
 
 describe("shouldMosaicIn", () => {
-  it("is true when the flag is set", () => {
-    expect(shouldMosaicIn(fakeWin(), fakeStorage({[`pixel-in`]: "1"}))).toBe(true)
+  it("is true when we arrived via a pixel-out (the tower's exit)", () => {
+    expect(shouldMosaicIn(fakeWin(), {arrivedViaPixel: true, requested: false})).toBe(true)
   })
-  it("is true on /links even with no flag", () => {
-    expect(shouldMosaicIn(fakeWin({pathname: "/links"}), fakeStorage())).toBe(true)
+  it("on /links, only the Gibson's request triggers it — never the flag alone", () => {
+    expect(shouldMosaicIn(fakeWin({pathname: "/links"}), {arrivedViaPixel: true, requested: false})).toBe(false)
+    expect(shouldMosaicIn(fakeWin({pathname: "/links"}), {arrivedViaPixel: false, requested: true})).toBe(true)
   })
   it("is false elsewhere with no flag", () => {
-    expect(shouldMosaicIn(fakeWin({pathname: "/"}), fakeStorage())).toBe(false)
+    expect(shouldMosaicIn(fakeWin({pathname: "/"}), {arrivedViaPixel: false, requested: false})).toBe(false)
   })
-  it("is false when reduced-motion is preferred, even with the flag", () => {
-    expect(shouldMosaicIn(fakeWin({reduced: true, pathname: "/links"}), fakeStorage({[`pixel-in`]: "1"}))).toBe(false)
+  it("is false when reduced-motion is preferred, regardless", () => {
+    expect(shouldMosaicIn(fakeWin({reduced: true, pathname: "/links"}), {arrivedViaPixel: true, requested: true})).toBe(false)
   })
 })
 
@@ -124,5 +127,24 @@ describe("onPixelClick", () => {
     onPixelClick(e, {win: fakeWin(), storage: fakeStorage(), out})
     expect(e.preventDefault).not.toHaveBeenCalled()
     expect(out).not.toHaveBeenCalled()
+  })
+})
+
+describe("mosaic-in completion seam", () => {
+  // The hook is shared module state; reset it so each case is self-contained.
+  beforeEach(() => setMosaicInHook(null))
+
+  it("fires a registered hook once when the mosaic-in finishes, then clears it", () => {
+    let calls = 0
+    setMosaicInHook(() => (calls += 1))
+    finishMosaicIn({remove: () => {}})
+    finishMosaicIn({remove: () => {}}) // hook already consumed
+    expect(calls).toBe(1)
+  })
+
+  it("removes the canvas on finish even with no hook", () => {
+    let removed = false
+    finishMosaicIn({remove: () => (removed = true)})
+    expect(removed).toBe(true)
   })
 })

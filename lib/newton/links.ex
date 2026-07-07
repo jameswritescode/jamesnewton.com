@@ -1,31 +1,39 @@
 defmodule Newton.Links do
-  @moduledoc "The hardcoded set of outbound links shown on the /links page."
+  @moduledoc """
+  The hardcoded set of outbound links shown on /links. Names are display-cased
+  for the fallback page; the Gibson tower uppercases them for its own panel.
+  """
 
   @links [
     %{
-      name: "GITHUB",
+      name: "GitHub",
       url: "https://github.com/jameswritescode",
-      description: "Code, experiments, and the source of this very site."
+      description: "Code, experiments, and the source of this site."
     },
     %{
-      name: "LINKEDIN",
-      url: "https://www.linkedin.com/in/jameswritescode",
-      description: "The professional paper trail."
+      name: "Instagram",
+      url: "https://www.instagram.com/raptorexplosion",
+      description: "Life away from the keyboard."
     },
     %{
-      name: "BLUESKY",
+      name: "Bluesky",
       url: "https://bsky.app/profile/jamesnewton.com",
-      description: "Short thoughts, mostly about software and craft."
+      description: "Short thoughts and photos."
     },
     %{
-      name: "MARK OS",
+      name: "Mark OS",
       url: "https://markos.ai",
-      description: "Where I work. We think about how software gets built."
+      description: "Superpower your marketing team. Review your content with AI."
     },
     %{
-      name: "EMAIL",
+      name: "LinkedIn",
+      url: "https://www.linkedin.com/in/jameswritescode",
+      description: "Linkslop."
+    },
+    %{
+      name: "Email",
       url: "mailto:hello@jamesnewton.com",
-      description: "Say hello. I read everything."
+      description: "Say hello."
     }
     # RSS is deferred until the site has an actual feed. Add once it exists:
     # %{name: "RSS", url: "/feed.xml", description: "Subscribe the old-fashioned way."}

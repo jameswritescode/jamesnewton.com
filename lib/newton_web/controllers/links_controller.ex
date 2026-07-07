@@ -3,7 +3,6 @@ defmodule NewtonWeb.LinksController do
   alias Newton.Links
 
   def index(conn, _params) do
-    links = Links.all()
-    render(conn, :index, page_title: "Links", links: links, first_link: List.first(links))
+    render(conn, :index, page_title: "Links", links: Links.all())
   end
 end

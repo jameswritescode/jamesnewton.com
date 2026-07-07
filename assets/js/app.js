@@ -27,8 +27,8 @@ import topbar from "../vendor/topbar"
 import Swup from "../vendor/swup"
 import {RippleCanvas} from "./hooks/ripple_canvas"
 import {initPhotos, teardownPhotos} from "./photos"
-import {initLinks} from "./links"
 import {initPixelTransition} from "./pixel_transition"
+import {initGibsonIntro} from "./gibson_intro"
 import {focusAfterNavigation} from "./navigation"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
@@ -60,14 +60,15 @@ const swup = new Swup({
 swup.hooks.on("visit:start", teardownPhotos)
 swup.hooks.on("content:replace", () => {
   initPhotos()
-  initLinks()
   // Move focus into the new content and announce the page change to AT.
   // (Focusing the target also scrolls it into view, covering hash links.)
   focusAfterNavigation()
 })
 // Initial page load (Swup doesn't fire content:replace for the first page).
 initPhotos()
-initLinks()
+// The intro must init BEFORE the pixel transition: it registers the mosaic-in
+// gate/hook that the transition's mosaic consumes as soon as it starts.
+initGibsonIntro()
 initPixelTransition()
 scrollToHash()
 

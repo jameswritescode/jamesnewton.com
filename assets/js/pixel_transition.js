@@ -25,12 +25,14 @@ export function prefersReducedMotion(win = window) {
   return win.matchMedia("(prefers-reduced-motion: reduce)").matches
 }
 
-// Should the destination page play a mosaic-in? Yes when we arrived via the
-// transition (flag set) or we are on /links (covers direct loads / refreshes).
-// Never when the user prefers reduced motion.
-export function shouldMosaicIn(win = window, storage = win.sessionStorage) {
+// Should the destination page play a mosaic-in? The mosaic belongs to the
+// Gibson experience: on /links it plays only when the cinematic REQUESTED it
+// (the plain fallback page gets no transition); elsewhere it plays only when
+// we arrived via a pixel-out (the tower's exit). Never under reduced motion.
+export function shouldMosaicIn(win = window, {arrivedViaPixel, requested}) {
   if (prefersReducedMotion(win)) return false
-  return storage.getItem(FLAG) === "1" || win.location.pathname === "/links"
+  if (win.location.pathname === "/links") return requested
+  return arrivedViaPixel
 }
 
 // Read-and-clear the one-shot handoff flag.
@@ -125,6 +127,41 @@ function runMosaic(canvas, direction, win, done) {
 // module is re-evaluated on the next load. `pixelIn` resets it on completion.
 let running = false
 
+// One-shot hook fired when the next mosaic-in finishes. Phase C registers this
+// to take over the reveal (run the cinematic) instead of showing the menu
+// directly. Null by default, so Phase B just removes the canvas.
+let mosaicInHook = null
+export function setMosaicInHook(fn) {
+  mosaicInHook = fn
+}
+
+// One-shot gate awaited before the next mosaic-in starts CLEARING (the cover
+// still paints instantly). The cinematic registers a scene-ready promise here
+// so the mosaic reveals a rendered city, not a black canvas — without it the
+// clear can finish before the WebGL scene's first frame exists.
+let mosaicInGate = null
+export function setMosaicInGate(promise) {
+  mosaicInGate = promise
+}
+
+// The Gibson's opt-in: /links only plays a mosaic-in when the cinematic will
+// actually run (the intro calls this before initPixelTransition — see the
+// init order in app.js). The plain fallback page gets no transition.
+let mosaicRequested = false
+export function requestMosaicIn() {
+  mosaicRequested = true
+}
+
+// Completion of a mosaic-in: remove the cover, release the run-guard, and fire
+// (and clear) the one-shot hook if registered.
+export function finishMosaicIn(canvas) {
+  canvas.remove()
+  running = false
+  const hook = mosaicInHook
+  mosaicInHook = null
+  if (hook) hook()
+}
+
 export function pixelOut(href, {doc = document, win = window} = {}) {
   if (running) return
   running = true
@@ -138,10 +175,21 @@ export function pixelIn({doc = document, win = window} = {}) {
   if (running) return
   running = true
   const canvas = createOverlay(doc, win)
-  runMosaic(canvas, "in", win, () => {
-    canvas.remove()
-    running = false
-  })
+  // Cover instantly; only the clearing animation waits on the gate.
+  const ctx = canvas.getContext("2d")
+  ctx.fillStyle = SETTLE
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  const gate = mosaicInGate
+  mosaicInGate = null
+  const begin = () => runMosaic(canvas, "in", win, () => finishMosaicIn(canvas))
+  if (gate) {
+    // Never hold the page hostage on a slow/failed scene load.
+    const timeout = new Promise((resolve) => win.setTimeout(resolve, 1800))
+    Promise.race([gate, timeout]).then(begin)
+  } else {
+    begin()
+  }
 }
 
 // Install the delegated click listener and run a mosaic-in if we arrived via the
@@ -151,8 +199,10 @@ export function initPixelTransition({doc = document, win = window, storage = win
     onPixelClick(event, {win, storage, out: (href) => pixelOut(href, {doc, win})})
   )
 
-  if (shouldMosaicIn(win, storage)) {
-    consumeInFlag(storage)
+  // Always read-and-clear the arrival flag (a stale flag must never leak a
+  // mosaic into a later, unrelated navigation), then decide.
+  const arrivedViaPixel = consumeInFlag(storage)
+  if (shouldMosaicIn(win, {arrivedViaPixel, requested: mosaicRequested})) {
     pixelIn({doc, win})
   }
 }

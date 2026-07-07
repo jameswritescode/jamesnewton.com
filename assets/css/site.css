@@ -136,6 +136,49 @@ strong {
   pointer-events: none;
 }
 
+/* The /links cinematic canvas. Sits above the page (and the DOM menu) but BELOW
+   the mosaic overlay (z 9999), so the mosaic-in reveals the scene; it then
+   crossfades out to show the menu. Never interactive. */
+.gibson-canvas {
+  position: fixed;
+  inset: 0;
+  /* Pin the DISPLAY size to the viewport. Without this, the canvas renders at
+     its intrinsic buffer size — which is devicePixelRatio × viewport on retina
+     screens — anchored top-left, so the browser shows only the top-left
+     quarter of the scene, cropped. (Headless dpr=1 masks the bug.) */
+  width: 100%;
+  height: 100%;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+/* Skip affordance shown during the cinematic. Above the canvas; the only
+   interactive element of the intro. */
+.gibson-skip {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9001;
+  font-family: "SF Mono", "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: #8ff6ff;
+  background: rgba(2, 2, 7, 0.6);
+  border: 1px solid #19c9ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 0.1s ease, border-color 0.1s ease;
+}
+
+.gibson-skip:hover,
+.gibson-skip:focus-visible {
+  color: #ff5cc8;
+  border-color: #ff31d9;
+  box-shadow: 0 0 12px rgba(255, 49, 217, 0.4);
+  outline: none;
+}
+
 .skip-link {
   position: absolute;
   width: 1px;
@@ -864,3 +907,13 @@ a:focus-visible {
   font-style: italic;
 }
 
+
+/* The /links fallback page. Most visitors get the WebGL tower; this quiet,
+   feed-styled list (no tower metadata — the Gibson reads the JSON island) serves no-JS/no-WebGL visitors, crawlers, and ?fallback. */
+.links-name {
+  display: block;
+  font-size: 1.05rem;
+  letter-spacing: var(--label-tracking);
+  color: var(--link);
+  margin-bottom: 0.4rem;
+}

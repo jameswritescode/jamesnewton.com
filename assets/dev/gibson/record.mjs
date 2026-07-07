@@ -46,7 +46,10 @@ await p.addInitScript(() => {
     },
   })
 })
-await p.goto(`${BASE}/links?intro`, {waitUntil: "domcontentloaded"})
+// Routes are random per load; pin the seed so recordings stay comparable
+// across runs (SEED=n env to A/B a different one).
+const seed = process.env.SEED ?? "7"
+await p.goto(`${BASE}/links?intro&seed=${seed}`, {waitUntil: "domcontentloaded"})
 await p.waitForTimeout(17800)
 const fs = await p.evaluate(() => window.__flightStart)
 const video = p.video()

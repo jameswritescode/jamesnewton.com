@@ -31,3 +31,24 @@ export function cinematicMode(win = window, storage = win.localStorage, doc = do
 export function markGibsonSeen(storage = window.localStorage) {
   storage.setItem(SEEN, "1")
 }
+
+// Which seeds drive the scene's two RNG streams. The city is FIXED (the same
+// skyline every visit, so tuning judgments hold), while the flight route is
+// random per load. Overrides for reproduction and A/B comparisons:
+//   ?seed=N      — pins both streams (the historical fully-deterministic mode)
+//   ?routeSeed=N — pins just the route through the fixed city (the scene logs
+//                  each load's route seed, so any route can be replayed)
+const CITY_SEED = 7
+
+export function sceneSeeds(win = window, random = Math.random) {
+  const params = new URLSearchParams(win.location.search)
+  const seed = seedParam(params, "seed")
+  if (seed !== null) return {city: seed, route: (seed ^ 0x9e3779b9) >>> 0}
+  const route = seedParam(params, "routeSeed")
+  return {city: CITY_SEED, route: route !== null ? route : 1 + Math.floor(random() * 0xffffff)}
+}
+
+function seedParam(params, name) {
+  const s = params.get(name)
+  return s == null ? null : Number(s) || 1
+}

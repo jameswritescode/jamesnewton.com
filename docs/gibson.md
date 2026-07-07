@@ -177,8 +177,10 @@ period is 176 units rather than one cell. On it:
 
 Randomness (turn rows, direction, cross distance, landing side) comes from a
 dedicated RNG stream so tower/texture draws can change without moving the
-route. Default seed is **7** — every load identical (per-load random routes
-are parked until wanted; `?seed=N` overrides).
+route. The city seed is fixed (**7**) while the route seed is **random per
+load** (`sceneSeeds` in `gibson_gate.js`); the scene logs each load's route
+seed to the console. `?routeSeed=N` replays a specific route; `?seed=N` pins
+both streams (the fully deterministic mode captures rely on).
 
 **Test invariants** (`path.test.js`): stays deep inside the grid (edge never
 visible), opens high and descends below rooftop height, xz-heading never jumps
@@ -260,7 +262,8 @@ seed-deterministic.
 |---|---|
 | `?intro` | Force-replay the cinematic |
 | `?fallback` | Force the plain server-rendered page (beats everything, incl. `?intro`) |
-| `?seed=N` | Override the route/city seed (default 7) |
+| `?seed=N` | Pin BOTH seeds (city + route) for fully deterministic captures |
+| `?routeSeed=N` | Replay a specific route through the fixed city (each load logs its route seed) |
 | `?gibsonFrame=0..1` | Static hold at that route fraction; exposes `window.__cam` |
 | `?gibsonView=over` | Overhead debug camera + route line (fog off) |
 
@@ -298,8 +301,6 @@ written ad hoc and deleted — the capture rules below are what matters.
 
 ## Parked / open items
 
-- **Random per-load routes**: parked; deterministic seed 7 until the
-  animation is signed off.
 - **Teardown**: what stays/goes from the debug kit is a wrap-up conversation
   — current lean: keep `P` pause (+ ribbon), `?seed`, `?gibsonFrame`; strip
   build tag, fps readout, scrubbing, debug globals, one-shot scripts, and the

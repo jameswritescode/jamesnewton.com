@@ -3,16 +3,18 @@
 // landing tower whose street face is the site's link menu. Returns
 // {render(t), dispose, menu, ...} for the flight controller in gibson.js.
 //
-// Determinism: one seeded RNG drives all procedural content, so the order of
-// rand() consumption below IS the scene's identity — keep creation order
-// stable (textures → board activity → tower partition → menu face → floor)
-// or every screenshot comparison breaks. The route uses its own RNG stream so
-// camera work never reshuffles the city.
+// Determinism: one seeded RNG drives all procedural city content, so the
+// order of rand() consumption below IS the scene's identity — keep creation
+// order stable (textures → board activity → tower partition → menu face →
+// floor) or every screenshot comparison breaks. The route uses its own RNG
+// stream (random per load; see sceneSeeds) so the flight never reshuffles
+// the fixed city.
 import * as THREE from "three"
 import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer.js"
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass.js"
 import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass.js"
 import {generateRoute, makeRng} from "./path.js"
+import {sceneSeeds} from "../gibson_gate.js"
 import {createBoardActivity, createFloor} from "./board.js"
 import {createPathRibbon, setupOverview} from "./debug.js"
 import {
@@ -50,13 +52,14 @@ function applyCameraFov(camera, aspect) {
 export function buildScene(canvas, win, {still = false, mode = "flight"} = {}) {
   const w = win.innerWidth
   const h = win.innerHeight
-  // Deterministic route + city: a fixed default seed so every /links load is
-  // identical (random per-load routes are parked until wanted; ?seed=N still
-  // overrides for A/B comparisons). Separate RNG streams so the camera route
-  // is stable regardless of how many draws the towers/textures make.
-  const seed = seedNumber(win) ?? 7
-  const rand = makeRng(seed)
-  const routeRand = makeRng((seed ^ 0x9e3779b9) >>> 0)
+  // Fixed city, random flight: the skyline is identical every visit while the
+  // route through it varies per load (seed policy + overrides live in
+  // sceneSeeds). Separate RNG streams so the camera route is independent of
+  // how many draws the towers/textures make.
+  const seeds = sceneSeeds(win)
+  const rand = makeRng(seeds.city)
+  const routeRand = makeRng(seeds.route)
+  win.console.info(`[gibson] route seed ${seeds.route} — replay with ?routeSeed=${seeds.route}`)
 
   // antialias:false — all rendering goes through the EffectComposer's
   // (non-MSAA) targets, so canvas MSAA is never applied; requesting it just
@@ -487,11 +490,6 @@ function densify(wps, step) {
   const last = wps[wps.length - 1]
   out.push(new THREE.Vector3(last.x, last.y, last.z))
   return out
-}
-
-function seedNumber(win) {
-  const s = new URLSearchParams(win.location.search).get("seed")
-  return s == null ? null : Number(s) || 1
 }
 
 // The #gibson-links JSON island: the page's link manifest, rendered by the

@@ -21,9 +21,11 @@ how-to-verify playbook. Tools live in `assets/dev/gibson/`; outputs land in
    dpr-1 captures looked perfect).
 4. **Anchor timing on `FLIGHTSTART_S`** (printed by `record.mjs`), not
    wall-clock guesses — the cache-busted bundle load varies per run.
-5. The scene is **deterministic (seed 7)**; `?seed=N` for A/B. Layout is
-   reproducible; scroll/cycling are wall-clock, so byte-diffing screenshots
-   only works in reduced-motion (`still`) mode.
+5. The city is fixed (seed 7) but the **route is random per load** — always
+   pass `?seed=N` (pins city + route) when a capture must be reproducible;
+   `?routeSeed=N` replays one route (each load logs its own to the console).
+   Scroll/cycling are wall-clock, so byte-diffing screenshots only works in
+   reduced-motion (`still`) mode.
 
 ## Tools
 

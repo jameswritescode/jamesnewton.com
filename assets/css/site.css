@@ -665,7 +665,14 @@ html.gibson-takeover #main {
 
 .feed-item-photo {
   display: block;
-  width: 100%;
+  max-width: 100%;
+  /* Feed teaser, not the photo page: tall portrait shots would otherwise
+     fill whole screens. Constrain, never crop — CSS can't know where the
+     subject is, so the photo keeps its composition and simply renders
+     smaller (portrait orientation becomes a narrower, centered thumbnail). */
+  max-height: 420px;
+  width: auto;
+  margin-inline: auto;
   border-radius: var(--radius-md);
 }
 

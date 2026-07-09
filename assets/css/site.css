@@ -127,6 +127,24 @@ strong {
   pointer-events: none;
 }
 
+/* The Gibson's takeover backdrop, stamped by the root layout's inline script
+   BEFORE first paint (anti-FOUC) and kept up by gibson_intro for the whole
+   session: the ENTIRE server page — header, skip link, ripple background,
+   content — stays invisible on a gibson-black backdrop, so anything that
+   momentarily shows through a transparent canvas (buffer resizes clear it)
+   is black, never the covered page. visibility also drops these from the
+   tab order. Removed only when the DOM page should return (no WebGL, bail,
+   skip, ?fallback). The black matches the scene's space background. */
+html.gibson-takeover body {
+  background-color: #010108;
+}
+html.gibson-takeover .site-header,
+html.gibson-takeover .skip-link,
+html.gibson-takeover .ripple-canvas,
+html.gibson-takeover #main {
+  visibility: hidden;
+}
+
 /* Full-viewport overlay for the /links mosaic page transition. Above all page
    content; never interactive. */
 .pixel-overlay {

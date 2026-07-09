@@ -66,7 +66,12 @@ export function buildScene(canvas, win, {still = false, mode = "flight"} = {}) {
   // forces a multisampled default framebuffer that costs resolve time for
   // nothing. Edge quality comes from the devicePixelRatio-scaled buffer.
   const renderer = new THREE.WebGLRenderer({canvas, antialias: false})
-  renderer.setPixelRatio(Math.min(win.devicePixelRatio || 1, 2))
+  // Flight renders at a lower pixel-ratio cap: at 5K-class buffers the full-
+  // res frame (~6ms) brushes the 120Hz budget (8.3ms) and dips are visible on
+  // ProMotion displays. 1.5 cuts fill ~44% and is indistinguishable in fast
+  // motion under bloom; the parked/still tower (static, sharp menu text) gets
+  // full resolution — gibson.js restores the 2.0 cap on arrival.
+  renderer.setPixelRatio(Math.min(win.devicePixelRatio || 1, mode === "flight" ? 1.5 : 2))
   renderer.setSize(w, h, false)
 
   const scene = new THREE.Scene()
@@ -374,7 +379,13 @@ export function buildScene(canvas, win, {still = false, mode = "flight"} = {}) {
   const bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.5, 0.5, 0.45)
   composer.addPass(bloom)
 
-  // Keep the scene responsive to window size changes.
+  // Keep the scene responsive to window size changes. Resizing the drawing
+  // buffer (setSize, and setPixelRatio below) CLEARS the canvas — repaint in
+  // the same task, or the compositor shows a transparent canvas (the page
+  // behind it) until the loop's next frame. Every resize event fires this,
+  // so a live window drag is a stream of clear+repaint pairs that must stay
+  // paired.
+  let lastRenderT = 0
   function onResize() {
     const ww = win.innerWidth
     const hh = win.innerHeight
@@ -382,11 +393,13 @@ export function buildScene(canvas, win, {still = false, mode = "flight"} = {}) {
     composer.setSize(ww, hh)
     bloom.setSize(ww, hh)
     applyCameraFov(camera, ww / hh)
+    render(lastRenderT)
   }
   win.addEventListener("resize", onResize)
 
   // --- per-frame camera + animation ------------------------------------------
   function render(t) {
+    lastRenderT = t
     const now = win.performance.now()
     animateData(Math.min(1, Math.max(0, t)), now)
     animateBoard(now)
@@ -457,14 +470,28 @@ export function buildScene(canvas, win, {still = false, mode = "flight"} = {}) {
     pathMesh.visible = v
   }
 
+  // Warm the canvas→GPU re-upload path while the scene is still covered. The
+  // first character-cycle after takeoff (t=0.35, ~5s in) otherwise pays a
+  // 40-175ms one-off dirty-canvas re-upload hitch, mid-flight and very
+  // visible. A dedicated RNG so the rand() consumption order — the scene's
+  // identity — stays untouched. The caller must render once more afterwards
+  // to actually push the uploads.
+  function primeDataCycle() {
+    if (still) return
+    const warmRand = makeRng((seeds.city ^ 0x51ed270b) >>> 0)
+    faceTexes.forEach((tex, i) => cycleFaceRows(tex, PALETTE[i], warmRand))
+    roofTexes.forEach((tex, i) => cycleFaceRows(tex, PALETTE[i], warmRand, {rim: true, dim: ROOF_DIM}))
+  }
+
   // Adaptive-quality hook: dropping the pixel ratio quadratically cuts fill
   // work (the dominant cost: full-screen render + bloom's blur chain).
+  // onResize repaints synchronously, so the buffer clear never shows.
   function setPixelRatio(r) {
     renderer.setPixelRatio(r)
     onResize()
   }
 
-  return {scene, camera, render, dispose, route, timeToArc, setPathVisible, setPixelRatio, menu: menuApi}
+  return {scene, camera, render, dispose, route, timeToArc, setPathVisible, setPixelRatio, primeDataCycle, menu: menuApi}
 }
 
 // Insert collinear points along each waypoint segment so a CatmullRom through

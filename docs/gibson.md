@@ -262,6 +262,7 @@ seed-deterministic.
 |---|---|
 | `?intro` | Force-replay the cinematic |
 | `?fallback` | Force the plain server-rendered page (beats everything, incl. `?intro`) |
+| `?still` | Preview the reduced-motion presentation (static tower; loses only to `?fallback`/no WebGL) |
 | `?seed=N` | Pin BOTH seeds (city + route) for fully deterministic captures |
 | `?routeSeed=N` | Replay a specific route through the fixed city (each load logs its route seed) |
 | `?gibsonFrame=0..1` | Static hold at that route fraction; exposes `window.__cam` |

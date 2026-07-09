@@ -88,6 +88,11 @@ window.__gibsonRun = function (canvas, {onComplete, onArrived, mode = "flight"})
   // ("parked" mode), the landing view itself; the loop below then backdates
   // startTime so t is already 1 and the scene parks on its first frame.
   built.render(mode === "parked" ? 1 : 0)
+  // Dirty the data textures and render again while still covered: the second
+  // render absorbs the one-off canvas→GPU re-upload warm-up that would
+  // otherwise hitch the flight when character-cycling starts (~5s in).
+  built.primeDataCycle()
+  built.render(mode === "parked" ? 1 : 0)
 
   // Context restore during flight/parked: the running loop repaints on its own.
   canvas.addEventListener("webglcontextrestored", () => {
@@ -132,10 +137,12 @@ window.__gibsonRun = function (canvas, {onComplete, onArrived, mode = "flight"})
   window.addEventListener("pageshow", resetPacing)
 
   // Adaptive quality: GPUs that can't hold the flight get the render
-  // resolution stepped down (2 → 1.5 → 1, quadratic fill savings); effectively
+  // resolution stepped down (quadratic fill savings); effectively
   // software-rendered WebGL (a slideshow) bails to the DOM menu rather than
-  // torturing the visitor — even from the parked ending.
-  let quality = Math.min(window.devicePixelRatio || 1, 2)
+  // torturing the visitor — even from the parked ending. The flight starts
+  // at the scene's 1.5 cap; arrival restores full resolution below.
+  let quality = Math.min(window.devicePixelRatio || 1, mode === "flight" ? 1.5 : 2)
+  let stepped = false
   let slideshowWindows = 0
   function adaptQuality(fps) {
     if (bailed) return
@@ -149,6 +156,7 @@ window.__gibsonRun = function (canvas, {onComplete, onArrived, mode = "flight"})
     // struggling GPU.
     if (fps < 45 && quality > 1 && !parked) {
       quality = Math.max(1, quality - 0.5)
+      stepped = true
       built.setPixelRatio(quality)
     }
   }
@@ -202,6 +210,13 @@ window.__gibsonRun = function (canvas, {onComplete, onArrived, mode = "flight"})
     }
     if (t >= 1 && !parked && !paused) {
       parked = true
+      // Static camera + 30fps throttle leave plenty of headroom for full
+      // resolution, and the menu text deserves it. A GPU the flight already
+      // stepped down keeps its reduced ratio.
+      if (!stepped) {
+        quality = Math.min(window.devicePixelRatio || 1, 2)
+        built.setPixelRatio(quality)
+      }
       if (onArrived) onArrived()
     }
     // The loop never stops: parked, the city stays alive behind the tower menu

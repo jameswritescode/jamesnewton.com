@@ -60,6 +60,14 @@ describe("cinematicMode", () => {
     expect(cinematicMode(fakeWin({search: "?fallback"}), fakeStorage(), doc)).toBe("none")
     expect(cinematicMode(fakeWin({search: "?fallback&intro"}), fakeStorage({"gibson-seen": "1"}), doc)).toBe("none")
   })
+  it("?still previews the reduced-motion presentation (beats ?intro and the seen flag)", () => {
+    expect(cinematicMode(fakeWin({search: "?still"}), fakeStorage(), doc)).toBe("still")
+    expect(cinematicMode(fakeWin({search: "?still&intro"}), fakeStorage({"gibson-seen": "1"}), doc)).toBe("still")
+  })
+  it("?still loses to ?fallback and to missing WebGL, like real reduced motion", () => {
+    expect(cinematicMode(fakeWin({search: "?still&fallback"}), fakeStorage(), doc)).toBe("none")
+    expect(cinematicMode(fakeWin({search: "?still"}), fakeStorage(), fakeDoc(false))).toBe("none")
+  })
 })
 
 describe("sceneSeeds", () => {

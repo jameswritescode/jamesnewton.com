@@ -40,6 +40,31 @@
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
+    <%!-- Anti-FOUC for the /links Gibson (authorized exception to the no-inline-
+    script rule; safe here — the root <head> is outside LiveView-managed DOM).
+    The Gibson takes over /links for every visitor except ?fallback/no-WebGL,
+    but that decision lives in deferred app.js, which can run AFTER first
+    paint — flashing the fallback page. This blocking script blacks out the
+    page (header, background, content — see html.gibson-takeover in site.css)
+    before paint. gibson_intro takes charge of the class from there: it keeps
+    the blackout up for the Gibson's whole session (it is what shows through
+    whenever a buffer resize leaves the canvas momentarily transparent) and
+    removes it only when the DOM page should return (no WebGL, bail, skip).
+    The timeout is a failsafe — if app.js never runs, the page comes back
+    rather than staying blank — and gibson_intro cancels it via the exposed
+    timer id when it takes over. No-JS visitors never run this, so the
+    fallback page shows normally. --%>
+    <script nonce={@csp_nonce} phx-no-curly-interpolation>
+      (function () {
+        if (window.location.pathname !== "/links") return
+        if (new URLSearchParams(window.location.search).has("fallback")) return
+        var root = document.documentElement
+        root.classList.add("gibson-takeover")
+        window.__gibsonHoldFailsafe = setTimeout(function () {
+          root.classList.remove("gibson-takeover")
+        }, 4000)
+      })()
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

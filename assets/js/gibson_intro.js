@@ -24,13 +24,45 @@ function injectBundle(doc, win) {
   })
 }
 
+// Remove the DOM page from sight AND from interaction (clicks, tab order,
+// a11y tree) while the Gibson owns the viewport. It stays in the document as
+// the no-JS/SEO fallback; visibility (not display) so that if the canvas ever
+// blanks — GPU context reclaimed in a background tab — the visitor sees
+// black, never the covered page bleeding through as a phantom second UI.
+function hideMain(doc) {
+  const main = doc.getElementById("main")
+  if (!main) return
+  main.setAttribute("inert", "")
+  main.setAttribute("aria-hidden", "true")
+  main.style.visibility = "hidden"
+}
+
 export function initGibsonIntro({doc = document, win = window, storage = win.localStorage} = {}) {
   if (win.location.pathname !== "/links") return
   const mode = cinematicMode(win, storage, doc)
-  if (mode === "none") return
-  // The Gibson is running: /links gets its mosaic-in. The fallback page
-  // never reaches this line, so it gets no transition.
-  requestMosaicIn()
+  // The root layout's pre-paint blackout (anti-FOUC inline script) becomes
+  // the Gibson's backdrop for the WHOLE session: buffer resizes (window
+  // resize, pixel-ratio changes) clear the canvas, and whatever the
+  // compositor catches in that gap must be black — never the covered page.
+  // It also keeps the header/skip-link out of the tab order under the
+  // canvas. Released only when the DOM page should return.
+  const releaseHold = () => {
+    win.clearTimeout(win.__gibsonHoldFailsafe)
+    doc.documentElement.classList.remove("gibson-takeover")
+  }
+  if (mode === "none") return releaseHold()
+  // Taking over: the inline script's 4s failsafe must not yank the backdrop.
+  win.clearTimeout(win.__gibsonHoldFailsafe)
+  // The Gibson is running: /links gets its mosaic-in. The fallback page never
+  // reaches this line, so it gets no transition — and still mode never wants
+  // one (real reduced-motion suppresses it anyway; skipping here keeps the
+  // ?still preview faithful).
+  if (mode !== "still") requestMosaicIn()
+  // The DOM page leaves NOW, not at arrival: visible, it flashes until the
+  // cover/scene paints (still mode has no mosaic to hide behind); interactive,
+  // its links sit invisibly under the canvas taking clicks and tab focus for
+  // the whole flight. The bail path (finish) restores it.
+  hideMain(doc)
 
   const canvas = doc.createElement("canvas")
   canvas.className = "gibson-canvas"
@@ -93,6 +125,7 @@ export function initGibsonIntro({doc = document, win = window, storage = win.loc
   function finish() {
     if (finished) return
     finished = true
+    releaseHold()
     cleanupSkipUi()
     if (hotspots) hotspots.remove()
     const main = doc.getElementById("main")
@@ -115,15 +148,6 @@ export function initGibsonIntro({doc = document, win = window, storage = win.loc
     if (finished) return
     markGibsonSeen(storage)
     if (skipBtn) skipBtn.remove()
-    const main = doc.getElementById("main")
-    if (main) {
-      main.setAttribute("inert", "")
-      main.setAttribute("aria-hidden", "true")
-      // Visually hidden too: if the canvas ever blanks (e.g. GPU context
-      // reclaimed in a background tab), the visitor sees black — never the
-      // covered DOM page bleeding through as a phantom second UI.
-      main.style.visibility = "hidden"
-    }
 
     let items = []
     try {
@@ -244,6 +268,7 @@ export function initGibsonIntro({doc = document, win = window, storage = win.loc
     })
     .catch(() => {
       // Bundle failed: drop the canvas + skip UI and let the DOM menu show.
+      releaseHold()
       sceneReady()
       cleanupSkipUi()
       canvas.remove()

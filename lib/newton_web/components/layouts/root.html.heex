@@ -54,7 +54,7 @@
     rather than staying blank — and gibson_intro cancels it via the exposed
     timer id when it takes over. No-JS visitors never run this, so the
     fallback page shows normally. --%>
-    <script nonce={@csp_nonce} phx-no-curly-interpolation>
+    <script nonce={assigns[:csp_nonce]} phx-no-curly-interpolation>
       (function () {
         if (window.location.pathname !== "/links") return
         if (new URLSearchParams(window.location.search).has("fallback")) return

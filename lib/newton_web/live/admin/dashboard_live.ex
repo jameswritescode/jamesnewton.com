@@ -2,6 +2,7 @@ defmodule NewtonWeb.Admin.DashboardLive do
   use NewtonWeb, :live_view
 
   alias NewtonWeb.Admin.Layouts
+  alias Newton.Blog.ImageAudit
 
   @impl true
   def mount(_params, _session, socket) do
@@ -12,7 +13,8 @@ defmodule NewtonWeb.Admin.DashboardLive do
      |> assign(:reading_total, Newton.Reading.count_entries())
      |> assign(:reading_active, Newton.Reading.count_in_progress())
      |> assign(:galleries_total, Newton.Gallery.count_groups())
-     |> assign(:photos_total, Newton.Gallery.count_photos())}
+     |> assign(:photos_total, Newton.Gallery.count_photos())
+     |> assign(:media_drift, media_drift())}
   end
 
   @impl true
@@ -32,6 +34,15 @@ defmodule NewtonWeb.Admin.DashboardLive do
           {@photos_total} photo{if @photos_total == 1, do: "", else: "s"}
         </.card>
       </div>
+
+      <.link
+        :if={@media_drift}
+        id="media-drift"
+        navigate={~p"/admin/media"}
+        class="mt-4 block rounded-xl border border-amber-500/40 bg-(--admin-surface) p-4 text-[0.85rem] text-(--admin-text) no-underline hover:border-amber-500/70"
+      >
+        {drift_summary(@media_drift)} →
+      </.link>
     </Layouts.admin>
     """
   end
@@ -65,4 +76,24 @@ defmodule NewtonWeb.Admin.DashboardLive do
     </.link>
     """
   end
+
+  defp media_drift do
+    case ImageAudit.run() do
+      %{missing: [], strays: []} -> nil
+      audit -> audit
+    end
+  end
+
+  defp drift_summary(%{strays: strays, missing: missing}) do
+    [
+      count_phrase(length(strays), "orphaned file"),
+      count_phrase(length(missing), "missing image")
+    ]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join(" · ")
+  end
+
+  defp count_phrase(0, _noun), do: nil
+  defp count_phrase(1, noun), do: "1 #{noun}"
+  defp count_phrase(n, noun), do: "#{n} #{noun}s"
 end

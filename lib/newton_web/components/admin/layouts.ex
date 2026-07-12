@@ -11,7 +11,8 @@ defmodule NewtonWeb.Admin.Layouts do
     %{key: :dashboard, label: "Dashboard", path: "/admin"},
     %{key: :posts, label: "Posts", path: "/admin/posts"},
     %{key: :reading, label: "Reading", path: "/admin/reading"},
-    %{key: :photos, label: "Photos", path: "/admin/photos"}
+    %{key: :photos, label: "Photos", path: "/admin/photos"},
+    %{key: :media, label: "Media", path: "/admin/media"}
   ]
 
   attr :flash, :map, default: %{}

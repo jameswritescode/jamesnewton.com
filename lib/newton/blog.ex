@@ -2,6 +2,8 @@ defmodule Newton.Blog do
   @moduledoc "The blog context: posts and their queries."
   import Ecto.Query, warn: false
   alias Newton.Blog.Post
+  alias Newton.Blog.PostImage
+  alias Newton.Gallery.Storage
   alias Newton.Repo
 
   # Fields needed to render post lists and the home feed — everything except the
@@ -97,9 +99,26 @@ defmodule Newton.Blog do
     end
   end
 
-  @doc "Delete a post."
+  @doc "Deletes an image's file and ledger row. Refused while the post still uses it."
+  @spec delete_image(%PostImage{}) ::
+          {:ok, %PostImage{}} | {:error, :referenced | Ecto.Changeset.t()}
+  def delete_image(%PostImage{} = image) do
+    post = Repo.get!(Post, image.post_id)
+
+    if image_referenced?(post, image) do
+      {:error, :referenced}
+    else
+      Storage.delete(image.key)
+      Repo.delete(image)
+    end
+  end
+
+  @doc "Deletes a post and the image files it owns; ledger rows cascade."
   @spec delete_post(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
-  def delete_post(%Post{} = post), do: Repo.delete(post)
+  def delete_post(%Post{} = post) do
+    post |> list_images() |> Enum.each(&Storage.delete(&1.key))
+    Repo.delete(post)
+  end
 
   @doc "Build a post changeset for forms."
   @spec change_post(%Post{}, map()) :: Ecto.Changeset.t()
@@ -147,4 +166,28 @@ defmodule Newton.Blog do
 
   defp maybe_limit(query, nil), do: query
   defp maybe_limit(query, n), do: from(q in query, limit: ^n)
+
+  @doc "Records an editor upload on the post's image ledger."
+  @spec attach_image(%Post{}, String.t(), String.t() | nil) ::
+          {:ok, %PostImage{}} | {:error, Ecto.Changeset.t()}
+  def attach_image(%Post{} = post, key, original_filename \\ nil) do
+    %PostImage{post_id: post.id}
+    |> PostImage.create_changeset(%{key: key, original_filename: original_filename})
+    |> Repo.insert()
+  end
+
+  @spec list_images(%Post{}) :: [%PostImage{}]
+  def list_images(%Post{} = post) do
+    Repo.all(
+      from i in PostImage,
+        where: i.post_id == ^post.id,
+        order_by: [asc: i.inserted_at, asc: i.id]
+    )
+  end
+
+  @doc "Whether the post's markdown still uses the image. Usage is derived, never stored."
+  @spec image_referenced?(%Post{}, %PostImage{}) :: boolean()
+  def image_referenced?(%Post{} = post, %PostImage{} = image) do
+    String.contains?(post.body_markdown || "", image.key)
+  end
 end

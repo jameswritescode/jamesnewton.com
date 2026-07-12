@@ -13,6 +13,8 @@ defmodule Newton.Blog.Post do
     field :published_at, :utc_datetime
     field :preview_token, :string
 
+    has_many :images, Newton.Blog.PostImage
+
     timestamps(type: :utc_datetime)
   end
 

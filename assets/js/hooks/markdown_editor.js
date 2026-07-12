@@ -15,6 +15,37 @@ export function imageMarkdown(url) {
   return {text: `![](${url})`, caretOffset: 2}
 }
 
+export function uploadToken(random = Math.random) {
+  return Math.floor(random() * 0x1000000)
+    .toString(16)
+    .padStart(6, "0")
+}
+
+export function uploadPlaceholder(name, token) {
+  const shown = String(name).replace(/[[\]()`\r\n]/g, "")
+  return `![Uploading ${shown}${token ? ` (${token})` : ""}…]()`
+}
+
+export function findPlaceholder(doc, name, token) {
+  const placeholder = uploadPlaceholder(name, token)
+  const from = doc.indexOf(placeholder)
+  return from === -1 ? null : {from, to: from + placeholder.length}
+}
+
+export function classifyFiles(files, {exts, maxEntries, maxFileSize}) {
+  const ok = []
+  const rejected = []
+  for (const f of files) {
+    const dot = f.name ? f.name.lastIndexOf(".") : -1
+    const ext = dot === -1 ? "" : f.name.slice(dot).toLowerCase()
+    if (exts.length && !exts.includes(ext)) rejected.push({name: f.name, reason: "type"})
+    else if (maxFileSize && f.size > maxFileSize) rejected.push({name: f.name, reason: "size"})
+    else if (ok.length >= maxEntries) rejected.push({name: f.name, reason: "count"})
+    else ok.push(f)
+  }
+  return {ok, rejected}
+}
+
 // Toggle a symmetric inline marker (e.g. "**" for bold) around the selection
 // [from, to) of `doc`. Returns the document change plus the selection to keep:
 // {from, to, insert, anchor, head} with all offsets in document coordinates.
@@ -229,10 +260,13 @@ export const MarkdownEditor = {
       }),
     })
 
-    // Insert image markdown at the current selection when the server reports a
-    // finished upload. The updateListener above syncs the textarea → autosave.
-    this.handleEvent("insert_image", ({url}) => {
+    this.handleEvent("insert_image", ({url, name, token}) => {
       if (!this.view) return
+      const found = findPlaceholder(this.view.state.doc.toString(), name, token)
+      if (found) {
+        this.view.dispatch({changes: {...found, insert: imageMarkdown(url).text}})
+        return
+      }
       const {text, caretOffset} = imageMarkdown(url)
       const {from, to} = this.view.state.selection.main
       this.view.dispatch({
@@ -242,22 +276,61 @@ export const MarkdownEditor = {
       this.view.focus()
     })
 
-    // Drag a file onto the editor → upload it. dragover must preventDefault so
-    // the browser treats the editor as a drop target.
+    // LiveView cancels preflight-rejected entries client-side with no server
+    // callback — anything not filtered here would strand its placeholder.
+    const limits = {
+      exts: (this.el.dataset.uploadAccept || "")
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean),
+      maxEntries: Number(this.el.dataset.uploadMaxEntries || 10),
+      maxFileSize: Number(this.el.dataset.uploadMaxFileSize || 0),
+    }
+    const startUploads = (files, at) => {
+      const {ok, rejected} = classifyFiles(files, limits)
+      if (rejected.length) this.pushEvent("upload_rejected", {rejected})
+      if (!ok.length) return
+      const tagged = ok.map((file) => ({file, token: uploadToken()}))
+      const sel = this.view.state.selection.main
+      const range = at == null ? sel : {from: at, to: at}
+      this.view.dispatch({
+        changes: {
+          ...range,
+          insert: tagged.map(({file, token}) => uploadPlaceholder(file.name, token)).join("\n"),
+        },
+      })
+      // The filename is the only client→server channel an entry has; the
+      // server splits the token back off.
+      this.upload(
+        "inline_images",
+        tagged.map(
+          ({file, token}) =>
+            new File([file], `${token}--${file.name}`, {
+              type: file.type,
+              lastModified: file.lastModified,
+            })
+        )
+      )
+    }
+
+    // Drag a file onto the editor → placeholder at the drop point, then
+    // upload. dragover must preventDefault so the browser treats the editor
+    // as a drop target.
     this.onDragOver = (e) => e.preventDefault()
     this.onDrop = (e) => {
       const files = imageFiles(e.dataTransfer && e.dataTransfer.files)
       if (!files.length) return
       e.preventDefault()
-      this.upload("inline_images", files)
+      startUploads(files, this.view.posAtCoords({x: e.clientX, y: e.clientY}))
     }
-    // Paste a screenshot/image → upload it (and preventDefault so CodeMirror
-    // doesn't also paste a filename or blob text).
+    // Paste a screenshot/image → placeholder over the selection, then upload
+    // (preventDefault so CodeMirror doesn't also paste a filename or blob
+    // text).
     this.onPaste = (e) => {
       const files = imageFiles(e.clipboardData && e.clipboardData.files)
       if (!files.length) return
       e.preventDefault()
-      this.upload("inline_images", files)
+      startUploads(files)
     }
     this.el.addEventListener("dragover", this.onDragOver)
     this.el.addEventListener("drop", this.onDrop)

@@ -3,6 +3,10 @@ import {
   syncMarkdown,
   imageFiles,
   imageMarkdown,
+  uploadToken,
+  uploadPlaceholder,
+  findPlaceholder,
+  classifyFiles,
   toggleMarker,
   wrapLink,
 } from "./markdown_editor"
@@ -57,6 +61,79 @@ describe("imageMarkdown", () => {
       text: "![](/media/abc.png)",
       caretOffset: 2,
     })
+  })
+})
+
+describe("uploadToken", () => {
+  it("is six hex characters, zero-padded", () => {
+    expect(uploadToken(() => 0)).toBe("000000")
+    expect(uploadToken(() => 0.9999999)).toMatch(/^[0-9a-f]{6}$/)
+  })
+})
+
+describe("uploadPlaceholder", () => {
+  it("builds an uploading marker from the filename and token", () => {
+    expect(uploadPlaceholder("shot.png", "a1b2c3")).toBe("![Uploading shot.png (a1b2c3)…]()")
+  })
+
+  it("works without a token", () => {
+    expect(uploadPlaceholder("shot.png")).toBe("![Uploading shot.png…]()")
+  })
+
+  it("strips characters that would break the markdown image syntax", () => {
+    expect(uploadPlaceholder("we[ird](x)`\nname.png", "a1b2c3")).toBe(
+      "![Uploading weirdxname.png (a1b2c3)…]()"
+    )
+  })
+})
+
+describe("findPlaceholder", () => {
+  it("locates the placeholder's range in the document", () => {
+    const doc = "intro\n![Uploading shot.png (a1b2c3)…]()\noutro"
+    expect(findPlaceholder(doc, "shot.png", "a1b2c3")).toEqual({from: 6, to: 39})
+  })
+
+  it("distinguishes two same-named uploads by token", () => {
+    const first = uploadPlaceholder("image.png", "aaaaaa")
+    const second = uploadPlaceholder("image.png", "bbbbbb")
+    const doc = `${first}\n${second}`
+    expect(findPlaceholder(doc, "image.png", "bbbbbb")).toEqual({
+      from: first.length + 1,
+      to: first.length + 1 + second.length,
+    })
+  })
+
+  it("returns null when the author deleted the placeholder", () => {
+    expect(findPlaceholder("no placeholders here", "shot.png", "a1b2c3")).toBeNull()
+  })
+})
+
+describe("classifyFiles", () => {
+  const cfg = {exts: [".png", ".jpg"], maxEntries: 2, maxFileSize: 100}
+  const f = (name, size) => ({name, size, type: "image/png"})
+
+  it("accepts files within every limit", () => {
+    const {ok, rejected} = classifyFiles([f("a.png", 10), f("b.JPG", 99)], cfg)
+    expect(ok.map((x) => x.name)).toEqual(["a.png", "b.JPG"])
+    expect(rejected).toEqual([])
+  })
+
+  it("rejects extensions outside the accept list", () => {
+    const {ok, rejected} = classifyFiles([f("a.svg", 10)], cfg)
+    expect(ok).toEqual([])
+    expect(rejected).toEqual([{name: "a.svg", reason: "type"}])
+  })
+
+  it("rejects oversize files", () => {
+    expect(classifyFiles([f("a.png", 101)], cfg).rejected).toEqual([
+      {name: "a.png", reason: "size"},
+    ])
+  })
+
+  it("rejects files beyond the entry cap", () => {
+    const {ok, rejected} = classifyFiles([f("a.png", 1), f("b.png", 1), f("c.png", 1)], cfg)
+    expect(ok.map((x) => x.name)).toEqual(["a.png", "b.png"])
+    expect(rejected).toEqual([{name: "c.png", reason: "count"}])
   })
 })
 

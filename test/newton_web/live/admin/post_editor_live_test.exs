@@ -64,6 +64,121 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert_push_event(view, "insert_image", %{url: "/media/" <> _})
   end
 
+  test "an upload lands on the post's image ledger", %{conn: conn} do
+    {view, post} = open_draft(conn)
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "shot.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "shot.png")
+
+    assert [attached] = Newton.Blog.list_images(post)
+    assert attached.original_filename == "shot.png"
+    assert_push_event(view, "insert_image", %{url: url, name: "shot.png", token: nil})
+    assert url == "/media/" <> attached.key
+  end
+
+  test "a token-prefixed upload is split back into token and original name", %{conn: conn} do
+    {view, post} = open_draft(conn)
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "a1b2c3--shot.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "a1b2c3--shot.png")
+
+    assert [%{original_filename: "shot.png"}] = Newton.Blog.list_images(post)
+    assert_push_event(view, "insert_image", %{name: "shot.png", token: "a1b2c3"})
+  end
+
+  test "client-rejected files surface as a flash", %{conn: conn} do
+    {view, _post} = open_draft(conn)
+
+    render_hook(view, "upload_rejected", %{
+      "rejected" => [
+        %{"name" => "big.png", "reason" => "size"},
+        %{"name" => "vector.svg", "reason" => "type"}
+      ]
+    })
+
+    html = render(view)
+    assert html =~ "big.png"
+    assert html =~ "vector.svg"
+  end
+
+  test "the hook element publishes the server's upload limits", %{conn: conn} do
+    {view, _post} = open_draft(conn)
+
+    assert has_element?(
+             view,
+             "#markdown-editor[data-upload-accept][data-upload-max-entries][data-upload-max-file-size]"
+           )
+  end
+
+  test "typing (validate) between drop and upload completion doesn't lose the upload", %{
+    conn: conn
+  } do
+    {view, post} = open_draft(conn)
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "race.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    view
+    |> form("#post-form",
+      post: %{title: "Untitled post", slug: "untitled-post", body_markdown: "start more"}
+    )
+    |> render_change()
+
+    render_upload(image, "race.png")
+
+    assert [%{original_filename: "race.png"}] = Newton.Blog.list_images(post)
+    assert_push_event(view, "insert_image", %{url: "/media/" <> _})
+  end
+
+  test "an autosave firing mid-upload doesn't lose the upload", %{conn: conn} do
+    {view, post} = open_draft(conn)
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "auto.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    view
+    |> form("#post-form",
+      post: %{title: "Untitled post", slug: "untitled-post", body_markdown: "start more"}
+    )
+    |> render_change()
+
+    send(view.pid, :autosave)
+    _ = render(view)
+
+    render_upload(image, "auto.png")
+
+    assert [%{original_filename: "auto.png"}] = Newton.Blog.list_images(post)
+    assert_push_event(view, "insert_image", %{url: "/media/" <> _})
+  end
+
+  test "the first upload on a brand-new post creates the draft and attaches to it", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "first.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "first.png")
+    assert_patch(view)
+
+    assert [post] = Newton.Blog.list_posts(:drafts)
+    assert [%{original_filename: "first.png"}] = Newton.Blog.list_images(post)
+    assert_push_event(view, "insert_image", %{url: "/media/" <> _})
+  end
+
   test "editing a draft persists on submit", %{conn: conn} do
     {view, _post} = open_draft(conn)
 
@@ -528,5 +643,65 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     view |> element("button", "Settings") |> render_click()
 
     refute has_element?(view, "#publish-drawer button", "Enable preview link")
+  end
+
+  defp stored_file(key) do
+    root = Application.fetch_env!(:newton, :media_root)
+    File.mkdir_p!(root)
+    path = Path.join(root, key)
+    File.write!(path, "img-bytes")
+    path
+  end
+
+  test "deleting an unreferenced image removes it from disk, ledger, and page", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Img",
+        slug: "img-post",
+        body_markdown: "No pics anymore."
+      })
+
+    {:ok, image} = Newton.Blog.attach_image(post, "stale.png", "stale.png")
+    path = stored_file("stale.png")
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    assert has_element?(view, "#post-image-#{image.id}")
+
+    view |> element("#post-image-#{image.id} button", "Delete") |> render_click()
+
+    refute has_element?(view, "#post-image-#{image.id}")
+    refute File.exists?(path)
+    assert Newton.Blog.list_images(post) == []
+  end
+
+  test "a referenced image shows no delete button and survives a forged delete", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Img",
+        slug: "img-post-2",
+        body_markdown: "![](/media/live.png)"
+      })
+
+    {:ok, image} = Newton.Blog.attach_image(post, "live.png", "live.png")
+    stored_file("live.png")
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+    assert has_element?(view, "#post-image-#{image.id}")
+    refute has_element?(view, "#post-image-#{image.id} button")
+
+    render_click(view, "delete_image", %{"id" => to_string(image.id)})
+    assert [_] = Newton.Blog.list_images(post)
+  end
+
+  test "an upload appears in the Images section immediately", %{conn: conn} do
+    {view, _post} = open_draft(conn)
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "fresh.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "fresh.png")
+    assert has_element?(view, "#post-images")
   end
 end

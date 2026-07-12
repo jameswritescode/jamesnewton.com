@@ -12,6 +12,10 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   @autosave_debounce_ms 1500
 
+  @upload_accept ~w(.jpg .jpeg .png .webp .gif)
+  @upload_max_entries 10
+  @upload_max_file_size 50_000_000
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
@@ -22,29 +26,92 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> assign(:autosave_params, nil)
      |> assign(:autosave_timer, nil)
      |> allow_upload(:inline_images,
-       accept: ~w(.jpg .jpeg .png .webp .gif),
-       max_entries: 10,
-       max_file_size: 10_000_000,
+       accept: @upload_accept,
+       max_entries: @upload_max_entries,
+       max_file_size: @upload_max_file_size,
        auto_upload: true,
        progress: &handle_inline_upload/3
      )}
   end
 
   # Auto-upload progress callback: when an entry finishes, store it on the media
-  # volume (untracked) and push the URL back to the editor hook to insert.
+  # volume, record it on the post's image ledger, and push the URL back to the
+  # editor hook to replace that upload's placeholder.
   defp handle_inline_upload(:inline_images, entry, socket) do
     if entry.done? do
+      socket = ensure_post(socket)
+      post = socket.assigns.post
+      {token, filename} = split_upload_token(entry.client_name)
+
       url =
         consume_uploaded_entry(socket, entry, fn %{path: path} ->
-          {:ok, key} = Storage.store(path, entry.client_name)
+          {:ok, key} = Storage.store(path, filename)
+          attach_image(post, key, filename)
           {:ok, Gallery.image_url(key)}
         end)
 
-      {:noreply, push_event(socket, "insert_image", %{url: url, alt: ""})}
+      socket = assign(socket, :images, post_images(post))
+
+      {:noreply,
+       push_event(socket, "insert_image", %{url: url, alt: "", name: filename, token: token})}
     else
       {:noreply, socket}
     end
   end
+
+  defp split_upload_token(client_name) do
+    case Regex.run(~r/^([0-9a-f]{6})--(.+)$/, client_name) do
+      [_, token, filename] -> {token, filename}
+      _ -> {nil, client_name}
+    end
+  end
+
+  defp rejected_summary(rejected) do
+    Enum.map_join(rejected, ", ", fn item ->
+      "#{item["name"]} (#{rejection_reason(item["reason"])})"
+    end)
+  end
+
+  defp rejection_reason("type"), do: "unsupported type"
+
+  defp rejection_reason("size"),
+    do: "larger than #{div(@upload_max_file_size, 1_000_000)}MB"
+
+  defp rejection_reason(_), do: "too many files at once"
+
+  defp upload_error_message(:too_large), do: "file too large"
+  defp upload_error_message(:not_accepted), do: "unsupported file type"
+  defp upload_error_message(:too_many_files), do: "too many files"
+  defp upload_error_message(other), do: to_string(other)
+
+  defp upload_accept, do: @upload_accept
+  defp upload_max_entries, do: @upload_max_entries
+  defp upload_max_file_size, do: @upload_max_file_size
+
+  defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
+    case Blog.create_post(backfill_new(%{})) do
+      {:ok, post} ->
+        socket
+        |> assign(:post, post)
+        |> assign(:published_at, post.published_at)
+        |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
+
+      {:error, _changeset} ->
+        socket
+    end
+  end
+
+  defp ensure_post(socket), do: socket
+
+  defp attach_image(%Post{id: nil}, _key, _original_filename), do: :ok
+
+  defp attach_image(%Post{} = post, key, original_filename) do
+    Blog.attach_image(post, key, original_filename)
+    :ok
+  end
+
+  defp post_images(%Post{id: nil}), do: []
+  defp post_images(%Post{} = post), do: Blog.list_images(post)
 
   @impl true
   def handle_params(params, _uri, socket) do
@@ -57,6 +124,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     socket
     |> assign(:page_title, "New post")
     |> assign(:post, post)
+    |> assign(:images, post_images(post))
     |> assign(:published_at, nil)
     |> assign(:slug_locked, false)
     |> assign(:slug_auto, "")
@@ -73,6 +141,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     socket
     |> assign(:page_title, "Edit post")
     |> assign(:post, post)
+    |> assign(:images, post_images(post))
     |> assign(:published_at, post.published_at)
     |> assign(:slug_locked, slug_locked?(post))
     |> assign(:slug_auto, post.slug)
@@ -172,6 +241,23 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       {:ok, date} -> {:noreply, set_published(socket, DateTime.new!(date, ~T[12:00:00]))}
       _ -> {:noreply, socket}
     end
+  end
+
+  def handle_event("delete_image", %{"id" => id}, socket) do
+    post = socket.assigns.post
+
+    socket.assigns.images
+    |> Enum.find(&(to_string(&1.id) == id))
+    |> case do
+      nil -> :ok
+      image -> Blog.delete_image(image)
+    end
+
+    {:noreply, assign(socket, :images, post_images(post))}
+  end
+
+  def handle_event("upload_rejected", %{"rejected" => rejected}, socket) when is_list(rejected) do
+    {:noreply, put_flash(socket, :error, "Not uploaded: #{rejected_summary(rejected)}")}
   end
 
   def handle_event("delete", _params, socket) do
@@ -407,21 +493,76 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             id="markdown-editor"
             phx-hook="MarkdownEditor"
             data-input-id="post_body_markdown"
+            data-upload-accept={Enum.join(upload_accept(), ",")}
+            data-upload-max-entries={upload_max_entries()}
+            data-upload-max-file-size={upload_max_file_size()}
             class="overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-surface)"
           >
           </div>
         </div>
 
         <.live_file_input upload={@uploads.inline_images} class="sr-only" />
+        <p
+          :for={err <- upload_errors(@uploads.inline_images)}
+          class="mt-2 text-[0.78rem] text-red-400"
+        >
+          Upload failed: {upload_error_message(err)}
+        </p>
+        <%= for entry <- @uploads.inline_images.entries,
+                err <- upload_errors(@uploads.inline_images, entry) do %>
+          <p class="mt-2 text-[0.78rem] text-red-400">
+            {entry.client_name}: {upload_error_message(err)}
+          </p>
+        <% end %>
 
+        <label
+          for={@form[:excerpt].id}
+          class="mt-8 mb-3 flex items-baseline gap-2 text-[0.78rem] uppercase tracking-wide text-(--admin-text-subtle)"
+        >
+          Excerpt
+          <span class="normal-case tracking-normal text-(--admin-text-muted)">
+            auto-derived from the body until you edit it
+          </span>
+        </label>
         <.input
           field={@form[:excerpt]}
           type="textarea"
-          label="Excerpt (auto-derived from the body until you edit it)"
           rows="2"
-          class="mt-4 w-full rounded-lg border border-(--admin-border) bg-(--admin-surface) p-3 text-[0.85rem] text-(--admin-text) focus:outline-none"
+          class="w-full rounded-lg border border-(--admin-border) bg-(--admin-surface) p-3 text-[0.85rem] text-(--admin-text) focus:outline-none"
         />
       </.form>
+
+      <section :if={@images != []} id="post-images" class="mt-8">
+        <h2 class="mb-3 text-[0.78rem] uppercase tracking-wide text-(--admin-text-subtle)">
+          Images
+        </h2>
+        <ul class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <li
+            :for={image <- @images}
+            id={"post-image-#{image.id}"}
+            class="rounded-lg border border-(--admin-border) bg-(--admin-surface) p-2"
+          >
+            <img src={Gallery.image_url(image.key)} alt="" class="h-24 w-full rounded object-cover" />
+            <div class="mt-2 flex items-center justify-between gap-2 text-[0.72rem] text-(--admin-text-subtle)">
+              <span class="truncate">{image.original_filename || image.key}</span>
+              <%= if Blog.image_referenced?(@post, image) do %>
+                <span class="shrink-0 text-(--admin-text-muted)">in use</span>
+              <% else %>
+                <span class="shrink-0 text-amber-400/80">not referenced</span>
+                <button
+                  type="button"
+                  phx-click="delete_image"
+                  phx-value-id={image.id}
+                  data-confirm="Delete this image file? This cannot be undone."
+                  class="shrink-0 text-red-400 hover:text-red-300"
+                >
+                  Delete
+                </button>
+              <% end %>
+            </div>
+          </li>
+        </ul>
+      </section>
 
       <Components.drawer :if={@drawer_open} id="publish-drawer" on_close="close_drawer">
         <:title>Publish</:title>

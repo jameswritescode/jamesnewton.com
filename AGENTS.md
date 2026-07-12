@@ -3,6 +3,7 @@ This is a web application written using the Phoenix web framework.
 ## Project guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
+- **No narrating comments.** Do not annotate code with comments that restate what it does or justify why it was written that way — that rationale belongs in the commit message. Let well-named functions and modules tell the story; extract a helper instead of explaining a block. Reserve comments for constraints the code cannot express and the next editor would trip over (a workaround, a subtle gotcha)
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 
 ### Phoenix v1.8 guidelines

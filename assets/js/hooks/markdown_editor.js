@@ -248,6 +248,7 @@ export const MarkdownEditor = {
           markdownKeymap,
           keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
           EditorView.lineWrapping,
+          EditorView.contentAttributes.of({spellcheck: "true"}),
           markdown({base: markdownLanguage, codeLanguages: languages}),
           syntaxHighlighting(highlight),
           codeBlockLines,

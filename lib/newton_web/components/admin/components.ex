@@ -264,7 +264,7 @@ defmodule NewtonWeb.Admin.Components do
         </.link>
         {render_slot(@inline)}
       </div>
-      {render_slot(@meta)}
+      <span :for={meta <- @meta} class="shrink-0 whitespace-nowrap">{render_slot(meta)}</span>
     </div>
     """
   end

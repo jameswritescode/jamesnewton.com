@@ -106,6 +106,21 @@ defmodule NewtonWeb.Admin.ComponentsTest do
     assert html =~ "one"
   end
 
+  test "list_item renders each meta entry in a non-wrapping cell" do
+    assigns = %{}
+
+    html =
+      h(~H"""
+      <Components.list_item id="row-3" navigate="/x">
+        Title
+        <:meta><span>September 17, 2025</span></:meta>
+      </Components.list_item>
+      """)
+
+    assert html =~ "whitespace-nowrap"
+    assert html =~ "shrink-0"
+  end
+
   test "list_item links via navigate or patch and places all slots" do
     assigns = %{}
 

@@ -88,53 +88,39 @@ defmodule NewtonWeb.Admin.GalleryLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:photos}>
-      <div class="mb-6 flex items-center justify-between">
-        <h1 class="text-[1.35rem] font-semibold tracking-tight">Photos</h1>
+      <Components.page_header title="Photos">
         <Components.button patch={~p"/admin/photos/new"}>Add gallery</Components.button>
-      </div>
+      </Components.page_header>
 
-      <div
-        id="galleries"
-        phx-update="stream"
-        class="overflow-hidden rounded-xl border border-(--admin-border)"
-      >
-        <div
-          id="galleries-empty"
-          class="hidden p-5 text-[0.85rem] text-(--admin-text-subtle) only:block"
-        >
-          No galleries yet.
-        </div>
-
-        <div
+      <Components.list id="galleries" empty="No galleries yet.">
+        <Components.list_item
           :for={{id, group} <- @streams.galleries}
           id={id}
-          class="relative flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
+          navigate={~p"/admin/photos/#{group.id}"}
         >
-          <div class="size-10 shrink-0 overflow-hidden rounded-md bg-(--admin-bg)">
-            <img
-              :if={cover = List.first(group.photos)}
-              src={Gallery.thumb_url(cover)}
-              alt=""
-              class="size-full object-cover"
-            />
-          </div>
-
-          <.link
-            navigate={~p"/admin/photos/#{group.id}"}
-            class="flex-1 text-[0.9rem] font-medium text-(--admin-text) no-underline after:absolute after:inset-0"
-          >
-            {group.title}
-          </.link>
-
-          <span class="text-[0.78rem] text-(--admin-text-subtle)">
-            {length(group.photos)} photo{if length(group.photos) == 1, do: "", else: "s"}
-          </span>
-
-          <span class="w-36 text-right text-[0.78rem] text-(--admin-text-subtle)">
-            {format_date(group.taken_on, on_nil: "—")}
-          </span>
-        </div>
-      </div>
+          <:leading>
+            <div class="size-10 shrink-0 overflow-hidden rounded-md bg-(--admin-bg)">
+              <img
+                :if={cover = List.first(group.photos)}
+                src={Gallery.thumb_url(cover)}
+                alt=""
+                class="size-full object-cover"
+              />
+            </div>
+          </:leading>
+          {group.title}
+          <:meta>
+            <span class="text-[0.78rem] text-(--admin-text-subtle)">
+              {length(group.photos)} photo{if length(group.photos) == 1, do: "", else: "s"}
+            </span>
+          </:meta>
+          <:meta>
+            <span class="w-36 text-right text-[0.78rem] text-(--admin-text-subtle)">
+              {format_date(group.taken_on, on_nil: "—")}
+            </span>
+          </:meta>
+        </Components.list_item>
+      </Components.list>
 
       <GalleryComponents.settings_drawer
         :if={@drawer_open}

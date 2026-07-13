@@ -123,47 +123,32 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:reading}>
-      <div class="mb-6 flex items-center justify-between">
-        <h1 class="text-[1.35rem] font-semibold tracking-tight">Reading</h1>
+      <Components.page_header title="Reading">
         <Components.button patch={~p"/admin/reading/new"}>Add entry</Components.button>
-      </div>
+      </Components.page_header>
 
       <.reading_summary counts={@status_counts} />
 
-      <div
-        id="entries"
-        phx-update="stream"
-        class="overflow-hidden rounded-xl border border-(--admin-border)"
-      >
-        <div
-          id="entries-empty"
-          class="hidden p-5 text-[0.85rem] text-(--admin-text-subtle) only:block"
-        >
-          No reading entries yet.
-        </div>
-        <div
+      <Components.list id="entries" empty="No reading entries yet.">
+        <Components.list_item
           :for={{id, entry} <- @streams.entries}
           id={id}
-          class="relative flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
+          patch={~p"/admin/reading/#{entry.id}/edit"}
         >
-          <div class="flex min-w-0 flex-1 items-baseline gap-2">
-            <.link
-              patch={~p"/admin/reading/#{entry.id}/edit"}
-              class="text-[0.9rem] font-medium text-(--admin-text) no-underline after:absolute after:inset-0"
-            >
-              {entry.title}
-            </.link>
-
+          {entry.title}
+          <:inline>
             <span class="truncate text-[0.8rem] text-(--admin-text-subtle)">{entry.author}</span>
-          </div>
-
-          <Layouts.reading_badge status={entry.status} />
-
-          <span class="w-36 text-right text-[0.78rem] text-(--admin-text-subtle)">
-            {format_date(entry.finished_at, on_nil: "—")}
-          </span>
-        </div>
-      </div>
+          </:inline>
+          <:meta>
+            <Layouts.reading_badge status={entry.status} />
+          </:meta>
+          <:meta>
+            <span class="w-36 text-right text-[0.78rem] text-(--admin-text-subtle)">
+              {format_date(entry.finished_at, on_nil: "—")}
+            </span>
+          </:meta>
+        </Components.list_item>
+      </Components.list>
 
       <.reading_drawer
         :if={@drawer_open}

@@ -32,6 +32,23 @@ defmodule Newton.SocialCardTest do
     assert dims(png) == {1200, 630}
   end
 
+  test "post_card survives an excerpt whose wrap renders wider than the text box" do
+    excerpt =
+      "After 4 years, I left Shopify in December of last year to jump back into " <>
+        "the startup game, joining Mark OS. It was a great journey for me, and I " <>
+        "worked with a lot of great people, doing some of the…"
+
+    {:ok, png} =
+      SocialCard.post_card(%{
+        title: "Navigating the New Software Development Paradigm",
+        excerpt: excerpt,
+        published_on: nil,
+        reading_time: 1
+      })
+
+    assert dims(png) == {1200, 630}
+  end
+
   test "post_card renders with a nil excerpt" do
     {:ok, png} =
       SocialCard.post_card(%{

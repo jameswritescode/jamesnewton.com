@@ -64,8 +64,26 @@ defmodule Newton.SocialCard do
 
   defp text(string, opts) do
     base = [font: "Lora", font_size: opts[:size], text_fill_color: opts[:color], align: :left]
-    base = if opts[:wrap], do: Keyword.put(base, :width, @content_width), else: base
-    Image.Text.text(string, base)
+
+    if opts[:wrap] do
+      wrapped_text(string, base, @content_width)
+    else
+      Image.Text.text(string, base)
+    end
+  end
+
+  # libvips treats :width as a soft wrap target and can render a line a few
+  # pixels wider, which its own bounds check then refuses to place; narrowing
+  # the box makes pango break the line earlier.
+  defp wrapped_text(string, base, width) when width > @content_width - 100 do
+    case Image.Text.text(string, Keyword.put(base, :width, width)) do
+      {:error, %Image.Error{message: "Location" <> _}} -> wrapped_text(string, base, width - 20)
+      other -> other
+    end
+  end
+
+  defp wrapped_text(string, base, width) do
+    Image.Text.text(string, Keyword.put(base, :width, width))
   end
 
   # Scale the title down as it gets longer so short titles stay large and long

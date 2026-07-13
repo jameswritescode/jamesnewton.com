@@ -163,6 +163,82 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert_push_event(view, "insert_image", %{url: "/media/" <> _})
   end
 
+  test "the hook's post-insert flush persists the body before any refresh", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "flush.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "flush.png")
+    assert_patch(view)
+
+    assert [post] = Newton.Blog.list_posts(:drafts)
+    assert [attached] = Newton.Blog.list_images(post)
+
+    render_change(view, "validate", %{
+      "post" => %{
+        "title" => "",
+        "_unused_title" => "",
+        "slug" => "",
+        "_unused_slug" => "",
+        "body_markdown" => "![](/media/#{attached.key})"
+      }
+    })
+
+    render_hook(view, "autosave_now", %{})
+    _ = render(view)
+
+    reloaded = Newton.Blog.get_post!(post.id)
+    assert reloaded.body_markdown =~ attached.key
+    assert Newton.Blog.image_referenced?(reloaded, attached)
+    assert reloaded.title == post.title
+    assert reloaded.slug == post.slug
+
+    assert has_element?(view, ~s(#post-form input[name="post[title]"][value="#{post.title}"]))
+    assert has_element?(view, ~s(#post-form input[name="post[slug]"][value="#{post.slug}"]))
+  end
+
+  test "a deliberately cleared title is not resurrected into the form by a flush", %{conn: conn} do
+    {view, post} = open_draft(conn, %{title: "Keep Me", slug: "keep-me", body_markdown: "old"})
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "", "slug" => "keep-me", "body_markdown" => "old and new"}
+    })
+
+    render_hook(view, "autosave_now", %{})
+    _ = render(view)
+
+    reloaded = Newton.Blog.get_post!(post.id)
+    assert reloaded.body_markdown == "old and new"
+    assert reloaded.title == "Keep Me"
+
+    refute has_element?(view, ~s(#post-form input[name="post[title]"][value="Keep Me"]))
+  end
+
+  test "a flush carrying the body persists it without a preceding validate", %{conn: conn} do
+    {view, post} = open_draft(conn, %{title: "Payload", slug: "payload", body_markdown: "old"})
+
+    render_hook(view, "autosave_now", %{"body_markdown" => "payload body wins"})
+    _ = render(view)
+
+    assert Newton.Blog.get_post!(post.id).body_markdown == "payload body wins"
+  end
+
+  test "autosave persists a changed, non-blank title", %{conn: conn} do
+    {view, post} = open_draft(conn, %{title: "Before", slug: "before-slug"})
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "After", "slug" => "before-slug", "body_markdown" => "body"}
+    })
+
+    render_hook(view, "autosave_now", %{})
+    _ = render(view)
+
+    assert Newton.Blog.get_post!(post.id).title == "After"
+  end
+
   test "the first upload on a brand-new post creates the draft and attaches to it", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 

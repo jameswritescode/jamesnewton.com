@@ -3,4 +3,6 @@ defmodule NewtonWeb.Helpers do
 
   defdelegate format_date(date, opts \\ []), to: Newton.Format
   defdelegate format_reading_time(minutes), to: Newton.Format
+
+  def blank?(value), do: String.trim(value || "") == ""
 end

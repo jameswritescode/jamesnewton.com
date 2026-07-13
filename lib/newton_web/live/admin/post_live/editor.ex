@@ -202,7 +202,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     save(socket, socket.assigns.post, params)
   end
 
-  def handle_event("autosave_now", _params, socket) do
+  def handle_event("autosave_now", params, socket) do
+    socket =
+      case params do
+        %{"body_markdown" => body} ->
+          update(socket, :autosave_params, &Map.put(&1 || %{}, "body_markdown", body))
+
+        _ ->
+          socket
+      end
+
     if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
     send(self(), :autosave)
     {:noreply, assign(socket, :autosave_timer, nil)}
@@ -300,26 +309,49 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp persist_autosave(socket, %Post{} = post, params) do
-    case Blog.update_post(post, params) do
+    case Blog.update_post(post, never_blank_identity(params, post)) do
       {:ok, post} ->
         {:noreply,
          socket
          |> assign(:post, post)
          |> assign(:autosave_params, nil)
          |> assign(:autosave_timer, nil)
-         |> assign(:save_state, :saved)}
+         |> assign(:save_state, :saved)
+         |> reoffer_identity(post, params)}
 
       {:error, _changeset} ->
         {:noreply, assign(socket, :save_state, :error)}
     end
   end
 
+  # A blank the author typed stays blank on screen; only untouched blanks
+  # (LiveView's _unused_ markers) get the persisted identity offered back.
+  defp reoffer_identity(socket, post, params) do
+    if Enum.all?(~w(title slug), &(unused?(params, &1) or not blank?(params[&1]))) do
+      assign(socket, :form, to_form(Blog.change_post(post)))
+    else
+      socket
+    end
+  end
+
+  defp unused?(params, key), do: Map.has_key?(params, "_unused_" <> key)
+
   defp content?(params) do
-    String.trim(params["title"] || "") != "" or String.trim(params["body_markdown"] || "") != ""
+    not blank?(params["title"]) or not blank?(params["body_markdown"])
+  end
+
+  defp never_blank_identity(params, post) do
+    params
+    |> keep_existing("title", post.title)
+    |> keep_existing("slug", post.slug)
+  end
+
+  defp keep_existing(params, key, existing) do
+    if blank?(params[key]), do: Map.put(params, key, existing), else: params
   end
 
   defp backfill_new(params) do
-    if String.trim(params["title"] || "") == "" do
+    if blank?(params["title"]) do
       params
       |> Map.put("title", "Untitled post")
       |> Map.put("slug", Blog.next_untitled_slug())

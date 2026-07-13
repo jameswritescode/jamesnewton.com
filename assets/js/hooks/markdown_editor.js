@@ -266,15 +266,18 @@ export const MarkdownEditor = {
       const found = findPlaceholder(this.view.state.doc.toString(), name, token)
       if (found) {
         this.view.dispatch({changes: {...found, insert: imageMarkdown(url).text}})
-        return
+      } else {
+        const {text, caretOffset} = imageMarkdown(url)
+        const {from, to} = this.view.state.selection.main
+        this.view.dispatch({
+          changes: {from, to, insert: text},
+          selection: {anchor: from + caretOffset},
+        })
+        this.view.focus()
       }
-      const {text, caretOffset} = imageMarkdown(url)
-      const {from, to} = this.view.state.selection.main
-      this.view.dispatch({
-        changes: {from, to, insert: text},
-        selection: {anchor: from + caretOffset},
-      })
-      this.view.focus()
+      // The body rides in the flush so persistence can't depend on the
+      // validate-vs-push ordering (a future phx-debounce would reorder them).
+      this.pushEvent("autosave_now", {body_markdown: this.view.state.doc.toString()})
     })
 
     // LiveView cancels preflight-rejected entries client-side with no server

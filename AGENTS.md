@@ -4,6 +4,7 @@ This is a web application written using the Phoenix web framework.
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - **No narrating comments.** Do not annotate code with comments that restate what it does or justify why it was written that way — that rationale belongs in the commit message. Let well-named functions and modules tell the story; extract a helper instead of explaining a block. Reserve comments for constraints the code cannot express and the next editor would trip over (a workaround, a subtle gotcha)
+- **Bias to reusable components for repeated UI chrome.** When a second page needs the same major structure another page already has (list containers, rows, page headers, cards), extract a slot-based function component instead of copying the markup — near-identical class strings across templates are the smell. One-off page content doesn't need this; the shared visual skeleton does
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 
 ### Phoenix v1.8 guidelines

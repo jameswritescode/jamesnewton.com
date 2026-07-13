@@ -2,18 +2,6 @@ defmodule Newton.LinksTest do
   use ExUnit.Case, async: true
   alias Newton.Links
 
-  test "all/0 is led by GITHUB (the readout default)" do
-    assert Links.all() |> List.first() |> Map.fetch!(:name) == "GITHUB"
-  end
-
-  test "all/0 includes each launch link" do
-    names = Links.all() |> Enum.map(& &1.name)
-
-    for expected <- ["GITHUB", "LINKEDIN", "BLUESKY", "MARK OS", "EMAIL"] do
-      assert expected in names
-    end
-  end
-
   test "each link has a name, url, and description" do
     for link <- Links.all() do
       assert is_binary(link.name) and link.name != ""

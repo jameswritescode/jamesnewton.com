@@ -1,4 +1,5 @@
 alias Newton.{Repo, Blog, Reading, Gallery}
+alias Newton.Accounts.User
 alias Newton.Blog.Post
 alias Newton.Reading.Entry
 alias Newton.Gallery.{PhotoGroup, Photo}
@@ -8,6 +9,16 @@ Repo.delete_all(Photo)
 Repo.delete_all(PhotoGroup)
 Repo.delete_all(Entry)
 Repo.delete_all(Post)
+
+# --- Dev admin (password set via direct hash: "password" is below the
+# changeset's 12-char minimum, which is the point — never use in prod) ---
+unless Repo.get_by(User, email: "admin@example.com") do
+  Repo.insert!(%User{
+    email: "admin@example.com",
+    hashed_password: Bcrypt.hash_pwd_salt("password"),
+    confirmed_at: DateTime.utc_now(:second)
+  })
+end
 
 # --- Posts ---
 three_ways = """

@@ -25,6 +25,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> assign(:save_state, :saved)
      |> assign(:autosave_params, nil)
      |> assign(:autosave_timer, nil)
+     |> assign(:editor_key, new_editor_key())
+     |> assign(:editor_post_id, :unset)
      |> allow_upload(:inline_images,
        accept: @upload_accept,
        max_entries: @upload_max_entries,
@@ -94,6 +96,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         socket
         |> assign(:post, post)
         |> assign(:published_at, post.published_at)
+        |> assign(:editor_post_id, post.id)
         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
 
       {:error, _changeset} ->
@@ -122,6 +125,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     post = %Post{}
 
     socket
+    |> sync_editor_key(nil)
     |> assign(:page_title, "New post")
     |> assign(:post, post)
     |> assign(:images, post_images(post))
@@ -139,6 +143,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     post = Blog.get_post!(id)
 
     socket
+    |> sync_editor_key(post.id)
     |> assign(:page_title, "Edit post")
     |> assign(:post, post)
     |> assign(:images, post_images(post))
@@ -151,6 +156,26 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:autosave_params, nil)
     |> assign(:form, to_form(Blog.change_post(post)))
   end
+
+  # The body editor's DOM is phx-update="ignore", so a same-module patch to a
+  # DIFFERENT post would leave the previous post's content in CodeMirror.
+  # Changing the key (and with it every id in the region) forces morphdom to
+  # rebuild it; the key survives the /new -> /:id/edit patch of one editing
+  # session because ensure_post/persist_autosave pre-assign the new post id.
+  defp sync_editor_key(socket, post_id) do
+    case socket.assigns.editor_post_id do
+      :unset ->
+        assign(socket, :editor_post_id, post_id)
+
+      ^post_id ->
+        socket
+
+      _changed ->
+        socket |> assign(:editor_key, new_editor_key()) |> assign(:editor_post_id, post_id)
+    end
+  end
+
+  defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
   # Published posts lock the slug so existing links/SEO don't break.
   defp slug_locked?(post) do
@@ -298,6 +323,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
            |> assign(:autosave_params, nil)
            |> assign(:autosave_timer, nil)
            |> assign(:save_state, :saved)
+           |> assign(:editor_post_id, post.id)
            |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
 
         {:error, _changeset} ->
@@ -519,12 +545,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           class="mb-4 w-full border-none bg-transparent font-mono text-[0.8rem] text-(--admin-text-subtle) focus:outline-none"
         />
 
-        <div id="body-editor" phx-update="ignore">
-          <textarea id="post_body_markdown" name="post[body_markdown]" class="hidden"><%= Phoenix.HTML.Form.normalize_value("textarea", @form[:body_markdown].value) %></textarea>
+        <div id={"body-editor-#{@editor_key}"} phx-update="ignore">
+          <textarea id={"post-body-markdown-#{@editor_key}"} name="post[body_markdown]" class="hidden"><%= Phoenix.HTML.Form.normalize_value("textarea", @form[:body_markdown].value) %></textarea>
           <div
-            id="markdown-editor"
+            id={"markdown-editor-#{@editor_key}"}
             phx-hook="MarkdownEditor"
-            data-input-id="post_body_markdown"
+            data-input-id={"post-body-markdown-#{@editor_key}"}
             data-upload-accept={Enum.join(upload_accept(), ",")}
             data-upload-max-entries={upload_max_entries()}
             data-upload-max-file-size={upload_max_file_size()}

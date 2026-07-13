@@ -114,8 +114,43 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     assert has_element?(
              view,
-             "#markdown-editor[data-upload-accept][data-upload-max-entries][data-upload-max-file-size]"
+             "[id^='markdown-editor'][data-upload-accept][data-upload-max-entries][data-upload-max-file-size]"
            )
+  end
+
+  defp editor_key(view) do
+    [_, key] = Regex.run(~r/id="markdown-editor-([\w-]+)"/, render(view))
+    key
+  end
+
+  test "patching to a different post rebuilds the editor region", %{conn: conn} do
+    {:ok, a} = Newton.Blog.create_post(%{title: "A", slug: "key-a", body_markdown: "aaa"})
+    {:ok, b} = Newton.Blog.create_post(%{title: "B", slug: "key-b", body_markdown: "bbb"})
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{a.id}/edit")
+    key_a = editor_key(view)
+
+    render_patch(view, ~p"/admin/posts/#{b.id}/edit")
+    assert editor_key(view) != key_a
+  end
+
+  test "patching back to /new after a draft was created rebuilds the editor region", %{
+    conn: conn
+  } do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    key_new = editor_key(view)
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "keyed.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "keyed.png")
+    assert_patch(view)
+    assert editor_key(view) == key_new
+
+    render_patch(view, ~p"/admin/posts/new")
+    assert editor_key(view) != key_new
   end
 
   test "typing (validate) between drop and upload completion doesn't lose the upload", %{
@@ -502,8 +537,8 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
 
-    assert has_element?(view, "#markdown-editor[phx-hook='MarkdownEditor']")
-    assert has_element?(view, "textarea#post_body_markdown")
+    assert has_element?(view, "[id^='markdown-editor'][phx-hook='MarkdownEditor']")
+    assert has_element?(view, "textarea[name='post[body_markdown]']")
     assert render(view) =~ "# Seeded body"
   end
 

@@ -676,14 +676,6 @@ html.gibson-takeover #main {
   border-radius: var(--radius-md);
 }
 
-.post.photos {
-  max-width: var(--container-width-wide);
-}
-
-body:has(.post.photos) .site-header {
-  max-width: var(--container-width-wide);
-}
-
 .photo-group {
   scroll-margin-top: 2rem;
 }
@@ -694,7 +686,6 @@ body:has(.post.photos) .site-header {
 
 .photo-group-header {
   margin-bottom: 1.25rem;
-  max-width: 680px;
 }
 
 .photo-group-date {

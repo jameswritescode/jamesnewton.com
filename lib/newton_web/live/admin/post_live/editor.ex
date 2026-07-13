@@ -591,9 +591,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       </.form>
 
       <section :if={@images != []} id="post-images" class="mt-8">
-        <h2 class="mb-3 text-[0.78rem] uppercase tracking-wide text-(--admin-text-subtle)">
-          Images
-        </h2>
+        <Components.section_header title="Images" />
         <ul class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <li
             :for={image <- @images}

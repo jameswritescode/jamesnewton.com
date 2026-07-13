@@ -5,6 +5,7 @@ defmodule NewtonWeb.Admin.MediaLive do
 
   alias Newton.Blog.ImageAudit
   alias Newton.Gallery
+  alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
 
   @impl true
@@ -55,12 +56,10 @@ defmodule NewtonWeb.Admin.MediaLive do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:media}>
-      <h1 class="mb-6 text-[1.35rem] font-semibold tracking-tight">Media</h1>
+      <Components.page_header title="Media" />
 
       <section id="media-strays" class="mb-8">
-        <h2 class="mb-3 text-[0.78rem] uppercase tracking-wide text-(--admin-text-subtle)">
-          Orphaned files
-        </h2>
+        <Components.section_header title="Orphaned files" />
         <p :if={@strays == []} class="text-[0.85rem] text-(--admin-text-muted)">
           No orphaned files.
         </p>
@@ -88,9 +87,7 @@ defmodule NewtonWeb.Admin.MediaLive do
       </section>
 
       <section id="media-missing">
-        <h2 class="mb-3 text-[0.78rem] uppercase tracking-wide text-(--admin-text-subtle)">
-          Missing files
-        </h2>
+        <Components.section_header title="Missing files" />
         <p :if={@missing == []} class="text-[0.85rem] text-(--admin-text-muted)">
           No missing files.
         </p>

@@ -1,6 +1,7 @@
 defmodule NewtonWeb.Admin.DashboardLive do
   use NewtonWeb, :live_view
 
+  alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
   alias Newton.Blog.ImageAudit
 
@@ -21,7 +22,7 @@ defmodule NewtonWeb.Admin.DashboardLive do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:dashboard}>
-      <h1 class="mb-6 text-[1.35rem] font-semibold tracking-tight">Dashboard</h1>
+      <Components.page_header title="Dashboard" />
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <.card id="card-posts" title="Posts" primary={@posts_total} path="/admin/posts">

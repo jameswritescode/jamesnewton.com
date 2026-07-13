@@ -60,4 +60,81 @@ defmodule NewtonWeb.Admin.ComponentsTest do
     assert html =~ ~s(data-confirm="Delete it?")
     refute html =~ "phx-value-id"
   end
+
+  defp h(template), do: rendered_to_string(template)
+
+  test "page_header renders the title and right-aligned actions" do
+    assigns = %{}
+
+    html =
+      h(~H"""
+      <Components.page_header title="Posts">
+        <button>New post</button>
+      </Components.page_header>
+      """)
+
+    assert html =~ "Posts"
+    assert html =~ "New post"
+  end
+
+  test "page_header works without actions" do
+    assigns = %{}
+    assert h(~H|<Components.page_header title="Dashboard" />|) =~ "Dashboard"
+  end
+
+  test "section_header renders an h2 with the title" do
+    assigns = %{}
+    html = h(~H|<Components.section_header title="Images" />|)
+    assert html =~ "<h2"
+    assert html =~ "Images"
+  end
+
+  test "list renders a stream container with a wired empty state" do
+    assigns = %{}
+
+    html =
+      h(~H"""
+      <Components.list id="things" empty="No things yet.">
+        <div id="thing-1">one</div>
+      </Components.list>
+      """)
+
+    assert html =~ ~s(id="things")
+    assert html =~ ~s(phx-update="stream")
+    assert html =~ ~s(id="things-empty")
+    assert html =~ "No things yet."
+    assert html =~ "one"
+  end
+
+  test "list_item links via navigate or patch and places all slots" do
+    assigns = %{}
+
+    navigate =
+      h(~H"""
+      <Components.list_item id="row-1" navigate="/admin/posts/1/edit">
+        Title text
+        <:leading><span>thumb</span></:leading>
+        <:inline><span>author</span></:inline>
+        <:meta><span>badge</span></:meta>
+        <:meta><span>date</span></:meta>
+      </Components.list_item>
+      """)
+
+    assert navigate =~ ~s(href="/admin/posts/1/edit")
+    assert navigate =~ ~s(data-phx-link="redirect")
+    assert navigate =~ "Title text"
+
+    for piece <- ~w(thumb author badge date) do
+      assert navigate =~ piece
+    end
+
+    patch =
+      h(~H"""
+      <Components.list_item id="row-2" patch="/admin/reading/2/edit">
+        Entry
+      </Components.list_item>
+      """)
+
+    assert patch =~ ~s(data-phx-link="patch")
+  end
 end

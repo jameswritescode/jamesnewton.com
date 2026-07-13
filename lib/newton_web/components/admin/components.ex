@@ -195,4 +195,81 @@ defmodule NewtonWeb.Admin.Components do
   defp field_class do
     "w-full rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-2 text-[0.85rem] text-(--admin-text) focus:border-(--admin-accent) focus:outline-none"
   end
+
+  attr :title, :string, required: true
+  slot :inner_block
+
+  def page_header(assigns) do
+    ~H"""
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-[1.35rem] font-semibold tracking-tight">{@title}</h1>
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  attr :title, :string, required: true
+
+  def section_header(assigns) do
+    ~H"""
+    <h2 class="mb-3 text-[0.78rem] uppercase tracking-wide text-(--admin-text-subtle)">
+      {@title}
+    </h2>
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :empty, :string, required: true
+  slot :inner_block, required: true
+
+  def list(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      phx-update="stream"
+      class="overflow-hidden rounded-xl border border-(--admin-border)"
+    >
+      <div
+        id={"#{@id}-empty"}
+        class="hidden p-5 text-[0.85rem] text-(--admin-text-subtle) only:block"
+      >
+        {@empty}
+      </div>
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :navigate, :string, default: nil
+  attr :patch, :string, default: nil
+  slot :leading
+  slot :inner_block, required: true
+  slot :inline
+  slot :meta
+
+  def list_item(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class="relative flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
+    >
+      {render_slot(@leading)}
+      <div class="flex min-w-0 flex-1 items-baseline gap-2">
+        <.link
+          {link_attrs(@navigate, @patch)}
+          class="text-[0.9rem] font-medium text-(--admin-text) no-underline after:absolute after:inset-0"
+        >
+          {render_slot(@inner_block)}
+        </.link>
+        {render_slot(@inline)}
+      </div>
+      {render_slot(@meta)}
+    </div>
+    """
+  end
+
+  defp link_attrs(nil, nil), do: %{}
+  defp link_attrs(nil, patch), do: %{patch: patch}
+  defp link_attrs(navigate, _patch), do: %{navigate: navigate}
 end

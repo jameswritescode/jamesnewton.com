@@ -27,10 +27,9 @@ defmodule NewtonWeb.Admin.PostLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:posts}>
-      <div class="mb-6 flex items-center justify-between">
-        <h1 class="text-[1.35rem] font-semibold tracking-tight">Posts</h1>
+      <Components.page_header title="Posts">
         <Components.button navigate={~p"/admin/posts/new"}>New post</Components.button>
-      </div>
+      </Components.page_header>
 
       <div class="mb-4 flex gap-1 text-[0.8rem]">
         <.filter_tab filter={@filter} value={:all} label="All" />
@@ -38,34 +37,23 @@ defmodule NewtonWeb.Admin.PostLive.Index do
         <.filter_tab filter={@filter} value={:published} label="Published" />
       </div>
 
-      <div
-        id="posts"
-        phx-update="stream"
-        class="overflow-hidden rounded-xl border border-(--admin-border)"
-      >
-        <div id="posts-empty" class="hidden p-5 text-[0.85rem] text-(--admin-text-subtle) only:block">
-          No posts yet.
-        </div>
-
-        <div
+      <Components.list id="posts" empty="No posts yet.">
+        <Components.list_item
           :for={{id, post} <- @streams.posts}
           id={id}
-          class="relative flex items-center gap-3 border-b border-(--admin-border) bg-(--admin-surface) px-4 py-3 last:border-b-0 hover:bg-(--admin-accent-soft)"
+          navigate={~p"/admin/posts/#{post.id}/edit"}
         >
-          <.link
-            navigate={~p"/admin/posts/#{post.id}/edit"}
-            class="flex-1 text-[0.9rem] font-medium text-(--admin-text) no-underline after:absolute after:inset-0"
-          >
-            {post.title}
-          </.link>
-
-          <Layouts.status_badge status={Newton.Blog.publish_status(post.published_at)} />
-
-          <span class="hidden w-28 text-right text-[0.78rem] text-(--admin-text-subtle) sm:block">
-            {format_date(post.published_at, on_nil: "—")}
-          </span>
-        </div>
-      </div>
+          {post.title}
+          <:meta>
+            <Layouts.status_badge status={Newton.Blog.publish_status(post.published_at)} />
+          </:meta>
+          <:meta>
+            <span class="hidden w-28 text-right text-[0.78rem] text-(--admin-text-subtle) sm:block">
+              {format_date(post.published_at, on_nil: "—")}
+            </span>
+          </:meta>
+        </Components.list_item>
+      </Components.list>
     </Layouts.admin>
     """
   end

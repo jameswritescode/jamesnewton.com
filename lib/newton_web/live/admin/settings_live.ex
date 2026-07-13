@@ -128,7 +128,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:settings}>
-      <h1 class="mb-6 text-[1.35rem] font-semibold tracking-tight">Settings</h1>
+      <Components.page_header title="Settings" />
 
       <section class="mb-8 max-w-md">
         <h2 class="mb-3 text-[0.95rem] font-medium">Change password</h2>

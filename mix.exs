@@ -10,7 +10,7 @@ defmodule Newton.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      compilers: [:phoenix_live_view] ++ Mix.compilers(),
+      compilers: [:phoenix_live_view, :seo_jsonld] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
       # precommit runs in :test, so Dialyzer also sees the mix task and the
       # ExUnit-based test support files — add both apps to the PLT.
@@ -75,7 +75,8 @@ defmodule Newton.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:wax_, "~> 0.7"},
-      {:lumis, "~> 0.1"}
+      {:lumis, "~> 0.1"},
+      {:phoenix_seo, "~> 0.3.0-rc.0"}
     ]
   end
 

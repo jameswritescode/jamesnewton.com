@@ -49,6 +49,9 @@ One new file owns all SEO knowledge:
   `url(~p"/og/posts/#{slug}")` with `width: 1200, height: 630` and the
   post title as alt — dimensions and alt are net-new over the hand-rolled
   tags. Article JSON-LD from the same fields.
+- **Amended after API verification:** 0.3.0 removed site-wide JSON-LD
+  config, so `WebSite` + `Person` ride the home page's item (phase b);
+  phase (a) emits `Article` (with an embedded `Person` author) on posts.
 - `Newton.SocialCard` and `OgImageController` are untouched — the library
   emits tags; the image pipeline stays ours.
 
@@ -61,9 +64,11 @@ One new file owns all SEO knowledge:
   post struct. The preview branch assigns the same item — its canonical
   already points at the clean URL by construction — and the existing
   `page_robots` noindex behavior is preserved.
-- The `page_title`/`live_title` mechanism is unchanged (title rendering
-  stays with `<.live_title>`; the library handles meta, not the title
-  tag).
+- **Amended after API verification:** `<SEO.juice>` renders the title tag
+  itself (it wraps `<.live_title>` internally, with prefix/suffix
+  support), so the layout's `<.live_title>` is removed and the dev
+  `[DEV]` prefix + "James Newton" default move into the site config.
+  Behavior identical; mechanism moves.
 
 ### 4. Verification (phase a gate)
 

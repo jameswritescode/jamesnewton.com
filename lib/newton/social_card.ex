@@ -10,18 +10,12 @@ defmodule Newton.SocialCard do
   # The site's single dark theme — bg / text / muted, matching site.css.
   @theme %{bg: "#151311", fg: "#eed3ba", muted: "#ad9987"}
 
-  # Vertical rhythm matched to the Figma design (ink-to-ink), measured from each
-  # block's rendered bottom. The brand→title gap is intentionally larger than
-  # title→excerpt — it reads as even because of the fonts' line-box leading.
   @brand_top 65
-  @brand_title_gap 56
-  @title_excerpt_gap 32
-  @excerpt_max_chars 160
+  @brand_title_min_gap 56
   @stripe_height 20
 
   @spec post_card(%{
           title: String.t(),
-          excerpt: String.t() | nil,
           published_on: Date.t() | nil,
           reading_time: integer()
         }) :: {:ok, binary()} | {:error, term()}
@@ -42,12 +36,10 @@ defmodule Newton.SocialCard do
          {:ok, title} <- text(post.title, size: title_size(post.title), color: p.fg, wrap: true),
          {:ok, sub} <- text(secondary, size: 24, color: p.muted),
          {:ok, c1} <- Image.compose(canvas, brand, x: @pad, y: @brand_top),
-         title_y = @brand_top + Image.height(brand) + @brand_title_gap,
+         title_y = title_y(Image.height(brand), Image.height(title), footer_y),
          {:ok, c2} <- Image.compose(c1, title, x: @pad, y: title_y),
-         excerpt_y = title_y + Image.height(title) + @title_excerpt_gap,
-         {:ok, c3} <- with_excerpt(c2, card_excerpt(post.excerpt), p.muted, excerpt_y),
-         {:ok, c4} <- Image.compose(c3, sub, x: @pad, y: footer_y) do
-      Image.write(c4, :memory, suffix: ".png")
+         {:ok, c3} <- Image.compose(c2, sub, x: @pad, y: footer_y) do
+      Image.write(c3, :memory, suffix: ".png")
     end
   end
 
@@ -87,26 +79,15 @@ defmodule Newton.SocialCard do
   end
 
   # Scale the title down as it gets longer so short titles stay large and long
-  # ones shrink and wrap to a second line rather than running off the card.
-  defp title_size(title) when byte_size(title) > 70, do: 52
-  defp title_size(title) when byte_size(title) > 40, do: 64
-  defp title_size(_), do: 75
+  # ones shrink and wrap rather than running off the card.
+  defp title_size(title) when byte_size(title) > 70, do: 58
+  defp title_size(title) when byte_size(title) > 40, do: 74
+  defp title_size(_), do: 92
 
-  defp with_excerpt(canvas, "", _color, _y), do: {:ok, canvas}
-
-  defp with_excerpt(canvas, excerpt, color, y) do
-    with {:ok, layer} <- text(excerpt, size: 30, color: color, wrap: true) do
-      Image.compose(canvas, layer, x: @pad, y: y)
-    end
-  end
-
-  defp card_excerpt(nil), do: ""
-
-  defp card_excerpt(excerpt) when is_binary(excerpt) do
-    if String.length(excerpt) > @excerpt_max_chars do
-      (String.slice(excerpt, 0, @excerpt_max_chars - 1) |> String.trim_trailing()) <> "…"
-    else
-      excerpt
-    end
+  # Center the title in the space between the brand and the footer, never
+  # closer to the brand than the original rhythm's gap.
+  defp title_y(brand_height, title_height, footer_y) do
+    top = @brand_top + brand_height
+    top + max(@brand_title_min_gap, div(footer_y - top - title_height, 2))
   end
 end

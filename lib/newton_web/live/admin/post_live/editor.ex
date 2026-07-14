@@ -420,7 +420,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
     attrs = %{
       title: if(title in [nil, ""], do: "Untitled post", else: title),
-      excerpt: Ecto.Changeset.get_field(changeset, :excerpt),
       published_on: socket.assigns.published_at && DateTime.to_date(socket.assigns.published_at),
       reading_time: socket.assigns.post.reading_time || 1
     }

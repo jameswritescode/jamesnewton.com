@@ -16,7 +16,6 @@ defmodule NewtonWeb.OgImageController do
 
     case SocialCard.post_card(%{
            title: post.title,
-           excerpt: post.excerpt,
            published_on: post.published_at && DateTime.to_date(post.published_at),
            reading_time: post.reading_time || 1
          }) do

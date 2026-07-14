@@ -15,10 +15,13 @@ defmodule NewtonWeb.SEO do
     )
   end
 
-  def open_graph_config(_conn) do
+  def open_graph_config(conn) do
     SEO.OpenGraph.build(
       site_name: "James Newton",
       type: :website,
+      title: "James Newton",
+      description: "Software & Photography",
+      url: Phoenix.Controller.current_url(conn),
       image: SEO.OpenGraph.Image.build(url: url(~p"/og-default.png"))
     )
   end
@@ -31,6 +34,11 @@ defmodule NewtonWeb.SEO do
       image: url(~p"/og-default.png")
     )
   end
+
+  # The card endpoint only serves published posts. Lives here because the Post
+  # OpenGraph and Twitter defimpls cannot share a private helper.
+  def post_image_url(%{published_at: nil}), do: url(~p"/og-default.png")
+  def post_image_url(post), do: url(~p"/og/posts/#{post.slug}")
 end
 
 defmodule NewtonWeb.SEO.Page do
@@ -50,13 +58,13 @@ defimpl SEO.OpenGraph.Build, for: Newton.Blog.Post do
     )
   end
 
-  defp image(%{published_at: nil}) do
-    SEO.OpenGraph.Image.build(url: url(~p"/og-default.png"))
+  defp image(%{published_at: nil} = post) do
+    SEO.OpenGraph.Image.build(url: NewtonWeb.SEO.post_image_url(post))
   end
 
   defp image(post) do
     SEO.OpenGraph.Image.build(
-      url: url(~p"/og/posts/#{post.slug}"),
+      url: NewtonWeb.SEO.post_image_url(post),
       width: 1200,
       height: 630,
       alt: post.title
@@ -78,7 +86,11 @@ end
 
 defimpl SEO.Twitter.Build, for: Newton.Blog.Post do
   def build(post, _conn) do
-    SEO.Twitter.build(title: post.title, description: post.excerpt)
+    SEO.Twitter.build(
+      title: post.title,
+      description: post.excerpt,
+      image: NewtonWeb.SEO.post_image_url(post)
+    )
   end
 end
 

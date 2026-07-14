@@ -12,31 +12,14 @@ defmodule NewtonWeb.PostController do
       {:preview, post} ->
         conn
         |> assign(:page_robots, "noindex")
-        |> put_og(post)
+        |> SEO.assign(post)
         |> render(:show, page_title: post.title, post: post, preview: true)
 
       post ->
         conn
-        |> put_og(post)
+        |> SEO.assign(post)
         |> render(:show, page_title: post.title, post: post, preview: false)
     end
-  end
-
-  # Published posts point og:image at their live, on-demand card; drafts/previews
-  # (noindex, and the on-demand endpoint only serves published posts) use the
-  # static default card.
-  defp put_og(conn, post) do
-    image =
-      if post.published_at,
-        do: url(~p"/og/posts/#{post.slug}"),
-        else: url(~p"/og-default.png")
-
-    conn
-    |> assign(:og_type, "article")
-    |> assign(:og_title, post.title)
-    |> assign(:og_description, post.excerpt)
-    |> assign(:og_url, url(~p"/posts/#{post.slug}"))
-    |> assign(:og_image, image)
   end
 
   # A signed-in admin previews any post (drafts included); everyone else sees only

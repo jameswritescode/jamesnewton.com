@@ -39,6 +39,14 @@ defmodule NewtonWeb.SEOTest do
     assert og.image.url =~ "/og-default.png"
   end
 
+  test "a post's twitter card carries the same image as its open graph", %{conn: conn} do
+    published = post_fixture()
+    assert SEO.Twitter.Build.build(published, conn).image =~ "/og/posts/#{published.slug}"
+
+    draft = post_fixture(%{published_at: nil, slug: "twitter-draft"})
+    assert SEO.Twitter.Build.build(draft, conn).image =~ "/og-default.png"
+  end
+
   test "a post's site build carries the clean canonical", %{conn: conn} do
     post = post_fixture()
     site = SEO.Site.Build.build(post, conn)

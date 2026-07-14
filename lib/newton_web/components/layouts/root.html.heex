@@ -11,26 +11,8 @@
     <link rel="icon" href={~p"/favicon.svg"} type="image/svg+xml" />
     <link rel="icon" href={~p"/favicon-32.png"} sizes="32x32" />
     <link rel="apple-touch-icon" href={~p"/apple-touch-icon.png"} />
-    <.live_title default="James Newton" prefix={title_prefix()}>
-      {assigns[:page_title]}
-    </.live_title>
     <meta :if={assigns[:page_robots]} name="robots" content={assigns[:page_robots]} />
-    <meta property="og:type" content={assigns[:og_type] || "website"} />
-    <meta property="og:site_name" content="James Newton" />
-    <meta property="og:title" content={assigns[:og_title] || "James Newton"} />
-    <meta
-      property="og:description"
-      content={assigns[:og_description] || "Software & Photography"}
-    />
-    <meta property="og:url" content={assigns[:og_url] || Phoenix.Controller.current_url(@conn)} />
-    <meta property="og:image" content={assigns[:og_image] || url(~p"/og-default.png")} />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={assigns[:og_title] || "James Newton"} />
-    <meta
-      name="twitter:description"
-      content={assigns[:og_description] || "Software & Photography"}
-    />
-    <meta name="twitter:image" content={assigns[:og_image] || url(~p"/og-default.png")} />
+    <SEO.juice conn={@conn} config={NewtonWeb.SEO.config()} page_title={assigns[:page_title]} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

@@ -87,7 +87,7 @@ defmodule NewtonWeb.SeoMetaTest do
   end
 
   for {path, fragment} <- [
-        {"/", "thinks a lot about how we build"},
+        {"/", "Software &amp; Photography"},
         {"/photos", "Photography from"},
         {"/reading", "Books read"},
         {"/links", "elsewhere"},

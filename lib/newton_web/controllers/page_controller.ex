@@ -5,8 +5,7 @@ defmodule NewtonWeb.PageController do
     conn
     |> SEO.assign(%NewtonWeb.SEO.Page{
       title: "James Newton",
-      description:
-        "Software engineer at Mark OS who thinks a lot about how we build things and why — the tools, the trade-offs, and the quiet decisions.",
+      description: "Software & Photography",
       path: "/"
     })
     |> render(:home, page_title: nil, feed: Newton.Feed.recent(5))

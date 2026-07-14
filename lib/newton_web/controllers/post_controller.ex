@@ -4,7 +4,13 @@ defmodule NewtonWeb.PostController do
   alias Newton.Blog.Post
 
   def index(conn, _params) do
-    render(conn, :index, page_title: "Posts", posts: Blog.list_published_posts())
+    conn
+    |> SEO.assign(%NewtonWeb.SEO.Page{
+      title: "Posts",
+      description: "Writing on software: the tools, the trade-offs, and the craft.",
+      path: "/posts"
+    })
+    |> render(:index, page_title: "Posts", posts: Blog.list_published_posts())
   end
 
   def show(conn, %{"slug" => slug} = params) do

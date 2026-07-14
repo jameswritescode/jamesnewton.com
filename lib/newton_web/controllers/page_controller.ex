@@ -2,11 +2,24 @@ defmodule NewtonWeb.PageController do
   use NewtonWeb, :controller
 
   def home(conn, _params) do
-    render(conn, :home, page_title: nil, feed: Newton.Feed.recent(5))
+    conn
+    |> SEO.assign(%NewtonWeb.SEO.Page{
+      title: "James Newton",
+      description:
+        "Software engineer at Mark OS who thinks a lot about how we build things and why — the tools, the trade-offs, and the quiet decisions.",
+      path: "/"
+    })
+    |> render(:home, page_title: nil, feed: Newton.Feed.recent(5))
   end
 
   def resume(conn, _params) do
-    render(conn, :resume, page_title: "Resume")
+    conn
+    |> SEO.assign(%NewtonWeb.SEO.Page{
+      title: "Resume",
+      description: "Experience and work history.",
+      path: "/resume"
+    })
+    |> render(:resume, page_title: "Resume")
   end
 
   # The blog used to live at /blog; 301 the old URLs to /posts for SEO.

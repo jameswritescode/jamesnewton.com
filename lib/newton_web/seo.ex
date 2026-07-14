@@ -97,12 +97,15 @@ end
 defimpl SEO.JSONLD.Build, for: Newton.Blog.Post do
   use NewtonWeb, :verified_routes
 
+  def build(%{published_at: nil}, _conn), do: nil
+
   def build(post, _conn) do
     SEO.JSONLD.Article.build(%{
       headline: post.title,
       description: post.excerpt,
       date_published: post.published_at,
       author: SEO.JSONLD.Person.build(%{name: "James Newton", url: url(~p"/")}),
+      image: NewtonWeb.SEO.post_image_url(post),
       main_entity_of_page: url(~p"/posts/#{post.slug}")
     })
   end

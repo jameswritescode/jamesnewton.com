@@ -3,6 +3,12 @@ defmodule NewtonWeb.PhotoController do
   alias Newton.Gallery
 
   def index(conn, _params) do
-    render(conn, :index, page_title: "Photos", groups: Gallery.list_groups())
+    conn
+    |> SEO.assign(%NewtonWeb.SEO.Page{
+      title: "Photos",
+      description: "Photography from hikes and travels — lakes, coasts, and mountains.",
+      path: "/photos"
+    })
+    |> render(:index, page_title: "Photos", groups: Gallery.list_groups())
   end
 end

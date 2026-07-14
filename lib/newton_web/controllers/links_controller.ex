@@ -3,6 +3,12 @@ defmodule NewtonWeb.LinksController do
   alias Newton.Links
 
   def index(conn, _params) do
-    render(conn, :index, page_title: "Links", links: Links.all())
+    conn
+    |> SEO.assign(%NewtonWeb.SEO.Page{
+      title: "Links",
+      description: "Where to find me elsewhere on the internet.",
+      path: "/links"
+    })
+    |> render(:index, page_title: "Links", links: Links.all())
   end
 end

@@ -62,6 +62,13 @@ defmodule NewtonWeb.SEOTest do
     assert article["@type"] == "Article"
     assert article["headline"] == post.title
     assert article["author"]["name"] == "James Newton"
+    assert article["image"] =~ "/og/posts/#{post.slug}"
+  end
+
+  test "an unpublished post emits no JSON-LD", %{conn: conn} do
+    post = post_fixture(%{published_at: nil, slug: "jsonld-draft"})
+
+    assert SEO.JSONLD.Build.build(post, conn) == nil
   end
 
   test "a Page item builds titled, self-canonical tags", %{conn: conn} do

@@ -118,7 +118,8 @@ defmodule NewtonWeb.Admin.ComponentsTest do
       """)
 
     assert html =~ "whitespace-nowrap"
-    assert html =~ "shrink-0"
+    assert html =~ "contents"
+    refute html =~ "shrink-0"
   end
 
   test "list_item links via navigate or patch and places all slots" do

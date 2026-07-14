@@ -14,7 +14,11 @@ defmodule Newton.MixProject do
       listeners: [Phoenix.CodeReloader],
       # precommit runs in :test, so Dialyzer also sees the mix task and the
       # ExUnit-based test support files — add both apps to the PLT.
-      dialyzer: [plt_add_apps: [:mix, :ex_unit]]
+      dialyzer: [
+        plt_add_apps: [:mix, :ex_unit],
+        ignore_warnings: ".dialyzer_ignore.exs",
+        list_unused_filters: true
+      ]
     ]
   end
 

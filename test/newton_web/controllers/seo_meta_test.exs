@@ -106,4 +106,11 @@ defmodule NewtonWeb.SeoMetaTest do
       assert html =~ ~r/<link rel="canonical" href="[^"]*#{Regex.escape(unquote(path))}"/
     end
   end
+
+  test "the links page unfurls with its glitch card", %{conn: conn} do
+    html = conn |> get(~p"/links") |> html_response(200)
+
+    assert meta(html, "og:image") =~ "/og-links.png"
+    assert named_meta(html, "twitter:image") =~ "/og-links.png"
+  end
 end

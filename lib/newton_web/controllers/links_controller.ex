@@ -7,7 +7,8 @@ defmodule NewtonWeb.LinksController do
     |> SEO.assign(%NewtonWeb.SEO.Page{
       title: "Links",
       description: "Where to find me elsewhere on the internet.",
-      path: "/links"
+      path: "/links",
+      image: "/og-links.png"
     })
     |> render(:index, page_title: "Links", links: Links.all())
   end

@@ -42,7 +42,7 @@ defmodule NewtonWeb.SEO do
 end
 
 defmodule NewtonWeb.SEO.Page do
-  defstruct [:title, :description, :path, json_ld: []]
+  defstruct [:title, :description, :path, :image, json_ld: []]
 end
 
 defimpl SEO.OpenGraph.Build, for: Newton.Blog.Post do
@@ -112,8 +112,22 @@ defimpl SEO.JSONLD.Build, for: Newton.Blog.Post do
 end
 
 defimpl SEO.OpenGraph.Build, for: NewtonWeb.SEO.Page do
-  def build(page, _conn) do
+  def build(%{image: nil} = page, _conn) do
     SEO.OpenGraph.build(title: page.title, description: page.description)
+  end
+
+  def build(page, _conn) do
+    SEO.OpenGraph.build(
+      title: page.title,
+      description: page.description,
+      image:
+        SEO.OpenGraph.Image.build(
+          url: NewtonWeb.Endpoint.url() <> page.image,
+          width: 1200,
+          height: 630,
+          alt: page.title
+        )
+    )
   end
 end
 
@@ -128,8 +142,16 @@ defimpl SEO.Site.Build, for: NewtonWeb.SEO.Page do
 end
 
 defimpl SEO.Twitter.Build, for: NewtonWeb.SEO.Page do
-  def build(page, _conn) do
+  def build(%{image: nil} = page, _conn) do
     SEO.Twitter.build(title: page.title, description: page.description)
+  end
+
+  def build(page, _conn) do
+    SEO.Twitter.build(
+      title: page.title,
+      description: page.description,
+      image: NewtonWeb.Endpoint.url() <> page.image
+    )
   end
 end
 

@@ -86,6 +86,23 @@ defmodule NewtonWeb.SEOTest do
     assert site.canonical_url =~ "/photos"
   end
 
+  test "a Page with an image carries it into the open graph and twitter builds", %{conn: conn} do
+    page = %NewtonWeb.SEO.Page{
+      title: "Links",
+      description: "d",
+      path: "/links",
+      image: "/og-links.png"
+    }
+
+    og = SEO.OpenGraph.Build.build(page, conn)
+    twitter = SEO.Twitter.Build.build(page, conn)
+
+    assert og.image.url =~ "/og-links.png"
+    assert og.image.width == 1200
+    assert og.image.height == 630
+    assert twitter.image =~ "/og-links.png"
+  end
+
   test "the home Page emits WebSite and Person JSON-LD", %{conn: conn} do
     page = %NewtonWeb.SEO.Page{title: "James Newton", description: "d", path: "/"}
     types = page |> SEO.JSONLD.Build.build(conn) |> List.wrap() |> Enum.map(& &1["@type"])

@@ -7,7 +7,7 @@ defmodule NewtonWeb.PostController do
     conn
     |> SEO.assign(%NewtonWeb.SEO.Page{
       title: "Posts",
-      description: "Writing on software: the tools, the trade-offs, and the craft.",
+      description: "Writing on software and other things.",
       path: "/posts"
     })
     |> render(:index, page_title: "Posts", posts: Blog.list_published_posts())

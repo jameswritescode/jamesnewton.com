@@ -6,7 +6,7 @@ defmodule NewtonWeb.PhotoController do
     conn
     |> SEO.assign(%NewtonWeb.SEO.Page{
       title: "Photos",
-      description: "Photography from hikes and travels — lakes, coasts, and mountains.",
+      description: "Photography from hikes, travel, and other events.",
       path: "/photos"
     })
     |> render(:index, page_title: "Photos", groups: Gallery.list_groups())

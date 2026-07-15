@@ -45,6 +45,12 @@ custom classes must fully style the input
 - Ensure **clean typography, spacing, and layout balance** for a refined, premium look
 - Focus on **delightful details** like hover effects, loading states, and smooth page transitions
 
+### Observability & telemetry
+
+- **Instrument where applicable.** When adding features that do meaningful work — outbound HTTP calls, background jobs, expensive queries, external integrations — emit `:telemetry` events (start/stop/exception spans via `:telemetry.span/3` for anything with a duration) and wire the interesting ones into `NewtonWeb.Telemetry` as metrics. Phoenix/Ecto/LiveView already instrument themselves; this is about *our* domain operations
+- Name events `[:newton, :subsystem, :operation]` and keep them stable — dashboards and handlers bind to these names
+- **Avoid high-cardinality values in instrumentation.** Metric tags and event metadata used for aggregation must be bounded sets (status atoms, operation names, result classes) — never user IDs, slugs, URLs, tokens, or other unbounded values. High-cardinality tags explode metric storage and make aggregations useless; unbounded values belong in logs (and never secrets), not metric dimensions
+
 
 <!-- phoenix-gen-auth-start -->
 ## Authentication

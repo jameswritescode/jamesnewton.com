@@ -13,7 +13,8 @@
 - **Dynamic `robots.txt`** — the `Sitemap:` directive needs an absolute URL matching the serving host; a static file can't know its host, and a fly.dev robots.txt pointing at jamesnewton.com is a cross-host reference. Serving it from the controller makes it correct on every host.
 - **IndexNow triggers live in the web layer** (`PostLive.Editor`), not the Blog context — URLs are web-layer knowledge; `Newton.Blog` must not reach into `NewtonWeb`. All post mutations already funnel through the editor LiveView, so it is a single trigger surface.
 - **Fire-and-forget submission** via `Task.Supervisor` — publishing must never block or crash on a slow/failing ping. Failures log a warning.
-- **Telemetry** per AGENTS.md observability guidelines: the IndexNow client wraps its HTTP call in `:telemetry.span/3`; metadata is bounded (result, HTTP status, URL count) — never the URLs themselves.
+- **Telemetry** per AGENTS.md observability guidelines: the IndexNow client wraps its HTTP call in a telemetry span; metadata is bounded (result, HTTP status, URL count) — never the URLs themselves.
+- **Emission goes through a thin app-owned facade, `Newton.Telemetry`**, not raw `:telemetry.span/3` at call sites. Surveyed alternatives: `telemetry_decorator` (dormant since 2022), OpenTelemetry stack / `o11y` (solves distributed tracing exported to a backend — no trace backend exists here, so it's ceremony shipping spans nowhere), `prom_ex` (metrics export, orthogonal). The facade owns the `[:newton, ...]` event prefix and the `{result, stop_metadata}` tuple contract in one place; every future instrumented feature reuses it. If real tracing with a backend ever lands, OpenTelemetry is the graduation path.
 
 ## Components
 
@@ -48,7 +49,17 @@ Sitemap: <url(~p"/sitemap.xml")>
 
 Content-type `text/plain`, same cache-control. Admin/login need no Disallow entries — they are auth-gated and every public page already controls indexing via its robots meta tag; listing private paths in robots.txt only advertises them.
 
-### 2. `Newton.IndexNow` (client)
+### 2. `Newton.Telemetry` (emission facade)
+
+```elixir
+Newton.Telemetry.span(subsystem :: atom(), operation :: atom(), start_meta :: map(), fun)
+```
+
+- Delegates to `:telemetry.span([:newton, subsystem, operation], start_meta, fun)`; `fun` returns `{result, stop_meta}` and `span/4` returns `result`.
+- The single place that knows the `[:newton, ...]` prefix, keeping event names consistent with the AGENTS.md convention.
+- New emitters (the upcoming Atom feed, future integrations) use this module; raw `:telemetry` calls in app code are a review smell.
+
+### 3. `Newton.IndexNow` (client)
 
 ```elixir
 Newton.IndexNow.submit([url, ...]) :: :ok | {:error, term()}
@@ -59,12 +70,12 @@ Newton.IndexNow.submit([url, ...]) :: :ok | {:error, term()}
   - `key:` the IndexNow key (same value as the key file)
   - `enabled:` `true` only in prod (`config/prod.exs`); `false` in dev/test. When disabled, `submit/1` returns `:ok` without an HTTP call.
   - `req_options:` merged into the Req request — test injects `plug: {Req.Test, Newton.IndexNow}`.
-- Wraps the HTTP call in `:telemetry.span/3` with event prefix `[:newton, :indexnow, :submit]`. Span metadata: `%{url_count: n}` on start; `%{result: :ok | :error, status: integer | nil, url_count: n}` on stop. No URLs in metadata.
+- Wraps the HTTP call in `Newton.Telemetry.span(:indexnow, :submit, ...)` (event `[:newton, :indexnow, :submit]`). Span metadata: `%{url_count: n}` on start; `%{result: :ok | :error, status: integer | nil, url_count: n}` on stop. No URLs in metadata.
 - Any non-2xx status or transport error returns `{:error, ...}` and logs a warning with the status/reason (URLs may appear in the *log message* — logs are fine for unbounded values, metrics are not).
 
 **Key file:** a one-time generated 32-hex-char key committed as `priv/static/<key>.txt` containing exactly the key, with `<key>.txt` added to `static_paths`. The key is public by design (engines verify ownership by fetching it from our host), so committing it is safe. The same literal goes in `config/config.exs`.
 
-### 3. `NewtonWeb.IndexNowNotifier` (trigger + URL delta)
+### 4. `NewtonWeb.IndexNowNotifier` (trigger + URL delta)
 
 ```elixir
 NewtonWeb.IndexNowNotifier.notify_change(before :: %Post{} | nil, after :: %Post{} | nil) :: :ok
@@ -87,7 +98,7 @@ Computes the changed-URL set from before/after post states and submits it throug
 
 **Call sites** — after each successful mutation in `PostLive.Editor` (create at lines ~94/317/459, update at ~338/450/472, delete at ~298), passing the pre-mutation post (or `nil`) and the result post (or `nil`). The publish/unpublish toggle (~450) is the highest-value trigger.
 
-### 4. Telemetry metrics
+### 5. Telemetry metrics
 
 `NewtonWeb.Telemetry.metrics/0` gains:
 
@@ -98,7 +109,7 @@ summary("newton.indexnow.submit.stop.duration",
 )
 ```
 
-### 5. AGENTS.md
+### 6. AGENTS.md
 
 Already updated (Observability & telemetry section) — no further doc work in this project.
 

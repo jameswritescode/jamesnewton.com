@@ -36,3 +36,5 @@ config :newton, :media_root, "/data/images"
 # Kept off while jamesnewton-com.fly.dev serves as staging — no reason to ping
 # search engines about the staging host. Flip to true once jamesnewton.com goes live.
 config :newton, Newton.IndexNow, enabled: false
+
+config :newton, Newton.PromEx, metrics_server: [port: 9091]

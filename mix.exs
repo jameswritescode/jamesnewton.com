@@ -81,7 +81,8 @@ defmodule Newton.MixProject do
       {:wax_, "~> 0.7"},
       {:lumis, "~> 0.1"},
       {:phoenix_seo, "~> 0.3.0-rc.0"},
-      {:xml_builder, "~> 2.4"}
+      {:xml_builder, "~> 2.4"},
+      {:prom_ex, "~> 1.12"}
     ]
   end
 

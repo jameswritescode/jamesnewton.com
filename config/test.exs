@@ -46,3 +46,9 @@ config :phoenix,
 config :newton, :webauthn, rp_id: "localhost", origin: "http://localhost:4000"
 
 config :newton, Newton.IndexNow, req_options: [plug: {Req.Test, Newton.IndexNow}]
+
+# Phoenix's channel test transport is a 2-tuple with no String.Chars impl, so
+# the Prometheus aggregator would log a tag-drop warning on every LiveView test
+# connection. Drop those metric groups in test only.
+config :newton, Newton.PromEx,
+  drop_metrics_groups: [:phoenix_socket_event_metrics, :phoenix_channel_event_metrics]

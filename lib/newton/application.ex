@@ -8,6 +8,7 @@ defmodule Newton.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      Newton.PromEx,
       NewtonWeb.Telemetry,
       Newton.Repo,
       {DNSCluster, query: Application.get_env(:newton, :dns_cluster_query) || :ignore},

@@ -9,6 +9,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.Layouts
+  alias NewtonWeb.IndexNowNotifier
 
   @autosave_debounce_ms 1500
 
@@ -93,6 +94,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
     case Blog.create_post(backfill_new(%{})) do
       {:ok, post} ->
+        IndexNowNotifier.notify_change(nil, post)
+
         socket
         |> assign(:post, post)
         |> assign(:published_at, post.published_at)
@@ -298,6 +301,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   def handle_event("delete", _params, socket) do
     {:ok, _} = Blog.delete_post(socket.assigns.post)
+    IndexNowNotifier.notify_change(socket.assigns.post, nil)
 
     {:noreply,
      socket
@@ -318,6 +322,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     if content?(params) do
       case Blog.create_post(backfill_new(params)) do
         {:ok, post} ->
+          IndexNowNotifier.notify_change(nil, post)
+
           {:noreply,
            socket
            |> assign(:post, post)
@@ -338,14 +344,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp persist_autosave(socket, %Post{} = post, params) do
     case Blog.update_post(post, never_blank_identity(params, post)) do
-      {:ok, post} ->
+      {:ok, updated} ->
+        IndexNowNotifier.notify_change(post, updated)
+
         {:noreply,
          socket
-         |> assign(:post, post)
+         |> assign(:post, updated)
          |> assign(:autosave_params, nil)
          |> assign(:autosave_timer, nil)
          |> assign(:save_state, :saved)
-         |> reoffer_identity(post, params)}
+         |> reoffer_identity(updated, params)}
 
       {:error, _changeset} ->
         {:noreply, assign(socket, :save_state, :error)}
@@ -455,7 +463,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   # Publishing toggles publication state on the saved post; content edits in the
   # form are left untouched.
   defp set_published(socket, published_at) do
-    {:ok, post} = Blog.update_post(socket.assigns.post, %{"published_at" => published_at})
+    before = socket.assigns.post
+    {:ok, post} = Blog.update_post(before, %{"published_at" => published_at})
+    IndexNowNotifier.notify_change(before, post)
 
     socket
     |> assign(:post, post)
@@ -466,6 +476,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp save(socket, %Post{id: nil}, params) do
     case Blog.create_post(backfill_new(params)) do
       {:ok, post} ->
+        IndexNowNotifier.notify_change(nil, post)
+
         {:noreply,
          socket
          |> put_flash(:info, "Post saved")
@@ -478,13 +490,15 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp save(socket, %Post{} = post, params) do
     case Blog.update_post(post, params) do
-      {:ok, post} ->
+      {:ok, updated} ->
+        IndexNowNotifier.notify_change(post, updated)
+
         {:noreply,
          socket
          |> put_flash(:info, "Post saved")
-         |> assign(:post, post)
-         |> assign(:published_at, post.published_at)
-         |> assign(:form, to_form(Blog.change_post(post)))
+         |> assign(:post, updated)
+         |> assign(:published_at, updated.published_at)
+         |> assign(:form, to_form(Blog.change_post(updated)))
          |> assign(:save_state, :saved)
          |> assign(:autosave_params, nil)}
 

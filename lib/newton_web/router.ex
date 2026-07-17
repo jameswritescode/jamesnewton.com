@@ -40,6 +40,13 @@ defmodule NewtonWeb.Router do
     get "/posts/:slug", OgImageController, :show
   end
 
+  # Crawler endpoints. No :browser pipeline — plain XML/text, no session/CSRF;
+  # the controller sets content-type + caching.
+  scope "/", NewtonWeb do
+    get "/sitemap.xml", SitemapController, :sitemap
+    get "/robots.txt", SitemapController, :robots
+  end
+
   scope "/admin", NewtonWeb.Admin do
     pipe_through [:browser, :require_authenticated_user]
 

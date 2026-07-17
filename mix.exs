@@ -80,7 +80,8 @@ defmodule Newton.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:wax_, "~> 0.7"},
       {:lumis, "~> 0.1"},
-      {:phoenix_seo, "~> 0.3.0-rc.0"}
+      {:phoenix_seo, "~> 0.3.0-rc.0"},
+      {:xml_builder, "~> 2.4"}
     ]
   end
 

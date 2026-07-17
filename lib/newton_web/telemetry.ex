@@ -21,12 +21,6 @@ defmodule NewtonWeb.Telemetry do
 
   def metrics do
     [
-      # IndexNow Metrics
-      summary("newton.indexnow.submit.stop.duration",
-        unit: {:native, :millisecond},
-        tags: [:result]
-      ),
-
       # Phoenix Metrics
       summary("phoenix.endpoint.start.system_time",
         unit: {:native, :millisecond}
@@ -86,7 +80,7 @@ defmodule NewtonWeb.Telemetry do
       summary("vm.total_run_queue_lengths.total"),
       summary("vm.total_run_queue_lengths.cpu"),
       summary("vm.total_run_queue_lengths.io")
-    ]
+    ] ++ Newton.Metrics.definitions()
   end
 
   defp periodic_measurements do

@@ -12,6 +12,7 @@ defmodule Newton.Application do
       Newton.Repo,
       {DNSCluster, query: Application.get_env(:newton, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Newton.PubSub},
+      {Task.Supervisor, name: Newton.TaskSupervisor},
       # Start to serve requests, typically the last entry
       NewtonWeb.Endpoint
     ]

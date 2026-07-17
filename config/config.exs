@@ -83,6 +83,10 @@ config :mdex_native, syntax_highlighter: :lumis
 config :phoenix_seo,
   json_ld_types: [SEO.JSONLD.Article, SEO.JSONLD.WebSite, SEO.JSONLD.Person]
 
+config :newton, Newton.IndexNow,
+  key: "d1258f1d59aea5c8f3e604eb494cc477",
+  enabled: false
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

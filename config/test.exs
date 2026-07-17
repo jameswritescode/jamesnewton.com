@@ -44,3 +44,5 @@ config :phoenix,
   sort_verified_routes_query_params: true
 
 config :newton, :webauthn, rp_id: "localhost", origin: "http://localhost:4000"
+
+config :newton, Newton.IndexNow, req_options: [plug: {Req.Test, Newton.IndexNow}]

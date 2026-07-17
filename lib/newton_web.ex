@@ -19,7 +19,7 @@ defmodule NewtonWeb do
 
   def static_paths,
     do:
-      ~w(assets fonts images favicon.ico favicon.svg favicon-32.png favicon-96.png apple-touch-icon.png og-default.png og-links.png)
+      ~w(assets fonts images favicon.ico favicon.svg favicon-32.png favicon-96.png apple-touch-icon.png og-default.png og-links.png d1258f1d59aea5c8f3e604eb494cc477.txt)
 
   def router do
     quote do

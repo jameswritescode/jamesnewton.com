@@ -21,6 +21,12 @@ defmodule NewtonWeb.Telemetry do
 
   def metrics do
     [
+      # IndexNow Metrics
+      summary("newton.indexnow.submit.stop.duration",
+        unit: {:native, :millisecond},
+        tags: [:result]
+      ),
+
       # Phoenix Metrics
       summary("phoenix.endpoint.start.system_time",
         unit: {:native, :millisecond}

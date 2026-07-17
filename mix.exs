@@ -82,7 +82,11 @@ defmodule Newton.MixProject do
       {:lumis, "~> 0.1"},
       {:phoenix_seo, "~> 0.3.0-rc.0"},
       {:xml_builder, "~> 2.4"},
-      {:prom_ex, "~> 1.12"}
+      {:prom_ex, "~> 1.12"},
+      # PromEx's standalone metrics server (prod, port 9091) serves via
+      # Plug.Cowboy, not Bandit — an optional dep PromEx resolves at runtime,
+      # so nothing fails at compile time without it.
+      {:plug_cowboy, "~> 2.7"}
     ]
   end
 

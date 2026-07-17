@@ -21,4 +21,11 @@ defmodule Newton.PromExTest do
 
     assert PromEx.get_metrics(Newton.PromEx) =~ "phoenix_"
   end
+
+  # The prod-only standalone metrics server resolves Plug.Cowboy lazily at boot,
+  # so a missing dep crash-loops prod while every dev/test run stays green
+  # (the server is disabled outside prod). This canary keeps the dep pinned.
+  test "Plug.Cowboy is present for the prod metrics server" do
+    assert Code.ensure_loaded?(Plug.Cowboy)
+  end
 end

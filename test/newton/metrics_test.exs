@@ -4,7 +4,7 @@ defmodule Newton.MetricsTest do
   test "definitions use only Prometheus-exportable metric types" do
     definitions = Newton.Metrics.definitions()
 
-    assert definitions != []
+    refute Enum.empty?(definitions)
 
     for metric <- definitions do
       refute match?(%Telemetry.Metrics.Summary{}, metric),

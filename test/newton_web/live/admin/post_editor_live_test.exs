@@ -340,6 +340,55 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert html =~ ~s(value="custom")
   end
 
+  defp excerpt_value(html) do
+    case Regex.run(~r/<textarea[^>]*name="post\[excerpt\]"[^>]*>([^<]*)<\/textarea>/, html) do
+      [_, content] -> content
+      _ -> :no_excerpt_textarea
+    end
+  end
+
+  test "slug follows the title while the slug field stays untouched", %{conn: conn} do
+    {view, _post} = open_draft(conn)
+
+    # Real browser: the user types only in the title. LiveView marks the slug
+    # untouched (_unused_slug) and submits a value that lags the derived slug.
+    # The slug must keep following the title rather than locking on the stale value.
+    render_change(view, "validate", %{
+      "post" => %{"title" => "h", "slug" => "untitled-post", "_unused_slug" => ""}
+    })
+
+    html =
+      render_change(view, "validate", %{
+        "post" => %{"title" => "hello world", "slug" => "untitled-post", "_unused_slug" => ""}
+      })
+
+    assert html =~ ~s(value="hello-world")
+    refute html =~ ~s(value="untitled-post")
+  end
+
+  test "excerpt follows the body while the excerpt field stays untouched", %{conn: conn} do
+    {view, _post} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
+    stale = "Seed body paragraph."
+
+    # Real browser: the user types in the body only. The excerpt is untouched
+    # (_unused_excerpt) and submits its stale rendered value; it must keep
+    # following the body rather than locking on the stale value.
+    render_change(view, "validate", %{
+      "post" => %{"body_markdown" => "Second body version.", "excerpt" => stale, "_unused_excerpt" => ""}
+    })
+
+    html =
+      render_change(view, "validate", %{
+        "post" => %{
+          "body_markdown" => "Third body version now.",
+          "excerpt" => stale,
+          "_unused_excerpt" => ""
+        }
+      })
+
+    assert excerpt_value(html) == "Third body version now."
+  end
+
   test "excerpt follows the body until the author edits it", %{conn: conn} do
     {view, _post} = open_draft(conn)
 

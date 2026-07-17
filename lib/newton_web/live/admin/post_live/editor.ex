@@ -191,10 +191,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     published? = not is_nil(socket.assigns.published_at)
 
     slug_locked =
-      socket.assigns.slug_locked or published? or params["slug"] != socket.assigns.slug_auto
+      socket.assigns.slug_locked or published? or
+        field_edited?(params, "slug", socket.assigns.slug_auto)
 
     excerpt_locked =
-      socket.assigns.excerpt_locked or params["excerpt"] != socket.assigns.excerpt_auto
+      socket.assigns.excerpt_locked or
+        field_edited?(params, "excerpt", socket.assigns.excerpt_auto)
 
     {params, slug_auto} =
       FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
@@ -361,6 +363,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp unused?(params, key), do: Map.has_key?(params, "_unused_" <> key)
+
+  # A derived field (slug, excerpt) locks only once the author edits it. The
+  # author touched it when LiveView drops the field's _unused_ marker; the value
+  # a browser submits for an untouched field can lag the derived value, so a bare
+  # value comparison would lock it spuriously.
+  defp field_edited?(params, key, auto), do: not unused?(params, key) and params[key] != auto
 
   defp content?(params) do
     not blank?(params["title"]) or not blank?(params["body_markdown"])

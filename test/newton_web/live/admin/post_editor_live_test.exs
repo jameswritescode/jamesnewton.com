@@ -374,7 +374,11 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     # (_unused_excerpt) and submits its stale rendered value; it must keep
     # following the body rather than locking on the stale value.
     render_change(view, "validate", %{
-      "post" => %{"body_markdown" => "Second body version.", "excerpt" => stale, "_unused_excerpt" => ""}
+      "post" => %{
+        "body_markdown" => "Second body version.",
+        "excerpt" => stale,
+        "_unused_excerpt" => ""
+      }
     })
 
     html =

@@ -28,8 +28,8 @@ defmodule Newton.MetricsTest do
 
     assert is_function(indexnow.measurement, 1),
            "measurement must be a function that extracts duration from the event"
-    # Duration is stored in nanoseconds in the event, and converted to milliseconds per the unit config
-    # 1_000_000 nanoseconds = 1 millisecond
+
+    # The measurement fun also converts native time units to milliseconds
     assert indexnow.measurement.(%{duration: 1_000_000}) == 1
     assert indexnow.tags == [:result]
 

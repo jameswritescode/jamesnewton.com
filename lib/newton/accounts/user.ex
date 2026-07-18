@@ -8,6 +8,7 @@ defmodule Newton.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
+    field :timezone, :string, default: "America/Los_Angeles"
 
     has_many :credentials, Newton.Accounts.Credential
     timestamps(type: :utc_datetime)
@@ -109,6 +110,16 @@ defmodule Newton.Accounts.User do
     else
       changeset
     end
+  end
+
+  @spec timezone_changeset(%__MODULE__{} | Ecto.Changeset.t(), map()) :: Ecto.Changeset.t()
+  def timezone_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:timezone])
+    |> validate_required([:timezone])
+    |> validate_change(:timezone, fn :timezone, tz ->
+      if Tzdata.zone_exists?(tz), do: [], else: [timezone: "is not a known timezone"]
+    end)
   end
 
   @doc """

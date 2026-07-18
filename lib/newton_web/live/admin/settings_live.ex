@@ -13,6 +13,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
      socket
      |> assign(:page_title, "Settings")
      |> assign(:user, user)
+     |> assign(:timezone_form, timezone_form(user))
      |> assign(:password_form, password_form())
      |> assign(:credentials, Accounts.list_user_credentials(user))
      |> assign(:reg_challenge, nil)
@@ -20,6 +21,8 @@ defmodule NewtonWeb.Admin.SettingsLive do
      |> assign(:recovery_count, Accounts.count_unused_recovery_codes(user))
      |> assign(:new_recovery_codes, nil)}
   end
+
+  defp timezone_form(user), do: to_form(Accounts.User.timezone_changeset(user, %{}), as: :user)
 
   defp password_form, do: to_form(Accounts.change_user_password(%Accounts.User{}), as: :user)
 
@@ -37,6 +40,20 @@ defmodule NewtonWeb.Admin.SettingsLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :password_form, to_form(changeset, as: :user))}
+    end
+  end
+
+  def handle_event("save_timezone", %{"user" => params}, socket) do
+    case Accounts.update_user_timezone(socket.assigns.user, params) do
+      {:ok, user} ->
+        {:noreply,
+         socket
+         |> assign(:user, user)
+         |> assign(:timezone_form, timezone_form(user))
+         |> put_flash(:info, "Timezone updated.")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :timezone_form, to_form(changeset, as: :user))}
     end
   end
 
@@ -129,6 +146,21 @@ defmodule NewtonWeb.Admin.SettingsLive do
     ~H"""
     <Layouts.admin flash={@flash} current={:settings}>
       <Components.page_header title="Settings" />
+
+      <section class="mb-8 max-w-md">
+        <h2 class="mb-3 text-[0.95rem] font-medium">Timezone</h2>
+        <.form for={@timezone_form} id="timezone-form" phx-submit="save_timezone">
+          <Components.field
+            field={@timezone_form[:timezone]}
+            type="select"
+            label="Analytics and dashboard render in this timezone"
+            options={Tzdata.zone_list()}
+          />
+          <div class="mt-3">
+            <Components.button type="submit">Save timezone</Components.button>
+          </div>
+        </.form>
+      </section>
 
       <section class="mb-8 max-w-md">
         <h2 class="mb-3 text-[0.95rem] font-medium">Change password</h2>

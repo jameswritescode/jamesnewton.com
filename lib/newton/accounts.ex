@@ -201,6 +201,11 @@ defmodule Newton.Accounts do
     end
   end
 
+  @spec update_user_timezone(%User{}, map()) :: {:ok, %User{}} | {:error, Ecto.Changeset.t()}
+  def update_user_timezone(%User{} = user, attrs) do
+    user |> User.timezone_changeset(attrs) |> Repo.update()
+  end
+
   ## Session
 
   @doc """

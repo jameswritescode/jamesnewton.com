@@ -1,14 +1,17 @@
-alias Newton.{Repo, Blog, Reading, Gallery}
+alias Newton.{Repo, Analytics, Blog, Reading, Gallery}
 alias Newton.Accounts.User
+alias Newton.Analytics.HourlyView
 alias Newton.Blog.Post
 alias Newton.Reading.Entry
 alias Newton.Gallery.{PhotoGroup, Photo}
 
-# Idempotent reset (dev/placeholder content only)
+# Idempotent reset (dev/placeholder content only). HourlyView must be cleared
+# because record_views increments — reseeding would otherwise double counts.
 Repo.delete_all(Photo)
 Repo.delete_all(PhotoGroup)
 Repo.delete_all(Entry)
 Repo.delete_all(Post)
+Repo.delete_all(HourlyView)
 
 # --- Dev admin (password set via direct hash: "password" is below the
 # changeset's 12-char minimum, which is the point — never use in prod) ---
@@ -362,6 +365,43 @@ Enum.each(photo_groups, fn %{photos: photos} = attrs ->
   end)
 end)
 
+# --- Analytics (30 days of plausible view history; deterministic so reseeds
+# produce identical numbers) ---
+view_weights = %{
+  "/" => 8,
+  "/posts" => 4,
+  "/posts/three-ways-to-retry" => 6,
+  "/posts/the-quiet-shift-software-engineering-in-the-age-of-ai" => 9,
+  "/photos" => 3,
+  "/reading" => 2,
+  "/links" => 2,
+  "/resume" => 1
+}
+
+today = Date.utc_today()
+
+views =
+  for days_ago <- 0..29, {path, weight} <- view_weights, reduce: %{} do
+    acc ->
+      date = Date.add(today, -days_ago)
+      jitter = :erlang.phash2({path, date}, weight + 1)
+      aggregator_spike = if days_ago in 3..5 and path =~ "the-quiet-shift", do: 40, else: 0
+      total = weight + jitter + aggregator_spike
+
+      early = div(total, 3)
+      mid = div(total, 3)
+      late = total - early - mid
+
+      [{15, early}, {19, mid}, {23, late}]
+      |> Enum.reject(fn {_h, n} -> n == 0 end)
+      |> Enum.reduce(acc, fn {h, n}, acc ->
+        hour = DateTime.new!(date, Time.new!(h, 0, 0), "Etc/UTC")
+        Map.update(acc, {hour, path}, n, &(&1 + n))
+      end)
+  end
+
+:ok = Analytics.record_views(views)
+
 IO.puts(
-  "Seeded #{Repo.aggregate(Post, :count)} posts, #{Repo.aggregate(Entry, :count)} reading entries, #{Repo.aggregate(PhotoGroup, :count)} photo groups."
+  "Seeded #{Repo.aggregate(Post, :count)} posts, #{Repo.aggregate(Entry, :count)} reading entries, #{Repo.aggregate(PhotoGroup, :count)} photo groups, #{Repo.aggregate(HourlyView, :count)} view rows."
 )

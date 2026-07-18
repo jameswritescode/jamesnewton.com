@@ -15,6 +15,12 @@ defmodule Newton.Metrics do
         unit: {:native, :millisecond},
         tags: [:result],
         reporter_options: [buckets: [10, 50, 100, 250, 500, 1_000, 2_500, 5_000]]
+      ),
+      distribution("newton.analytics.flush.stop.duration",
+        event_name: [:newton, :analytics, :flush, :stop],
+        unit: {:native, :millisecond},
+        tags: [:result],
+        reporter_options: [buckets: [5, 10, 25, 50, 100, 250]]
       )
     ]
   end

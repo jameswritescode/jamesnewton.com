@@ -52,3 +52,5 @@ config :newton, Newton.IndexNow, req_options: [plug: {Req.Test, Newton.IndexNow}
 # connection. Drop those metric groups in test only.
 config :newton, Newton.PromEx,
   drop_metrics_groups: [:phoenix_socket_event_metrics, :phoenix_channel_event_metrics]
+
+config :newton, Newton.Analytics.Collector, flush_interval: :manual

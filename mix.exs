@@ -86,7 +86,8 @@ defmodule Newton.MixProject do
       # PromEx's standalone metrics server (prod, port 9091) serves via
       # Plug.Cowboy, not Bandit — an optional dep PromEx resolves at runtime,
       # so nothing fails at compile time without it.
-      {:plug_cowboy, "~> 2.7"}
+      {:plug_cowboy, "~> 2.7"},
+      {:tzdata, "~> 1.1"}
     ]
   end
 

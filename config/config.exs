@@ -80,6 +80,8 @@ config :newton, :webauthn, rp_id: "localhost", origin: "http://localhost:4000"
 
 config :mdex_native, syntax_highlighter: :lumis
 
+config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+
 config :phoenix_seo,
   json_ld_types: [SEO.JSONLD.Article, SEO.JSONLD.WebSite, SEO.JSONLD.Person]
 

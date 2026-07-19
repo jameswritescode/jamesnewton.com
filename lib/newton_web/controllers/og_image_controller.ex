@@ -1,8 +1,9 @@
 defmodule NewtonWeb.OgImageController do
   @moduledoc """
-  Renders a post's Open Graph card on demand. The card is generated from the
-  live post each request (never stale) and cached at the edge/browser via
-  HTTP headers, since crawlers refetch rarely.
+  Renders a post's Open Graph card. Rendered PNGs are memoized per
+  `{slug, updated_at}` (see Newton.SocialCard.Cache) so this public endpoint
+  can't be looped to burn libvips CPU, and stay fresh when a post is edited.
+  Also cached at the edge/browser via HTTP headers.
   """
   use NewtonWeb, :controller
 
@@ -14,11 +15,16 @@ defmodule NewtonWeb.OgImageController do
   def show(conn, %{"slug" => slug}) do
     post = Blog.get_published_post!(slug)
 
-    case SocialCard.post_card(%{
-           title: post.title,
-           published_on: post.published_at && DateTime.to_date(post.published_at),
-           reading_time: post.reading_time || 1
-         }) do
+    render =
+      SocialCard.Cache.fetch(slug, post.updated_at, fn ->
+        SocialCard.post_card(%{
+          title: post.title,
+          published_on: post.published_at && DateTime.to_date(post.published_at),
+          reading_time: post.reading_time || 1
+        })
+      end)
+
+    case render do
       {:ok, png} ->
         conn
         |> put_resp_content_type("image/png")

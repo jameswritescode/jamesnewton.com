@@ -15,6 +15,7 @@ defmodule Newton.Application do
       {Phoenix.PubSub, name: Newton.PubSub},
       {Task.Supervisor, name: Newton.TaskSupervisor},
       Newton.Analytics.Collector,
+      Newton.SocialCard.Cache,
       # Start to serve requests, typically the last entry
       NewtonWeb.Endpoint
     ]

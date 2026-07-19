@@ -89,6 +89,13 @@ config :newton, Newton.IndexNow,
   key: "d1258f1d59aea5c8f3e604eb494cc477",
   enabled: false
 
+config :newton, Newton.Standard,
+  enabled: false,
+  identifier: "jamesnewton.com",
+  did: "did:plc:engjedcb3kwfl4vuo5gtr6n4",
+  pds_url: "https://bsky.social",
+  publication_uri: "at://did:plc:engjedcb3kwfl4vuo5gtr6n4/site.standard.publication/self"
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

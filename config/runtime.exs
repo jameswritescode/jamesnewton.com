@@ -74,6 +74,8 @@ if config_env() == :prod do
     rp_id: host,
     origin: "https://" <> host
 
+  config :newton, Newton.Standard, app_password: System.get_env("BSKY_APP_PASSWORD")
+
   config :newton, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :newton, NewtonWeb.Endpoint,

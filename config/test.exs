@@ -54,3 +54,7 @@ config :newton, Newton.PromEx,
   drop_metrics_groups: [:phoenix_socket_event_metrics, :phoenix_channel_event_metrics]
 
 config :newton, Newton.Analytics.Collector, flush_interval: :manual
+
+config :newton, Newton.Standard,
+  app_password: "test-app-password",
+  req_options: [plug: {Req.Test, Newton.Standard}]

@@ -96,7 +96,7 @@ const PLACEHOLDER_TEXT = "Write your post in markdown…"
 export const MarkdownEditor = {
   async mounted() {
     const [
-      {EditorView, keymap, placeholder, Decoration, ViewPlugin},
+      {EditorView, drawSelection, keymap, placeholder, Decoration, ViewPlugin},
       {EditorState, EditorSelection, RangeSetBuilder},
       {markdown, markdownLanguage},
       {languages},
@@ -247,6 +247,7 @@ export const MarkdownEditor = {
           // Higher precedence than the default keymap so the shortcuts win.
           markdownKeymap,
           keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+          drawSelection(),
           EditorView.lineWrapping,
           EditorView.contentAttributes.of({spellcheck: "true"}),
           markdown({base: markdownLanguage, codeLanguages: languages}),

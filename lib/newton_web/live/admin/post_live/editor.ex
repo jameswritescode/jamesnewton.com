@@ -1,6 +1,8 @@
 defmodule NewtonWeb.Admin.PostLive.Editor do
   use NewtonWeb, :live_view
 
+  require Logger
+
   alias Newton.Blog
   alias Newton.Blog.Post
   alias Newton.Gallery
@@ -48,15 +50,25 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
       url =
         consume_uploaded_entry(socket, entry, fn %{path: path} ->
-          {:ok, key} = Storage.store(path, filename)
-          attach_image(post, key, filename)
-          {:ok, Gallery.image_url(key)}
+          case Storage.store(path, filename) do
+            {:ok, key} ->
+              attach_image(post, key, filename)
+              {:ok, Gallery.image_url(key)}
+
+            {:error, reason} ->
+              Logger.warning("inline image store failed for #{filename}: #{inspect(reason)}")
+              {:ok, nil}
+          end
         end)
 
       socket = assign(socket, :images, post_images(post))
 
-      {:noreply,
-       push_event(socket, "insert_image", %{url: url, alt: "", name: filename, token: token})}
+      if url do
+        {:noreply,
+         push_event(socket, "insert_image", %{url: url, alt: "", name: filename, token: token})}
+      else
+        {:noreply, put_flash(socket, :error, "Couldn't add #{filename} — not a supported image.")}
+      end
     else
       {:noreply, socket}
     end

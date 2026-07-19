@@ -78,27 +78,33 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
 
     uploaded =
       consume_uploaded_entries(socket, :photos, fn %{path: path}, entry ->
-        {:ok, key} = Storage.store(path, entry.client_name)
+        case Storage.store(path, entry.client_name) do
+          {:ok, key} ->
+            thumb_key =
+              case Gallery.store_thumbnail(path) do
+                {:ok, tk} ->
+                  tk
 
-        thumb_key =
-          case Gallery.store_thumbnail(path) do
-            {:ok, tk} ->
-              tk
+                {:error, reason} ->
+                  Logger.warning(
+                    "thumbnail generation failed for #{entry.client_name}: #{inspect(reason)}"
+                  )
 
-            {:error, reason} ->
-              Logger.warning(
-                "thumbnail generation failed for #{entry.client_name}: #{inspect(reason)}"
-              )
+                  nil
+              end
 
-              nil
-          end
+            {w, h} = Map.get(dimensions, entry.client_name, {nil, nil})
+            {:ok, {key, thumb_key, w, h}}
 
-        {w, h} = Map.get(dimensions, entry.client_name, {nil, nil})
-        {:ok, {key, thumb_key, w, h}}
+          {:error, reason} ->
+            Logger.warning("photo store failed for #{entry.client_name}: #{inspect(reason)}")
+            {:ok, nil}
+        end
       end)
 
     photos =
       uploaded
+      |> Enum.reject(&is_nil/1)
       |> Enum.with_index(base)
       |> Enum.map(fn {{key, thumb_key, w, h}, position} ->
         {:ok, photo} =

@@ -200,7 +200,7 @@ defmodule Newton.GalleryTest do
     root = media_root()
     File.mkdir_p!(root)
     src = Path.join(root, "src-#{System.unique_integer([:positive])}.tmp")
-    File.write!(src, "data")
+    File.write!(src, <<0xFF, 0xD8, 0xFF, 0xE0, "jpeg body">>)
     {:ok, key} = Storage.store(src, "p.jpg")
     File.rm(src)
     key

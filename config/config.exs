@@ -7,6 +7,8 @@
 # General application configuration
 import Config
 
+config :error_tracker, repo: Newton.Repo, otp_app: :newton, enabled: true
+
 config :newton, :scopes,
   user: [
     default: true,

@@ -111,4 +111,14 @@ defmodule NewtonWeb.Router do
     post "/login/passkey", UserSessionController, :passkey_login
     delete "/logout", UserSessionController, :delete
   end
+
+  if Application.compile_env(:newton, :dev_routes) do
+    use ErrorTracker.Web, :router
+
+    scope "/dev" do
+      pipe_through :browser
+
+      error_tracker_dashboard "/errors"
+    end
+  end
 end

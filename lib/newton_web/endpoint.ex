@@ -1,13 +1,13 @@
 defmodule NewtonWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :newton
 
-  # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
-  # Set :encryption_salt if you would also like to encrypt it.
+  # The session cookie is signed (tamper-proof) and encrypted (opaque to the
+  # client). Salts derive keys from SECRET_KEY_BASE; they are not secrets.
   @session_options [
     store: :cookie,
     key: "_newton_key",
     signing_salt: "SQAKAS3y",
+    encryption_salt: "Sn35u8INx76v",
     same_site: "Lax"
   ]
 
@@ -16,10 +16,13 @@ defmodule NewtonWeb.Endpoint do
     longpoll: [connect_info: [session: @session_options]]
 
   # User images (not fingerprinted assets) served from a configurable root.
+  # nosniff stops a content-type-confused browser from ever executing an
+  # uploaded file as HTML/script from our origin.
   plug Plug.Static,
     at: "/media",
     from: Application.compile_env(:newton, :media_root),
-    gzip: false
+    gzip: false,
+    headers: %{"x-content-type-options" => "nosniff"}
 
   # Serve at "/" the static files from "priv/static" directory.
   #

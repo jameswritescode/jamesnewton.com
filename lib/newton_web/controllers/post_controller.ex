@@ -24,6 +24,7 @@ defmodule NewtonWeb.PostController do
       post ->
         conn
         |> SEO.assign(post)
+        |> assign(:standard_document, Newton.Standard.document_uri(post.slug))
         |> render(:show, page_title: post.title, post: post, preview: false)
     end
   end

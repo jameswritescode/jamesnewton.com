@@ -13,6 +13,16 @@
     <link rel="apple-touch-icon" href={~p"/apple-touch-icon.png"} />
     <meta :if={assigns[:page_robots]} name="robots" content={assigns[:page_robots]} />
     <SEO.juice conn={@conn} config={NewtonWeb.SEO.config()} page_title={assigns[:page_title]} />
+    <link
+      :if={publication_uri = Newton.Standard.publication_uri()}
+      rel="site.standard.publication"
+      href={publication_uri}
+    />
+    <link
+      :if={assigns[:standard_document]}
+      rel="site.standard.document"
+      href={@standard_document}
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

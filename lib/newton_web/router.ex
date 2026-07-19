@@ -45,6 +45,7 @@ defmodule NewtonWeb.Router do
   scope "/", NewtonWeb do
     get "/sitemap.xml", SitemapController, :sitemap
     get "/robots.txt", SitemapController, :robots
+    get "/.well-known/site.standard.publication", StandardController, :publication
   end
 
   scope "/admin", NewtonWeb.Admin do

@@ -2,6 +2,7 @@ defmodule NewtonWeb.StandardMetaTest do
   use NewtonWeb.ConnCase, async: true
 
   alias Newton.Blog
+  alias Newton.AccountsFixtures
 
   @publication "at://did:plc:engjedcb3kwfl4vuo5gtr6n4/site.standard.publication/self"
 
@@ -41,6 +42,19 @@ defmodule NewtonWeb.StandardMetaTest do
     {:ok, post} = Blog.enable_preview(post)
 
     html = conn |> get(~p"/posts/#{post.slug}?p=#{post.preview_token}") |> html_response(200)
+
+    refute html =~ ~s(rel="site.standard.document")
+  end
+
+  test "an admin viewing a draft gets no document link", %{conn: conn} do
+    {:ok, _} =
+      Blog.create_post(%{slug: "admin-draft", title: "Draft", body_markdown: "Shh."})
+
+    html =
+      conn
+      |> log_in_user(AccountsFixtures.user_fixture())
+      |> get(~p"/posts/admin-draft")
+      |> html_response(200)
 
     refute html =~ ~s(rel="site.standard.document")
   end

@@ -43,14 +43,14 @@ Passkeys registered against `jamesnewton-com.fly.dev` will not work on
 
 - `fly secrets set BSKY_APP_PASSWORD=<app password>` (create one in Bluesky
   settings; never the account password).
-- Run `mix standard.put_publication` (one-time; prints the publication AT-URI)
-  and set it in config.
+- Run `mix standard.put_publication` (one-time; creates the record and prints its AT-URI — already configured, nothing to set).
 - `config/prod.exs`: `config :newton, Newton.Standard, enabled: true`. Deploy.
 - Create records for the already-published posts (touch-save each in the
   editor, or `Newton.Standard.put_document/1` from IEx).
 - Verify: `curl https://jamesnewton.com/.well-known/site.standard.publication`
   returns the AT-URI; a post page's head carries the
   `site.standard.document` link tag. AppView verification proceeds from there.
+- Note: renaming a published post's slug deletes the old record and creates a new one as independent fire-and-forget tasks — if the delete ever fails, the old record lingers in the PDS until manually removed (best-effort cleanup, accepted).
 
 ## 6. Search engines
 

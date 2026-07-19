@@ -22,8 +22,16 @@ function effectiveTheme() {
   return storedTheme() || systemTheme()
 }
 
+// The swap must not animate: hover styles use transition-colors, which would
+// otherwise tween every themed property when the palette attribute flips. The
+// guard attribute disables transitions (see admin.css), the forced reflow
+// applies the new palette while they're off, and the next frame re-enables.
 function applyTheme(theme) {
-  document.documentElement.setAttribute("data-admin-theme", theme)
+  const root = document.documentElement
+  root.setAttribute("data-admin-theme-switching", "")
+  root.setAttribute("data-admin-theme", theme)
+  void root.offsetWidth
+  requestAnimationFrame(() => root.removeAttribute("data-admin-theme-switching"))
 }
 
 export const AdminTheme = {

@@ -6,6 +6,14 @@
    variant defined in app.css. Scoped to `[data-admin-theme]` so the public
    site is untouched. */
 
+/* Set by the AdminTheme hook for the single frame a theme swap happens in —
+   without it, every element with a hover transition (transition-colors etc.)
+   tweens the palette change instead of switching instantly. */
+[data-admin-theme-switching],
+[data-admin-theme-switching] * {
+  transition: none !important;
+}
+
 [data-admin-theme] {
   --admin-bg: #f7f6f4;
   --admin-surface: #ffffff;

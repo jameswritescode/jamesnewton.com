@@ -54,6 +54,7 @@ describe("AdminTheme hook", () => {
       }
     })
     document.documentElement.removeAttribute("data-admin-theme")
+    document.documentElement.removeAttribute("data-admin-theme-switching")
   })
 
   afterEach(() => vi.unstubAllGlobals())
@@ -79,6 +80,17 @@ describe("AdminTheme hook", () => {
     click(el)
     expect(theme()).toBe("light")
     expect(localStorage.getItem("admin-theme")).toBe("light")
+  })
+
+  it("suppresses transitions for the frame the theme swaps in", async () => {
+    const {el} = mount({system: "light"})
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+
+    click(el)
+    expect(document.documentElement.hasAttribute("data-admin-theme-switching")).toBe(true)
+
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(document.documentElement.hasAttribute("data-admin-theme-switching")).toBe(false)
   })
 
   it("follows later system changes only while no manual choice is stored", () => {

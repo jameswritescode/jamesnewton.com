@@ -67,8 +67,33 @@ defmodule NewtonWeb.Router do
       live "/photos/:id/edit", GalleryLive.Show, :settings
       live "/photos/:id/photo/:photo_id", GalleryLive.Show, :photo
       live "/media", MediaLive, :index
+    end
+
+    # Managing credentials is sensitive: require a recent authentication (sudo
+    # mode), so a hijacked or unattended session can't silently plant a passkey.
+    live_session :admin_sudo,
+      on_mount: [
+        {NewtonWeb.UserAuth, :require_authenticated},
+        {NewtonWeb.UserAuth, :require_sudo_mode}
+      ],
+      root_layout: {NewtonWeb.Layouts, :admin_root} do
       live "/settings", SettingsLive, :edit
     end
+  end
+
+  # The sudo re-authentication surface. Authenticated but deliberately NOT
+  # sudo-gated (that would loop), so a stale session can re-confirm here.
+  scope "/", NewtonWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :sudo_reauth,
+      on_mount: [{NewtonWeb.UserAuth, :require_authenticated}],
+      root_layout: {NewtonWeb.Layouts, :admin_root} do
+      live "/login/confirm-access", UserLive.Sudo, :new
+    end
+
+    post "/login/confirm-access", SudoController, :password
+    post "/login/confirm-access/passkey", SudoController, :passkey
   end
 
   # Other scopes may use custom stacks.

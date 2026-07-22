@@ -242,14 +242,15 @@ defmodule NewtonWeb.UserAuth do
 
   def on_mount(:require_sudo_mode, _params, session, socket) do
     socket = mount_current_scope(socket, session)
+    scope = socket.assigns.current_scope
 
-    if Accounts.sudo_mode?(socket.assigns.current_scope.user, -10) do
+    if scope && Accounts.sudo_mode?(scope.user, -10) do
       {:cont, socket}
     else
       socket =
         socket
-        |> Phoenix.LiveView.put_flash(:error, "You must re-authenticate to access this page.")
-        |> Phoenix.LiveView.redirect(to: ~p"/login")
+        |> Phoenix.LiveView.put_flash(:error, "Confirm it's you to manage security settings.")
+        |> Phoenix.LiveView.redirect(to: ~p"/login/confirm-access")
 
       {:halt, socket}
     end

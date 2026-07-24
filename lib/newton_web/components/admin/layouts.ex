@@ -108,7 +108,7 @@ defmodule NewtonWeb.Admin.Layouts do
           </button>
         </header>
 
-        <main id="admin-main" class="max-w-6xl flex-1 px-4 py-8 md:px-10">
+        <main id="admin-main" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-10">
           {render_slot(@inner_block)}
         </main>
       </div>

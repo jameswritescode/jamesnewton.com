@@ -244,6 +244,10 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     save(socket, socket.assigns.post, params)
   end
 
+  def handle_event("autosave_now", _params, %{assigns: %{save_state: :conflict}} = socket) do
+    {:noreply, socket}
+  end
+
   def handle_event("autosave_now", params, socket) do
     socket =
       case params do
@@ -311,6 +315,45 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:noreply, put_flash(socket, :error, "Not uploaded: #{rejected_summary(rejected)}")}
   end
 
+  def handle_event("conflict_load_latest", _params, socket) do
+    post = Blog.get_post!(socket.assigns.post.id)
+
+    {:noreply,
+     socket
+     |> assign(:post, post)
+     |> assign(:published_at, post.published_at)
+     |> assign(:images, post_images(post))
+     |> assign(:slug_locked, slug_locked?(post))
+     |> assign(:slug_auto, post.slug)
+     |> assign(:excerpt_locked, excerpt_locked?(post))
+     |> assign(:excerpt_auto, post.excerpt || "")
+     |> assign(:save_state, :saved)
+     |> assign(:autosave_params, nil)
+     |> assign(:form, to_form(Blog.change_post(post)))
+     |> assign(:editor_key, new_editor_key())}
+  end
+
+  def handle_event("conflict_keep_mine", _params, socket) do
+    fresh = Blog.get_post!(socket.assigns.post.id)
+    params = socket.assigns.autosave_params || %{}
+
+    case Blog.update_post(fresh, never_blank_identity(params, fresh)) do
+      {:ok, updated} ->
+        PublicationNotifier.notify_change(fresh, updated)
+
+        {:noreply,
+         socket
+         |> assign(:post, updated)
+         |> assign(:published_at, updated.published_at)
+         |> assign(:form, to_form(Blog.change_post(updated)))
+         |> assign(:save_state, :saved)
+         |> assign(:autosave_params, nil)}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :save_state, :error)}
+    end
+  end
+
   def handle_event("delete", _params, socket) do
     {:ok, _} = Blog.delete_post(socket.assigns.post)
     PublicationNotifier.notify_change(socket.assigns.post, nil)
@@ -367,6 +410,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
          |> assign(:save_state, :saved)
          |> reoffer_identity(updated, params)}
 
+      {:error, :stale} ->
+        {:noreply, enter_conflict(socket)}
+
       {:error, _changeset} ->
         {:noreply, assign(socket, :save_state, :error)}
     end
@@ -414,6 +460,10 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     end
   end
 
+  defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, params, _published?) do
+    assign(socket, :autosave_params, params)
+  end
+
   defp track_save_state(socket, params, false), do: maybe_schedule_autosave(socket, params, true)
 
   defp track_save_state(socket, params, true) do
@@ -438,6 +488,14 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp reschedule_autosave_timer(socket) do
     if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
     assign(socket, :autosave_timer, Process.send_after(self(), :autosave, @autosave_debounce_ms))
+  end
+
+  defp enter_conflict(socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+
+    socket
+    |> assign(:autosave_timer, nil)
+    |> assign(:save_state, :conflict)
   end
 
   # Render the social card from the current form state (works for drafts/unsaved
@@ -467,6 +525,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   # Published posts show the text indicator (manual-save signal); drafts only show
   # it on error, since the button otherwise carries their state.
+  defp show_save_text?(_published_at, :conflict), do: false
+
   defp show_save_text?(published_at, save_state) do
     (not is_nil(published_at) and save_state != :saved) or
       (is_nil(published_at) and save_state == :error)
@@ -476,13 +536,24 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   # form are left untouched.
   defp set_published(socket, published_at) do
     before = socket.assigns.post
-    {:ok, post} = Blog.update_post(before, %{"published_at" => published_at})
-    PublicationNotifier.notify_change(before, post)
 
-    socket
-    |> assign(:post, post)
-    |> assign(:published_at, post.published_at)
-    |> put_flash(:info, if(post.published_at, do: "Post published", else: "Moved to draft"))
+    case Blog.update_post(before, %{"published_at" => published_at}) do
+      {:ok, post} ->
+        PublicationNotifier.notify_change(before, post)
+
+        socket
+        |> assign(:post, post)
+        |> assign(:published_at, post.published_at)
+        |> put_flash(:info, if(post.published_at, do: "Post published", else: "Moved to draft"))
+
+      {:error, :stale} ->
+        socket
+        |> update(:autosave_params, &Map.put(&1 || %{}, "published_at", published_at))
+        |> enter_conflict()
+
+      {:error, _changeset} ->
+        assign(socket, :save_state, :error)
+    end
   end
 
   defp save(socket, %Post{id: nil}, params) do
@@ -514,6 +585,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
          |> assign(:save_state, :saved)
          |> assign(:autosave_params, nil)}
 
+      {:error, :stale} ->
+        {:noreply, socket |> assign(:autosave_params, params) |> enter_conflict()}
+
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
     end
@@ -538,6 +612,28 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             ← Posts
           </.link>
           <div class="flex-1"></div>
+          <div
+            :if={@save_state == :conflict}
+            id="conflict-banner"
+            class="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[0.78rem] text-amber-600 admin-dark:text-amber-400"
+          >
+            <.icon name="hero-exclamation-triangle-mini" class="size-4 shrink-0" />
+            This post was changed in another window
+            <Components.button
+              id="conflict-load-latest"
+              variant="secondary"
+              phx-click="conflict_load_latest"
+            >
+              Load latest
+            </Components.button>
+            <Components.button
+              id="conflict-keep-mine"
+              variant="secondary"
+              phx-click="conflict_keep_mine"
+            >
+              Keep mine
+            </Components.button>
+          </div>
           <span
             :if={show_save_text?(@published_at, @save_state)}
             class="text-[0.78rem] text-(--admin-text-subtle)"

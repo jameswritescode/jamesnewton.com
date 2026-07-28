@@ -36,7 +36,9 @@ defmodule NewtonWeb.SudoTest do
     end
 
     test "the correct password reopens sudo and returns to settings", %{conn: conn} do
-      conn = post(conn, ~p"/login/confirm-access", %{"user" => %{"password" => valid_user_password()}})
+      conn =
+        post(conn, ~p"/login/confirm-access", %{"user" => %{"password" => valid_user_password()}})
+
       assert redirected_to(conn) == ~p"/admin/settings"
 
       # The rotated token makes the follow-up request sudo-fresh.
@@ -44,12 +46,15 @@ defmodule NewtonWeb.SudoTest do
     end
 
     test "a wrong password stays gated with an error", %{conn: conn} do
-      conn = post(conn, ~p"/login/confirm-access", %{"user" => %{"password" => "not the password"}})
+      conn =
+        post(conn, ~p"/login/confirm-access", %{"user" => %{"password" => "not the password"}})
+
       assert redirected_to(conn) == ~p"/login/confirm-access"
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "didn't match"
 
       # Still stale — settings remains gated.
-      assert {:error, {:redirect, %{to: "/login/confirm-access"}}} = live(conn, ~p"/admin/settings")
+      assert {:error, {:redirect, %{to: "/login/confirm-access"}}} =
+               live(conn, ~p"/admin/settings")
     end
 
     test "the confirm page renders both methods", %{conn: conn} do

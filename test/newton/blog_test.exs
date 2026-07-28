@@ -216,6 +216,7 @@ defmodule Newton.BlogTest do
         Blog.create_post(%{"title" => "Seq", "slug" => "seq", "body_markdown" => "one"})
 
       {:ok, post} = Blog.update_post(post, %{"body_markdown" => "two"})
+
       assert {:ok, %Post{body_markdown: "three"}} =
                Blog.update_post(post, %{"body_markdown" => "three"})
     end

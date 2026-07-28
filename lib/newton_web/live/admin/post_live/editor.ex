@@ -203,40 +203,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   @impl true
   def handle_event("validate", %{"post" => params}, socket) do
-    published? = not is_nil(socket.assigns.published_at)
-
-    slug_locked =
-      socket.assigns.slug_locked or published? or
-        field_edited?(params, "slug", socket.assigns.slug_auto)
-
-    excerpt_locked =
-      socket.assigns.excerpt_locked or
-        field_edited?(params, "excerpt", socket.assigns.excerpt_auto)
-
-    {params, slug_auto} =
-      FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
-        Newton.Slug.slugify(params["title"] || "")
-      end)
-
-    {params, excerpt_auto} =
-      FormHelpers.autofill(params, "excerpt", excerpt_locked, socket.assigns.excerpt_auto, fn ->
-        Newton.Markdown.excerpt(params["body_markdown"] || "")
-      end)
-
-    form =
-      socket.assigns.post
-      |> Blog.change_post(params)
-      |> Map.put(:action, :validate)
-      |> to_form()
-
-    {:noreply,
-     socket
-     |> assign(:form, form)
-     |> assign(:slug_locked, slug_locked)
-     |> assign(:slug_auto, slug_auto)
-     |> assign(:excerpt_locked, excerpt_locked)
-     |> assign(:excerpt_auto, excerpt_auto)
-     |> track_save_state(params, published?)}
+    {:noreply, apply_validate(socket, params)}
   end
 
   def handle_event("save", %{"post" => params}, socket) do
@@ -354,6 +321,18 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     end
   end
 
+  def handle_event("recover", %{"post" => params}, socket) do
+    if params["lock_version"] == to_string(socket.assigns.post.lock_version) do
+      {:noreply,
+       socket
+       |> apply_validate(params)
+       |> assign(:editor_key, new_editor_key())}
+    else
+      {:noreply,
+       put_flash(socket, :info, "Updated in another window — showing the latest version.")}
+    end
+  end
+
   def handle_event("delete", _params, socket) do
     {:ok, _} = Blog.delete_post(socket.assigns.post)
     PublicationNotifier.notify_change(socket.assigns.post, nil)
@@ -458,6 +437,42 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     else
       params
     end
+  end
+
+  defp apply_validate(socket, params) do
+    published? = not is_nil(socket.assigns.published_at)
+
+    slug_locked =
+      socket.assigns.slug_locked or published? or
+        field_edited?(params, "slug", socket.assigns.slug_auto)
+
+    excerpt_locked =
+      socket.assigns.excerpt_locked or
+        field_edited?(params, "excerpt", socket.assigns.excerpt_auto)
+
+    {params, slug_auto} =
+      FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
+        Newton.Slug.slugify(params["title"] || "")
+      end)
+
+    {params, excerpt_auto} =
+      FormHelpers.autofill(params, "excerpt", excerpt_locked, socket.assigns.excerpt_auto, fn ->
+        Newton.Markdown.excerpt(params["body_markdown"] || "")
+      end)
+
+    form =
+      socket.assigns.post
+      |> Blog.change_post(params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    socket
+    |> assign(:form, form)
+    |> assign(:slug_locked, slug_locked)
+    |> assign(:slug_auto, slug_auto)
+    |> assign(:excerpt_locked, excerpt_locked)
+    |> assign(:excerpt_auto, excerpt_auto)
+    |> track_save_state(params, published?)
   end
 
   defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, params, _published?) do
@@ -597,7 +612,14 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:posts}>
-      <.form for={@form} id="post-form" phx-submit="save" phx-change="validate">
+      <.form
+        for={@form}
+        id="post-form"
+        phx-submit="save"
+        phx-change="validate"
+        phx-auto-recover="recover"
+      >
+        <input type="hidden" name="post[lock_version]" value={@post.lock_version} />
         <div
           id="unsaved-guard"
           phx-hook="UnsavedGuard"

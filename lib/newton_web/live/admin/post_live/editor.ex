@@ -283,41 +283,62 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   def handle_event("conflict_load_latest", _params, socket) do
-    post = Blog.get_post!(socket.assigns.post.id)
+    case Blog.get_post(socket.assigns.post.id) do
+      nil ->
+        {:noreply, deleted_elsewhere(socket)}
 
-    {:noreply,
-     socket
-     |> assign(:post, post)
-     |> assign(:published_at, post.published_at)
-     |> assign(:images, post_images(post))
-     |> assign(:slug_locked, slug_locked?(post))
-     |> assign(:slug_auto, post.slug)
-     |> assign(:excerpt_locked, excerpt_locked?(post))
-     |> assign(:excerpt_auto, post.excerpt || "")
-     |> assign(:save_state, :saved)
-     |> assign(:autosave_params, nil)
-     |> assign(:form, to_form(Blog.change_post(post)))
-     |> assign(:editor_key, new_editor_key())}
+      post ->
+        {:noreply,
+         socket
+         |> assign(:post, post)
+         |> assign(:published_at, post.published_at)
+         |> assign(:images, post_images(post))
+         |> assign(:slug_locked, slug_locked?(post))
+         |> assign(:slug_auto, post.slug)
+         |> assign(:excerpt_locked, excerpt_locked?(post))
+         |> assign(:excerpt_auto, post.excerpt || "")
+         |> assign(:save_state, :saved)
+         |> assign(:autosave_params, nil)
+         |> assign(:form, to_form(Blog.change_post(post)))
+         |> assign(:editor_key, new_editor_key())}
+    end
   end
 
   def handle_event("conflict_keep_mine", _params, socket) do
-    fresh = Blog.get_post!(socket.assigns.post.id)
-    params = socket.assigns.autosave_params || %{}
+    case Blog.get_post(socket.assigns.post.id) do
+      nil ->
+        {:noreply, deleted_elsewhere(socket)}
 
-    case Blog.update_post(fresh, never_blank_identity(params, fresh)) do
-      {:ok, updated} ->
-        PublicationNotifier.notify_change(fresh, updated)
+      fresh ->
+        params = socket.assigns.autosave_params || %{}
 
-        {:noreply,
-         socket
-         |> assign(:post, updated)
-         |> assign(:published_at, updated.published_at)
-         |> assign(:form, to_form(Blog.change_post(updated)))
-         |> assign(:save_state, :saved)
-         |> assign(:autosave_params, nil)}
+        case Blog.update_post(fresh, never_blank_identity(params, fresh)) do
+          {:ok, updated} ->
+            PublicationNotifier.notify_change(fresh, updated)
 
-      {:error, _} ->
-        {:noreply, assign(socket, :save_state, :error)}
+            socket =
+              socket
+              |> assign(:post, updated)
+              |> assign(:published_at, updated.published_at)
+              |> assign(:form, to_form(Blog.change_post(updated)))
+              |> assign(:save_state, :saved)
+              |> assign(:autosave_params, nil)
+
+            socket =
+              if Map.has_key?(params, "body_markdown") do
+                socket
+              else
+                assign(socket, :editor_key, new_editor_key())
+              end
+
+            {:noreply, socket}
+
+          {:error, :stale} ->
+            {:noreply, enter_conflict(socket)}
+
+          {:error, _} ->
+            {:noreply, assign(socket, :save_state, :error)}
+        end
     end
   end
 
@@ -341,6 +362,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      socket
      |> put_flash(:info, "Post deleted")
      |> push_navigate(to: ~p"/admin/posts")}
+  end
+
+  defp deleted_elsewhere(socket) do
+    socket
+    |> put_flash(:error, "This post was deleted in another window.")
+    |> push_navigate(to: ~p"/admin/posts")
   end
 
   @impl true

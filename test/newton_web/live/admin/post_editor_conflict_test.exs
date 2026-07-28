@@ -172,4 +172,116 @@ defmodule NewtonWeb.Admin.PostEditorConflictTest do
     assert has_element?(view, "#conflict-banner")
     assert Blog.get_post!(post.id).body_markdown == "from computer A"
   end
+
+  test "Load latest navigates away instead of crashing when the post was deleted elsewhere", %{
+    conn: conn
+  } do
+    {view, post} = open_editor(conn)
+
+    {:ok, _} = Blog.delete_post(post)
+
+    type_body(view, post, "typing into a deleted post")
+    autosave(view)
+
+    assert has_element?(view, "#conflict-banner")
+
+    view |> element("#conflict-load-latest") |> render_click()
+
+    assert_redirect(view, ~p"/admin/posts")
+  end
+
+  test "Keep mine navigates away instead of crashing when the post was deleted elsewhere", %{
+    conn: conn
+  } do
+    {view, post} = open_editor(conn)
+
+    {:ok, _} = Blog.delete_post(post)
+
+    type_body(view, post, "typing into a deleted post")
+    autosave(view)
+
+    assert has_element?(view, "#conflict-banner")
+
+    view |> element("#conflict-keep-mine") |> render_click()
+
+    assert_redirect(view, ~p"/admin/posts")
+  end
+
+  test "Keep mine resyncs the editor when the conflict carries no body", %{conn: conn} do
+    published = DateTime.truncate(DateTime.utc_now(), :second)
+
+    {view, post} =
+      open_editor(conn, %{"slug" => "keep-mine-resync", "published_at" => published})
+
+    write_elsewhere(post, "the other window's rewrite")
+
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Move to draft") |> render_click()
+
+    assert has_element?(view, "#conflict-banner")
+
+    view |> element("#conflict-keep-mine") |> render_click()
+
+    refute has_element?(view, "#conflict-banner")
+    updated = Blog.get_post!(post.id)
+    assert updated.body_markdown == "the other window's rewrite"
+    assert is_nil(updated.published_at)
+    assert view |> element("#post-form") |> render() =~ "the other window&#39;s rewrite"
+  end
+
+  test "a second collision during Keep mine re-enters conflict instead of losing the banner", %{
+    conn: conn
+  } do
+    {view, post} = open_editor(conn)
+    write_elsewhere(post, "from computer A")
+    type_body(view, post, "mine wins")
+    autosave(view)
+
+    assert has_element?(view, "#conflict-banner")
+
+    handler_id = "second-collision-#{post.id}"
+    test_pid = self()
+
+    :telemetry.attach(
+      handler_id,
+      [:newton, :repo, :query],
+      fn _event, _measurements, metadata, _config ->
+        if metadata.source == "posts" and metadata.params == [post.id] do
+          :telemetry.detach(handler_id)
+          send(test_pid, :intercepted)
+          Blog.update_post(Blog.get_post!(post.id), %{"body_markdown" => "from computer C"})
+        end
+      end,
+      nil
+    )
+
+    view |> element("#conflict-keep-mine") |> render_click()
+    assert_receive :intercepted
+
+    assert has_element?(view, "#conflict-banner")
+    assert Blog.get_post!(post.id).body_markdown == "from computer C"
+  end
+
+  test "the recovery wiring survives future markup edits", %{conn: conn} do
+    # LiveViewTest cannot simulate a client reconnect, so the phx-auto-recover
+    # wiring itself is otherwise unreachable by any behavioral test.
+    {view, _post} = open_editor(conn)
+
+    assert has_element?(view, "#post-form[phx-auto-recover=recover]")
+    assert has_element?(view, "#post-form input[name='post[lock_version]'][type=hidden]")
+  end
+
+  test "autosave_now during a conflict never writes and keeps the banner up", %{conn: conn} do
+    {view, post} = open_editor(conn)
+    write_elsewhere(post, "from computer A")
+    type_body(view, post, "stale edit from computer B")
+    autosave(view)
+
+    assert has_element?(view, "#conflict-banner")
+
+    view |> element("#post_title") |> render_blur()
+
+    assert has_element?(view, "#conflict-banner")
+    assert Blog.get_post!(post.id).body_markdown == "from computer A"
+  end
 end

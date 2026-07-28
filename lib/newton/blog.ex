@@ -69,6 +69,10 @@ defmodule Newton.Blog do
   @spec get_post!(integer()) :: %Post{}
   def get_post!(id), do: Repo.get!(Post, id)
 
+  @doc "Fetch any post by id (admin), returning nil if it doesn't exist."
+  @spec get_post(term()) :: %Post{} | nil
+  def get_post(id), do: Repo.get(Post, id)
+
   @doc "Fetch any post by slug (admin), regardless of publish status."
   @spec get_post_by_slug!(String.t()) :: %Post{}
   def get_post_by_slug!(slug), do: Repo.get_by!(Post, slug: slug)

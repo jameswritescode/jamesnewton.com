@@ -24,9 +24,12 @@ defmodule Newton.Blog do
     %Post{} |> Post.changeset(attrs) |> Repo.insert()
   end
 
-  @spec update_post(%Post{}, map()) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
+  @spec update_post(%Post{}, map()) ::
+        {:ok, %Post{}} | {:error, Ecto.Changeset.t() | :stale}
   def update_post(%Post{} = post, attrs) do
     post |> Post.changeset(attrs) |> Repo.update()
+  rescue
+    Ecto.StaleEntryError -> {:error, :stale}
   end
 
   @spec rerender_post(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}

@@ -12,6 +12,7 @@ defmodule Newton.Blog.Post do
     field :reading_time, :integer
     field :published_at, :utc_datetime
     field :preview_token, :string
+    field :lock_version, :integer, default: 1
 
     has_many :images, Newton.Blog.PostImage
 
@@ -27,6 +28,7 @@ defmodule Newton.Blog.Post do
     |> ensure_body()
     |> validate_required([:slug, :title])
     |> unique_constraint(:slug)
+    |> optimistic_lock(:lock_version)
     |> render_derived_fields()
   end
 

@@ -1,6 +1,7 @@
 defmodule Newton.BlogTest do
   use Newton.DataCase
-  alias Newton.Blog
+  alias Newton.{Blog, Repo}
+  alias Newton.Blog.Post
 
   @valid %{
     slug: "hello-world",
@@ -194,6 +195,29 @@ defmodule Newton.BlogTest do
       assert id == shared.id
       assert is_nil(Blog.get_post_by_preview_token("d3", "wrong-token"))
       assert is_nil(Blog.get_post_by_preview_token("d3", ""))
+    end
+  end
+
+  describe "update_post/2 optimistic locking" do
+    test "returns {:error, :stale} and keeps the newer content when the post changed underneath" do
+      {:ok, post} =
+        Blog.create_post(%{"title" => "Race", "slug" => "race", "body_markdown" => "original"})
+
+      {:ok, _newer} = Blog.update_post(post, %{"body_markdown" => "from computer A"})
+
+      assert {:error, :stale} =
+               Blog.update_post(post, %{"body_markdown" => "stale from computer B"})
+
+      assert Repo.get!(Post, post.id).body_markdown == "from computer A"
+    end
+
+    test "sequential updates through fresh structs succeed" do
+      {:ok, post} =
+        Blog.create_post(%{"title" => "Seq", "slug" => "seq", "body_markdown" => "one"})
+
+      {:ok, post} = Blog.update_post(post, %{"body_markdown" => "two"})
+      assert {:ok, %Post{body_markdown: "three"}} =
+               Blog.update_post(post, %{"body_markdown" => "three"})
     end
   end
 end

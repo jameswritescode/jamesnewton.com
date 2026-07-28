@@ -42,8 +42,11 @@ Out of scope: real-time collaborative merging (CRDT/OT), Presence-based
   raises `Ecto.StaleEntryError` when another session already bumped the version.
 - `Blog.update_post/2` rescues `Ecto.StaleEntryError` and returns
   `{:error, :stale}`. Callers receive a value, never an exception.
-- `rerender_post/1` keeps its behavior; its version bump correctly conflicts
-  any editor session that was open across a re-render.
+- `rerender_post/1` keeps its behavior. It builds its own changeset without
+  `optimistic_lock`, so it neither bumps nor checks the version — acceptable
+  for a sequential maintenance task that loads fresh structs. The same is
+  true of `enable_preview/1` / `disable_preview/1` (accepted, noted at final
+  review).
 - Creates (`%Post{id: nil}`) cannot conflict and are untouched.
 
 ### 2. Editor conflict state

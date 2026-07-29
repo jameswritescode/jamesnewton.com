@@ -54,8 +54,11 @@ preference:
    phoenix_seo's JSON-LD renderer and emit the `ld+json` ourselves with
    `escape: :html_safe`.
 
-**Monitor:** the same repo we already watch for the phoenix_seo 0.3.0 release
-(see `docs/roadmap.md`). A fixed release closes this.
+**Monitor:** still present as of **0.3.1** (verified 2026-07-29 by rendering
+`SEO.JSONLD.meta/1` with a `</script>` title through our `Build` impl — the
+breakout renders verbatim; 0.3.0/0.3.1 were compiler/packaging fixups only).
+Keep watching `github.com/dbernheisel/phoenix_seo` for an escaping fix, or file
+the one-line `escape: :html_safe` PR ourselves.
 
 ## cowlib / hackney advisories (no in-range fix)
 

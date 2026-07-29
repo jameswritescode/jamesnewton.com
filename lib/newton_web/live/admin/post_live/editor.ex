@@ -532,6 +532,23 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     assign(socket, :autosave_timer, Process.send_after(self(), :autosave, @autosave_debounce_ms))
   end
 
+  attr :id, :string, required: true
+  attr :event, :string, required: true
+  slot :inner_block, required: true
+
+  defp conflict_action(assigns) do
+    ~H"""
+    <button
+      type="button"
+      id={@id}
+      phx-click={@event}
+      class="rounded-md border border-amber-600/40 px-3 py-1 text-[0.75rem] font-medium text-amber-800 transition-colors hover:border-amber-600/60 hover:bg-amber-500/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 admin-dark:border-amber-400/40 admin-dark:text-amber-200 admin-dark:hover:border-amber-400/60 admin-dark:hover:bg-amber-400/15"
+    >
+      {render_slot(@inner_block)}
+    </button>
+    """
+  end
+
   defp enter_conflict(socket) do
     if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
 
@@ -661,28 +678,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             ← Posts
           </.link>
           <div class="flex-1"></div>
-          <div
-            :if={@save_state == :conflict}
-            id="conflict-banner"
-            class="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[0.78rem] text-amber-600 admin-dark:text-amber-400"
-          >
-            <.icon name="hero-exclamation-triangle-mini" class="size-4 shrink-0" />
-            This post was changed in another window
-            <Components.button
-              id="conflict-load-latest"
-              variant="secondary"
-              phx-click="conflict_load_latest"
-            >
-              Load latest
-            </Components.button>
-            <Components.button
-              id="conflict-keep-mine"
-              variant="secondary"
-              phx-click="conflict_keep_mine"
-            >
-              Keep mine
-            </Components.button>
-          </div>
           <span
             :if={show_save_text?(@published_at, @save_state)}
             class="text-[0.78rem] text-(--admin-text-subtle)"
@@ -722,6 +717,26 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           phx-blur="autosave_now"
           class="mb-4 w-full border-none bg-transparent font-mono text-[0.8rem] text-(--admin-text-subtle) focus:outline-none"
         />
+
+        <div
+          :if={@save_state == :conflict}
+          id="conflict-banner"
+          class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-amber-500/35 bg-amber-500/10 px-4 py-2.5 text-[0.8rem] text-amber-800 admin-dark:text-amber-200 motion-safe:animate-[admin-notice-in_160ms_ease-out]"
+        >
+          <.icon
+            name="hero-exclamation-triangle-mini"
+            class="size-4 shrink-0 text-amber-600 admin-dark:text-amber-300"
+          />
+          <span class="font-medium">This post was changed in another window</span>
+          <div class="ml-auto flex items-center gap-2">
+            <.conflict_action id="conflict-load-latest" event="conflict_load_latest">
+              Load latest
+            </.conflict_action>
+            <.conflict_action id="conflict-keep-mine" event="conflict_keep_mine">
+              Keep mine
+            </.conflict_action>
+          </div>
+        </div>
 
         <div id={"body-editor-#{@editor_key}"} phx-update="ignore">
           <textarea id={"post-body-markdown-#{@editor_key}"} name="post[body_markdown]" class="hidden"><%= Phoenix.HTML.Form.normalize_value("textarea", @form[:body_markdown].value) %></textarea>

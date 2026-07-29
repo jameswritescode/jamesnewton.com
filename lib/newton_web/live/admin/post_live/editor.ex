@@ -749,6 +749,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             data-upload-max-file-size={upload_max_file_size()}
             class="overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-surface)"
           >
+            <div
+              data-editor-skeleton
+              aria-hidden="true"
+              class="flex min-h-[24rem] flex-col gap-5 px-[1.75rem] py-[1.5rem] motion-safe:animate-pulse"
+            >
+              <div class="h-4 w-1/3 rounded bg-(--admin-border)"></div>
+              <div class="h-4 w-full rounded bg-(--admin-border)"></div>
+              <div class="h-4 w-5/6 rounded bg-(--admin-border)"></div>
+              <div class="h-4 w-2/3 rounded bg-(--admin-border)"></div>
+            </div>
           </div>
         </div>
 

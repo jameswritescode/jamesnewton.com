@@ -237,6 +237,8 @@ export const MarkdownEditor = {
       {key: "Mod-k", run: insertLink, preventDefault: true},
     ])
 
+    this.el.querySelector("[data-editor-skeleton]")?.remove()
+
     this.view = new EditorView({
       parent: this.el,
       state: EditorState.create({

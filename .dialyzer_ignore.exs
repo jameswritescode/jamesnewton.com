@@ -1,4 +1,4 @@
-# phoenix_seo 0.3.0-rc's :seo_jsonld compiler emits a hand-written Breadcrumbs
+# phoenix_seo's :seo_jsonld compiler (still as of 0.3.1) emits a hand-written Breadcrumbs
 # wrapper (pulled in transitively via BreadcrumbList/ListItem; we never emit
 # breadcrumbs) whose build/1 breaks its own BreadcrumbList contract. Not fixable
 # in our code — the file is regenerated on every compile. Scoped to that one

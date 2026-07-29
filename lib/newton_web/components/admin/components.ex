@@ -124,15 +124,15 @@ defmodule NewtonWeb.Admin.Components do
 
   defp button_class("primary"),
     do:
-      "rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+      "rounded-md bg-(--admin-accent) px-3 py-1.5 text-[0.78rem] font-medium text-white transition-colors hover:bg-(--admin-accent-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--admin-accent)"
 
   defp button_class("secondary"),
     do:
-      "rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] hover:bg-(--admin-accent-soft)"
+      "rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] transition-colors hover:bg-(--admin-accent-soft) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--admin-accent)"
 
   defp button_class("danger"),
     do:
-      "rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) hover:bg-(--admin-accent-soft)"
+      "rounded-md border border-(--admin-border) px-3 py-1.5 text-[0.78rem] text-(--admin-accent) transition-colors hover:bg-(--admin-accent-soft) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--admin-accent)"
 
   @doc "Consistent destructive button used in admin edit drawers."
   attr :event, :string, required: true

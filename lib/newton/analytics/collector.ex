@@ -48,10 +48,24 @@ defmodule Newton.Analytics.Collector do
          false <- preview?(conn),
          false <- authenticated?(conn),
          true <- human?(conn) do
-      GenServer.cast(__MODULE__, {:view, conn.request_path})
+      GenServer.cast(__MODULE__, {:view, canonical_path(route, conn.params)})
     else
       _ -> :ok
     end
+  end
+
+  # The router matches on a URL-decoded copy of the path but leaves
+  # conn.request_path exactly as sent, so `/posts/%68ello`, `/posts/hello`, and
+  # `//` all reach a 200 while storing distinct rows — unbounded growth from
+  # anonymous traffic. Rebuild the path from the matched route and its decoded
+  # params so a page always counts under one key.
+  defp canonical_path(route, params) do
+    route
+    |> String.split("/")
+    |> Enum.map_join("/", fn
+      ":" <> name -> Map.get(params, name) || ":" <> name
+      segment -> segment
+    end)
   end
 
   defp preview?(%Plug.Conn{params: %{"p" => p}}) when not is_nil(p), do: true

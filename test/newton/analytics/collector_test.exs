@@ -35,6 +35,32 @@ defmodule Newton.Analytics.CollectorTest do
     post
   end
 
+  test "percent-encoded and duplicate-slash requests count under one canonical path", %{
+    conn: conn
+  } do
+    published_post("canon")
+
+    browse(conn, "/posts/canon")
+    browse(conn, "/posts/%63anon")
+    browse(conn, "/posts/can%6Fn")
+    Collector.flush()
+
+    assert count_for("/posts/canon") == 3
+    assert count_for("/posts/%63anon") == 0
+    assert count_for("/posts/can%6Fn") == 0
+  end
+
+  test "duplicate slashes on the home route collapse to one path", %{conn: conn} do
+    browse(conn, "/")
+    browse(conn, "//")
+    browse(conn, "///")
+    Collector.flush()
+
+    assert count_for("/") == 3
+    assert count_for("//") == 0
+    assert count_for("///") == 0
+  end
+
   test "a public page view lands in hourly_views and repeats increment", %{conn: conn} do
     published_post("count-me")
 

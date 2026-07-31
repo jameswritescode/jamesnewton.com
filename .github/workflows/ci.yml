@@ -24,14 +24,14 @@ jobs:
       PGUSER: postgres
       PGPASSWORD: postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: erlef/setup-beam@v1
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
         with:
           otp-version: "29.0.1"
           elixir-version: "1.20.2"
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             deps
@@ -40,15 +40,20 @@ jobs:
           restore-keys: |
             mix-${{ runner.os }}-otp29.0.1-ex1.20.2-
       - run: mix deps.get
+        # Reports advisories without gating the merge: the accepted cowlib and
+        # hackney findings have no patched release, so a blocking step would
+        # wedge every PR. Read the annotation, don't rely on the exit code.
+      - run: mix hex.audit
+        continue-on-error: true
       - run: mix compile --warnings-as-errors
       - run: mix deps.unlock --check-unused
       - run: mix format --check-formatted
       - run: mix credo --strict
       - run: mix test
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 11.5.2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm

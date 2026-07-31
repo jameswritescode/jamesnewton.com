@@ -402,7 +402,7 @@ Expected: succeeds (esbuild bundles `admin.js` with `UnsavedGuard`).
 
 - [ ] **Step 3: Playwright confirm-dialog check (start one dev server; stop it after)**
 
-Start `mix phx.server`, log in (`hello@jamesnewton.com` / `password1234`). Create or
+Start `mix phx.server`, log in (your local admin credentials). Create or
 open a **published** post's editor. Using Playwright:
 - Register a dialog handler that records and dismisses dialogs
   (`page.on("dialog", d => { saw = true; d.dismiss() })`).

@@ -324,7 +324,7 @@ Expected: PASS — compile `--warnings-as-errors`, format, Credo, all tests (inc
 
 - [ ] **Step 2: Build assets + browser screenshot pass (test server on PORT=4001)**
 
-Run `mix assets.build`. Start `PORT=4001 mix phx.server` (do **not** kill or use 4000). Log in (`hello@jamesnewton.com` / `password1234`). Using Playwright against `http://localhost:4001`, screenshot:
+Run `mix assets.build`. Start `PORT=4001 mix phx.server` (do **not** kill or use 4000). Log in (your local admin credentials). Using Playwright against `http://localhost:4001`, screenshot:
 - the **reading** edit drawer (existing entry), the **gallery settings** drawer, and the **publish** drawer in both a **draft** post and a **published** post.
 
 Confirm in each: the footer is pinned to the bottom of the drawer with a top divider; layout is `[Delete · … · primary]`; reading/gallery primary is Save (+ Cancel); publish primary is "Publish now" (draft) / "Move to draft" (published). No horizontal overflow.

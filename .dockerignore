@@ -50,3 +50,7 @@ erl_crash.dump
 /priv/static/cache_manifest.json
 
 /.expert/
+
+# Local uploads live on the Fly volume at /data/images in production
+/priv/media/
+.DS_Store

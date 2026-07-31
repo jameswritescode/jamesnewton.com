@@ -439,7 +439,7 @@ Expected: succeeds (esbuild bundles `admin.js` with `AdminNav`).
 
 - [ ] **Step 3: Playwright pass at three widths (start one dev server; stop it after)**
 
-Start `mix phx.server`. Log in (`hello@jamesnewton.com` / `password1234`). Using Playwright (the `assets/screenshot.mjs` pattern), at viewport widths **390** (mobile), **768** (tablet), and **1280** (desktop), on `/admin`, `/admin/posts`, a post editor, and a gallery:
+Start `mix phx.server`. Log in (your local admin credentials). Using Playwright (the `assets/screenshot.mjs` pattern), at viewport widths **390** (mobile), **768** (tablet), and **1280** (desktop), on `/admin`, `/admin/posts`, a post editor, and a gallery:
   - **390:** the mobile top bar + `#admin-nav-toggle` are visible; `#admin-sidebar` is off-canvas initially (its box is left of x=0 / not visible); clicking the hamburger opens it (sidebar visible, `#admin-sidebar-backdrop` shown); clicking the backdrop closes it; pressing Escape closes it; clicking a nav link navigates and the drawer is closed afterward; `document.documentElement.scrollWidth <= window.innerWidth` (no horizontal overflow) on each page; the login page (logged out) shows the centered card with no overflow.
   - **768 and 1280:** the static sidebar is visible, the mobile top bar (`md:hidden`) is hidden, and the layout matches today.
   - Stop the server when done (don't leave it running).

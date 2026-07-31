@@ -369,7 +369,7 @@ Expected: PASS — compile `--warnings-as-errors`, format, Credo, all tests
 
 - [ ] **Step 2: Browser pass (start one dev server; stop it after)**
 
-Start `mix phx.server`, log in (`hello@jamesnewton.com` / `password1234`). Using
+Start `mix phx.server`, log in (your local admin credentials). Using
 Playwright (the `assets/screenshot.mjs` pattern):
 - Hover a Save/Delete button in an admin drawer and confirm `getComputedStyle(btn).cursor === "pointer"`; confirm a disabled state (open a draft editor, type → the "Saving…" button) reports `cursor` not `pointer`.
 - Open the reading edit drawer, the gallery settings drawer, and the post editor's

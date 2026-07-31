@@ -30,7 +30,7 @@ Read the spec first: `docs/superpowers/specs/2026-06-11-admin-photos-design.md`.
   - JS hook + Vitest: `assets/js/hooks/admin_theme.js` + `admin_theme.test.js`; hooks registered in `assets/js/admin.js`.
   - LiveView test conventions: `test/newton_web/live/admin/reading_live_test.exs` (`log_in_user(user_fixture())`, `form/2`, `assert_patch`).
 
-**Project rules:** pnpm (not npm/npx) in `assets/`. TDD: failing test first. No narrating comments — name helpers well. **Test behaviors, not template structure.** Run `mix precommit` at the end. Screenshots via `cd assets && node screenshot.mjs <path>=<name>` (Playwright; admin login `hello@jamesnewton.com` / `password1234`).
+**Project rules:** pnpm (not npm/npx) in `assets/`. TDD: failing test first. No narrating comments — name helpers well. **Test behaviors, not template structure.** Run `mix precommit` at the end. Screenshots via `cd assets && node screenshot.mjs <path>=<name>` (Playwright; admin login your local admin credentials).
 
 ## File structure
 

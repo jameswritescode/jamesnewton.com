@@ -815,7 +815,7 @@ Run: `mix precommit` — PASS (format, compile, credo, dialyzer, full `mix test`
 Build assets, start `PORT=4001`. Create `assets/passkey_e2e.mjs` that:
 1. opens a CDP session, enables WebAuthn, and `addVirtualAuthenticator` with
    `{protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true}`;
-2. logs in with the **password** (`hello@jamesnewton.com` / `password1234`), goes to `/admin/settings`, names + clicks "Add a passkey" — asserts a credential row appears (and the virtual authenticator now has a credential);
+2. logs in with the **password** (your local admin credentials), goes to `/admin/settings`, names + clicks "Add a passkey" — asserts a credential row appears (and the virtual authenticator now has a credential);
 3. logs out, then on `/login` clicks the fallback "Sign in with a passkey" button — asserts it lands on `/admin` (logged in via passkey).
 
 Run: `cd assets && node passkey_e2e.mjs`. Expected: registration row appears; passkey login reaches `/admin`.

@@ -3,62 +3,38 @@
 Issues in dependencies we can't fix in our own code, with why they're accepted
 and what would resolve them.
 
-## phoenix_seo emits JSON-LD without HTML-escaping (`</script>` breakout)
+## phoenix_seo emits JSON-LD without HTML-escaping (`</script>` breakout) — RESOLVED in our code
 
-**Where:** `deps/phoenix_seo/lib/seo/json_ld.ex` renders the JSON-LD block as
+**Status: closed on our side (2026-07-30).** The upstream bug is still present in
+phoenix_seo 0.3.1, but it is no longer reachable here.
 
-```elixir
-<script :if={@item} type="application/ld+json">
-  <%= Phoenix.HTML.raw(@json_library.encode!(@item)) %>
-</script>
-```
+**The bug:** `deps/phoenix_seo/lib/seo/json_ld.ex` renders the JSON-LD block with
+`Phoenix.HTML.raw(@json_library.encode!(@item))`. Jason's default escaping leaves
+`<` and `/` untouched, so a value containing the literal bytes `</script>` closes
+the element early — an HTML parser terminates a script element on the first
+`</script` sequence regardless of the element's `type` — and whatever follows is
+parsed as live markup. On `/posts/:slug` the post `title` and `excerpt` feed that
+record, so an author-written title could inject markup into every visitor's
+`<head>`.
 
-It calls `Jason.encode!/1` with **no** `escape: :html_safe` option. Jason's
-default does not escape `<` / `/`, so a value containing the literal bytes
-`</script>` is emitted verbatim inside the `<script>` element. An HTML parser
-terminates a script element on the first `</script` byte sequence regardless of
-the element's `type`, so the JSON-LD block ends early and whatever follows is
-parsed as live markup.
+**How we closed it:** `@json_library` is *our* value, not the dependency's. It is
+passed at `use SEO, json_library: ...` in `lib/newton_web/seo.ex` and threaded
+through to that call site. It now points at `NewtonWeb.SEO.HtmlSafeJson`, a thin
+Jason wrapper whose `encode!/1` supplies `escape: :html_safe`. That escapes `<`
+to `\u003C` and `/` to `\/`, which keeps the output valid JSON-LD (consumers
+decode the escapes transparently) while making the breakout impossible. No
+dependency patch, and no lossy sanitizing of author text.
 
-**Reachability here:** on `/posts/:slug`, our `SEO.JSONLD.Build` for
-`Newton.Blog.Post` (`lib/newton_web/seo.ex`) puts the post `title` and `excerpt`
-into the record. Those are plain string fields cast in `Newton.Blog.Post`
-(not run through the markdown sanitizer). So an author who writes a title like
-`Evil</script><style>…</style>` produces live markup in every visitor's
-`<head>`. The other pages (`/`, `/photos`, `/reading`, resume) only feed
-hardcoded strings into JSON-LD, so `/posts/:slug` is the only reachable route.
+Regression coverage: `test/newton_web/controllers/seo_meta_test.exs` requests a
+published post whose title and excerpt both contain `</script>` payloads and
+asserts the rendered block contains no live markup and still decodes to the
+original strings.
 
-**Severity: Medium, and currently contained.**
+*(Earlier revisions of this file claimed the fix required editing `deps/` or
+sanitizing input. That was wrong — the `:json_library` seam was always ours.)*
 
-- The trigger is **author-authored** — only the authenticated admin (or a
-  hijacked admin session) can set a post title/excerpt. There's no public write
-  path.
-- Our Content-Security-Policy (`lib/newton_web/content_security_policy.ex`) is
-  `script-src 'self' 'nonce-…'` with no `'unsafe-inline'`, so an injected
-  `<script>` **does not execute** and inline event handlers don't fire.
-- What the breakout still buys an attacker: `style-src 'unsafe-inline'` +
-  `img-src … https:` allow CSS-based exfiltration (attribute-selector
-  keylogging, `background: url(https://attacker/…)`) and visual
-  defacement/phishing. And it removes a defense-in-depth layer — if the CSP is
-  ever loosened or bypassed, this becomes full stored XSS.
-
-**Why we haven't patched it:** the fix is one option on a call site inside
-`deps/`, which we don't edit directly. The correct resolutions, in order of
-preference:
-
-1. Upstream fix — `Jason.encode!(@item, escape: :html_safe)` in phoenix_seo
-   (worth filing/PRing; the project is `github.com/dbernheisel/phoenix_seo`).
-2. Until then, if we want belt-and-suspenders in our own code: sanitize
-   `title`/`excerpt` on the way into the JSON-LD record in
-   `lib/newton_web/seo.ex` (e.g. strip/deny `<`), or stop relying on
-   phoenix_seo's JSON-LD renderer and emit the `ld+json` ourselves with
-   `escape: :html_safe`.
-
-**Monitor:** still present as of **0.3.1** (verified 2026-07-29 by rendering
-`SEO.JSONLD.meta/1` with a `</script>` title through our `Build` impl — the
-breakout renders verbatim; 0.3.0/0.3.1 were compiler/packaging fixups only).
-Keep watching `github.com/dbernheisel/phoenix_seo` for an escaping fix, or file
-the one-line `escape: :html_safe` PR ourselves.
+**Upstream:** still worth a one-line PR to `github.com/dbernheisel/phoenix_seo`
+so other users get the safe default.
 
 ## cowlib / hackney advisories (no in-range fix)
 

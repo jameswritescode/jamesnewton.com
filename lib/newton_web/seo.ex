@@ -2,7 +2,7 @@ defmodule NewtonWeb.SEO do
   use NewtonWeb, :verified_routes
 
   use SEO,
-    json_library: Jason,
+    json_library: NewtonWeb.SEO.HtmlSafeJson,
     site: &__MODULE__.site_config/1,
     open_graph: &__MODULE__.open_graph_config/1,
     twitter: &__MODULE__.twitter_config/1

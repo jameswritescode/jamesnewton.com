@@ -113,4 +113,24 @@ defmodule NewtonWeb.SeoMetaTest do
     assert meta(html, "og:image") =~ "/og-links.png"
     assert named_meta(html, "twitter:image") =~ "/og-links.png"
   end
+
+  test "a post title cannot break out of the JSON-LD script element", %{conn: conn} do
+    {:ok, post} =
+      Blog.create_post(%{
+        slug: "jsonld-escape",
+        title: "Evil</script><b>pwn</b>",
+        body_markdown: "Body text.",
+        excerpt: "Desc</script><img src=x onerror=alert(1)>",
+        published_at: ~U[2026-04-17 12:00:00Z]
+      })
+
+    html = conn |> get(~p"/posts/#{post.slug}") |> html_response(200)
+
+    [_, json_ld] = Regex.run(~r/type="application\/ld\+json">(.*?)<\/script>/s, html)
+
+    refute json_ld =~ "<b>"
+    refute json_ld =~ "<img"
+    assert json_ld =~ "\\u003C"
+    assert Jason.decode!(json_ld)["headline"] == "Evil</script><b>pwn</b>"
+  end
 end

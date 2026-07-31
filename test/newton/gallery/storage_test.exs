@@ -24,6 +24,34 @@ defmodule Newton.Gallery.StorageTest do
     File.rm(src)
   end
 
+  @gif <<"GIF89a", "the rest of a gif">>
+  @webp <<"RIFF", 0, 0, 0, 0, "WEBP", "the rest of a webp">>
+
+  test "store/2 names the file from its verified bytes, not the client extension" do
+    src = Path.join(@root, "upload-#{System.unique_integer([:positive])}.tmp")
+    File.write!(src, <<"GIF89a", "<script>alert(1)</script>">>)
+
+    assert {:ok, key} = Storage.store(src, "pwn.html")
+    on_exit(fn -> File.rm(Path.join(@root, key)) end)
+
+    assert String.ends_with?(key, ".gif")
+    refute String.ends_with?(key, ".html")
+    File.rm(src)
+  end
+
+  test "store/2 derives the extension for every supported format" do
+    for {bytes, ext} <- [{@jpeg, ".jpg"}, {@png, ".png"}, {@gif, ".gif"}, {@webp, ".webp"}] do
+      src = Path.join(@root, "upload-#{System.unique_integer([:positive])}.tmp")
+      File.write!(src, bytes)
+
+      assert {:ok, key} = Storage.store(src, "anything.exe")
+      on_exit(fn -> File.rm(Path.join(@root, key)) end)
+
+      assert String.ends_with?(key, ext)
+      File.rm(src)
+    end
+  end
+
   test "store/2 rejects a file whose bytes are not a supported image" do
     src = Path.join(@root, "upload-#{System.unique_integer([:positive])}.tmp")
     File.write!(src, "<?php system($_GET['c']); ?>")

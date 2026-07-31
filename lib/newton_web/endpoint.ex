@@ -16,13 +16,19 @@ defmodule NewtonWeb.Endpoint do
     longpoll: [connect_info: [session: @session_options]]
 
   # User images (not fingerprinted assets) served from a configurable root.
-  # nosniff stops a content-type-confused browser from ever executing an
-  # uploaded file as HTML/script from our origin.
+  # This plug halts before the router, so the :browser pipeline's CSP never
+  # reaches these responses — they carry their own. `default-src 'none'` plus
+  # `sandbox` means even a file that somehow lands here with an executable
+  # content type renders inert and same-origin-less.
   plug Plug.Static,
     at: "/media",
     from: Application.compile_env(:newton, :media_root),
     gzip: false,
-    headers: %{"x-content-type-options" => "nosniff"}
+    headers: %{
+      "x-content-type-options" => "nosniff",
+      "content-security-policy" => "default-src 'none'; img-src 'self'; sandbox",
+      "x-frame-options" => "DENY"
+    }
 
   # Serve at "/" the static files from "priv/static" directory.
   #

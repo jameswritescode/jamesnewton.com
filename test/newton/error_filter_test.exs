@@ -25,6 +25,30 @@ defmodule Newton.ErrorFilterTest do
     assert sanitized["request.path"] == "/login"
   end
 
+  test "redacts the draft preview token from params and the raw query string" do
+    context = %{
+      "request.params" => %{"p" => "s3cret-preview-token", "slug" => "a-draft"},
+      "request.query" => "p=s3cret-preview-token&utm=x",
+      "request.path" => "/posts/a-draft"
+    }
+
+    sanitized = ErrorFilter.sanitize(context)
+
+    assert sanitized["request.params"]["p"] == "[REDACTED]"
+    assert sanitized["request.params"]["slug"] == "a-draft"
+    refute sanitized["request.query"] =~ "s3cret-preview-token"
+    assert sanitized["request.query"] =~ "utm=x"
+    assert sanitized["request.path"] == "/posts/a-draft"
+  end
+
+  test "redacts sensitive values in live_view params" do
+    context = %{"live_view.params" => %{"p" => "tok", "id" => "3"}}
+    sanitized = ErrorFilter.sanitize(context)
+
+    assert sanitized["live_view.params"]["p"] == "[REDACTED]"
+    assert sanitized["live_view.params"]["id"] == "3"
+  end
+
   test "passes through a context with no request params" do
     context = %{"other" => "value"}
     assert ErrorFilter.sanitize(context) == context

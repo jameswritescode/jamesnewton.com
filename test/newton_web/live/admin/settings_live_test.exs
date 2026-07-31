@@ -8,6 +8,33 @@ defmodule NewtonWeb.Admin.SettingsLiveTest do
     %{conn: log_in_user(conn, user), user: user}
   end
 
+  defp expire_sudo_window(view) do
+    :sys.replace_state(view.pid, fn state ->
+      update_in(state.socket.assigns.user, fn user ->
+        %{user | authenticated_at: DateTime.add(DateTime.utc_now(), -60, :minute)}
+      end)
+    end)
+  end
+
+  test "a stale sudo window blocks regenerating recovery codes", %{conn: conn, user: user} do
+    {:ok, view, _} = live(conn, ~p"/admin/settings")
+    expire_sudo_window(view)
+
+    render_click(view, "generate_recovery_codes", %{})
+
+    assert_redirect(view, ~p"/login/confirm-access")
+    assert Newton.Accounts.count_unused_recovery_codes(user) == 0
+  end
+
+  test "a stale sudo window blocks deleting a passkey", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/admin/settings")
+    expire_sudo_window(view)
+
+    render_click(view, "delete_passkey", %{"id" => "1"})
+
+    assert_redirect(view, ~p"/login/confirm-access")
+  end
+
   test "renders the settings page", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/admin/settings")
     assert html =~ "Change password"

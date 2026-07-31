@@ -405,5 +405,39 @@ defmodule Newton.AccountsTest do
       assert Accounts.redeem_recovery_code(user, code) == :error
       assert Accounts.count_unused_recovery_codes(user) == 9
     end
+
+    test "recovery codes are stored with a salted, stretched hash" do
+      user = user_fixture()
+      [code | _] = Accounts.generate_recovery_codes(user)
+
+      hashes =
+        Newton.Repo.all(
+          from r in Newton.Accounts.RecoveryCode,
+            where: r.user_id == ^user.id,
+            select: r.code_hash
+        )
+
+      refute Enum.any?(hashes, &(&1 == :crypto.hash(:sha256, String.replace(code, "-", ""))))
+      assert Enum.all?(hashes, &String.starts_with?(&1, "$2"))
+      assert length(Enum.uniq(hashes)) == 10
+    end
+
+    test "redeem_recovery_code still accepts legacy sha256 codes" do
+      user = user_fixture()
+      legacy = "ABCDE-FGHIJ"
+      now = DateTime.truncate(DateTime.utc_now(), :second)
+
+      Newton.Repo.insert_all(Newton.Accounts.RecoveryCode, [
+        %{
+          user_id: user.id,
+          code_hash: :crypto.hash(:sha256, "ABCDEFGHIJ"),
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      assert Accounts.redeem_recovery_code(user, legacy) == :ok
+      assert Accounts.redeem_recovery_code(user, legacy) == :error
+    end
   end
 end

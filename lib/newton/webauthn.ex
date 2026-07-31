@@ -19,10 +19,19 @@ defmodule Newton.Webauthn do
   - Relying-party ID:    `challenge.rp_id`   (string)
   """
 
+  @doc """
+  Shared Wax options. `user_verification: "required"` makes Wax enforce the UV
+  bit: a passkey is the sole factor at login and the step-up factor for sudo, so
+  a tap on an unlocked authenticator must not stand in for proving who is there.
+  """
   @spec opts(keyword()) :: keyword()
   def opts(extra \\ []) do
     cfg = Application.fetch_env!(:newton, :webauthn)
-    Keyword.merge([rp_id: cfg[:rp_id], origin: cfg[:origin]], extra)
+
+    Keyword.merge(
+      [rp_id: cfg[:rp_id], origin: cfg[:origin], user_verification: "required"],
+      extra
+    )
   end
 
   @spec registration_challenge() :: Wax.Challenge.t()

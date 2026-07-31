@@ -60,7 +60,7 @@ defmodule NewtonWeb.UserSessionController do
     |> json(%{
       challenge: Base.url_encode64(challenge.bytes, padding: false),
       rpId: challenge.rp_id,
-      userVerification: "preferred"
+      userVerification: "required"
     })
   end
 

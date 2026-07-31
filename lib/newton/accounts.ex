@@ -367,19 +367,35 @@ defmodule Newton.Accounts do
   @doc "Consume a matching unused recovery code; `:ok` if exactly one was spent, else `:error`."
   @spec redeem_recovery_code(%User{}, String.t()) :: :ok | :error
   def redeem_recovery_code(%User{id: user_id}, code) when is_binary(code) do
-    hash = hash_recovery_code(code)
+    normalized = normalize_recovery_code(code)
     now = DateTime.truncate(DateTime.utc_now(), :second)
 
-    {count, _} =
-      Repo.update_all(
-        from(r in RecoveryCode,
-          where: r.user_id == ^user_id and r.code_hash == ^hash and is_nil(r.used_at)
-        ),
-        set: [used_at: now, updated_at: now]
-      )
+    candidates =
+      Repo.all(from r in RecoveryCode, where: r.user_id == ^user_id and is_nil(r.used_at))
 
-    if count == 1, do: :ok, else: :error
+    case Enum.find(candidates, &recovery_code_matches?(normalized, &1.code_hash)) do
+      nil ->
+        Bcrypt.no_user_verify()
+        :error
+
+      %RecoveryCode{id: id} ->
+        {count, _} =
+          Repo.update_all(
+            from(r in RecoveryCode, where: r.id == ^id and is_nil(r.used_at)),
+            set: [used_at: now, updated_at: now]
+          )
+
+        if count == 1, do: :ok, else: :error
+    end
   end
+
+  # Codes generated before the move to Bcrypt are unsalted SHA-256; accept them
+  # so existing printed codes keep working until they are regenerated.
+  defp recovery_code_matches?(normalized, "$2" <> _ = stored),
+    do: Bcrypt.verify_pass(normalized, stored)
+
+  defp recovery_code_matches?(normalized, stored),
+    do: Plug.Crypto.secure_compare(:crypto.hash(:sha256, normalized), stored)
 
   defp random_recovery_code do
     chars =
@@ -392,8 +408,8 @@ defmodule Newton.Accounts do
   end
 
   # Normalize (upcase, strip non-alphanumerics) before hashing so lenient input matches.
-  defp hash_recovery_code(code) do
-    normalized = code |> String.upcase() |> String.replace(~r/[^A-Z0-9]/, "")
-    :crypto.hash(:sha256, normalized)
-  end
+  defp normalize_recovery_code(code),
+    do: code |> String.upcase() |> String.replace(~r/[^A-Z0-9]/, "")
+
+  defp hash_recovery_code(code), do: code |> normalize_recovery_code() |> Bcrypt.hash_pwd_salt()
 end

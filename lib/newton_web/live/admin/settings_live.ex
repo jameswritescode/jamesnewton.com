@@ -4,6 +4,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
   alias Newton.Accounts
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
+  alias NewtonWeb.UserAuth
 
   @impl true
   def mount(_params, _session, socket) do
@@ -31,7 +32,9 @@ defmodule NewtonWeb.Admin.SettingsLive do
     %{"current_password" => current, "user" => user_params} = params
 
     case Accounts.update_user_password(socket.assigns.user, current, user_params) do
-      {:ok, {user, _}} ->
+      {:ok, {user, expired_tokens}} ->
+        UserAuth.disconnect_sessions(expired_tokens)
+
         {:noreply,
          socket
          |> assign(:user, user)
@@ -74,7 +77,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
         displayName: user.email
       },
       pubKeyCredParams: [%{type: "public-key", alg: -7}, %{type: "public-key", alg: -257}],
-      authenticatorSelection: %{residentKey: "required", userVerification: "preferred"},
+      authenticatorSelection: %{residentKey: "required", userVerification: "required"},
       excludeCredentials:
         Enum.map(socket.assigns.credentials, fn c ->
           %{type: "public-key", id: Base.url_encode64(c.credential_id, padding: false)}
@@ -122,18 +125,34 @@ defmodule NewtonWeb.Admin.SettingsLive do
     do: {:noreply, put_flash(socket, :error, "Passkey registration was cancelled.")}
 
   def handle_event("generate_recovery_codes", _params, socket) do
-    codes = Accounts.generate_recovery_codes(socket.assigns.user)
+    with_fresh_sudo(socket, fn socket ->
+      codes = Accounts.generate_recovery_codes(socket.assigns.user)
 
-    {:noreply,
-     socket
-     |> assign(:new_recovery_codes, codes)
-     |> assign(:recovery_count, length(codes))
-     |> put_flash(:info, "Recovery codes generated. Save them now — they won't be shown again.")}
+      socket
+      |> assign(:new_recovery_codes, codes)
+      |> assign(:recovery_count, length(codes))
+      |> put_flash(:info, "Recovery codes generated. Save them now — they won't be shown again.")
+    end)
   end
 
   def handle_event("delete_passkey", %{"id" => id}, socket) do
-    Accounts.delete_credential(socket.assigns.user, String.to_integer(id))
-    {:noreply, assign(socket, :credentials, Accounts.list_user_credentials(socket.assigns.user))}
+    with_fresh_sudo(socket, fn socket ->
+      Accounts.delete_credential(socket.assigns.user, String.to_integer(id))
+      assign(socket, :credentials, Accounts.list_user_credentials(socket.assigns.user))
+    end)
+  end
+
+  # `:require_sudo_mode` only runs at mount, so a tab left open past the window
+  # could still mint recovery codes or strip passkeys. Re-check at event time.
+  defp with_fresh_sudo(socket, fun) do
+    if Accounts.sudo_mode?(socket.assigns.user, -10) do
+      {:noreply, fun.(socket)}
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, "Confirm it's you to manage security settings.")
+       |> push_navigate(to: ~p"/login/confirm-access")}
+    end
   end
 
   defp default_label, do: "Passkey · " <> Calendar.strftime(DateTime.utc_now(), "%b %-d, %Y")

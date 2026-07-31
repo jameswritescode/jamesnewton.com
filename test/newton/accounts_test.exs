@@ -422,9 +422,8 @@ defmodule Newton.AccountsTest do
       assert length(Enum.uniq(hashes)) == 10
     end
 
-    test "redeem_recovery_code still accepts legacy sha256 codes" do
+    test "redeem_recovery_code rejects a legacy sha256 hash" do
       user = user_fixture()
-      legacy = "ABCDE-FGHIJ"
       now = DateTime.truncate(DateTime.utc_now(), :second)
 
       Newton.Repo.insert_all(Newton.Accounts.RecoveryCode, [
@@ -436,8 +435,7 @@ defmodule Newton.AccountsTest do
         }
       ])
 
-      assert Accounts.redeem_recovery_code(user, legacy) == :ok
-      assert Accounts.redeem_recovery_code(user, legacy) == :error
+      assert Accounts.redeem_recovery_code(user, "ABCDE-FGHIJ") == :error
     end
   end
 end

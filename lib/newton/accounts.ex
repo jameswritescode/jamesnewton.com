@@ -373,7 +373,7 @@ defmodule Newton.Accounts do
     candidates =
       Repo.all(from r in RecoveryCode, where: r.user_id == ^user_id and is_nil(r.used_at))
 
-    case Enum.find(candidates, &recovery_code_matches?(normalized, &1.code_hash)) do
+    case Enum.find(candidates, &Bcrypt.verify_pass(normalized, &1.code_hash)) do
       nil ->
         Bcrypt.no_user_verify()
         :error
@@ -388,14 +388,6 @@ defmodule Newton.Accounts do
         if count == 1, do: :ok, else: :error
     end
   end
-
-  # Codes generated before the move to Bcrypt are unsalted SHA-256; accept them
-  # so existing printed codes keep working until they are regenerated.
-  defp recovery_code_matches?(normalized, "$2" <> _ = stored),
-    do: Bcrypt.verify_pass(normalized, stored)
-
-  defp recovery_code_matches?(normalized, stored),
-    do: Plug.Crypto.secure_compare(:crypto.hash(:sha256, normalized), stored)
 
   defp random_recovery_code do
     chars =

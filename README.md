@@ -1,18 +1,41 @@
-# Newton
+# jamesnewton.com
 
-To start your Phoenix server:
+[![CI](https://github.com/jameswritescode/jamesnewton.com/actions/workflows/ci.yml/badge.svg)](https://github.com/jameswritescode/jamesnewton.com/actions/workflows/ci.yml)
 
-* Run `mix setup` to install and setup dependencies
-* Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+Personal site and blog, built with Phoenix LiveView. Posts are written in
+markdown in a custom CodeMirror editor with autosave, inline image uploads,
+and optimistic-locking conflict protection; the public site adds photo
+galleries, a reading log, server-rendered social cards, and privacy-preserving
+first-party analytics.
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+## Stack
 
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+- Elixir / Phoenix 1.8 / LiveView, Postgres via Ecto
+- Tailwind CSS v4 + esbuild; JS deps managed with pnpm in `assets/`
+- Deployed on Fly.io (`fly deploy`); metrics via PromEx → Grafana
 
-## Learn more
+Tool versions are pinned in `mise.toml` (Elixir, Erlang/OTP, pnpm).
 
-* Official website: https://www.phoenixframework.org/
-* Guides: https://hexdocs.pm/phoenix/overview.html
-* Docs: https://hexdocs.pm/phoenix
-* Forum: https://elixirforum.com/c/phoenix-forum
-* Source: https://github.com/phoenixframework/phoenix
+## Development
+
+```bash
+mix setup          # deps, database, assets
+mix phx.server     # http://localhost:4000
+```
+
+Sign-in supports password and passkeys; security-sensitive settings require a
+fresh re-auth (sudo mode).
+
+## Checks
+
+`mix precommit` is the local gate: compile with warnings as errors, unused-dep
+check, formatter, Credo (strict), ExUnit, vitest (`assets/`), and Dialyzer.
+CI (`.github/workflows/ci.yml`) runs the same checks in assert-only form
+against Postgres 14.
+
+## Docs
+
+- `docs/production.md` — deploy/launch runbook
+- `docs/known-issues.md` — accepted upstream issues and why
+- `docs/analytics.md`, `docs/indexnow.md`, `docs/design.md` — subsystem notes
+- `docs/superpowers/specs/` — design docs for larger features

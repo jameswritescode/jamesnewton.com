@@ -13,6 +13,13 @@ config :newton, NewtonWeb.Endpoint, cache_static_manifest: "priv/static/cache_ma
 config :newton, NewtonWeb.Endpoint,
   force_ssl: [
     rewrite_on: [:x_forwarded_proto],
+    # include_subdomains stops an attacker who can answer DNS for a name we
+    # never created (evil.jamesnewton.com) from serving plain HTTP there and
+    # setting a .jamesnewton.com cookie the apex would then receive. Deliberately
+    # no `preload`: that ships the domain inside browser binaries and takes
+    # months to undo.
+    expires: 31_536_000,
+    subdomains: true,
     exclude: [
       # paths: ["/health"],
       hosts: ["localhost", "127.0.0.1"]

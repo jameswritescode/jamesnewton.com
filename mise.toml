@@ -1,4 +1,4 @@
 [tools]
 elixir = "1.20.2-otp-29"
-erlang = "29.0.1"
+erlang = "29.0.5"
 pnpm = "11.5.2"

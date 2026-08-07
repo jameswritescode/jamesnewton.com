@@ -6,6 +6,7 @@ defmodule NewtonWeb.UserAuth do
 
   alias Newton.Accounts
   alias Newton.Accounts.Scope
+  alias Newton.Accounts.UserToken
 
   # Make the remember me cookie valid for 14 days. This should match
   # the session validity setting in UserToken.
@@ -175,7 +176,7 @@ defmodule NewtonWeb.UserAuth do
   defp put_token_in_session(conn, token) do
     conn
     |> put_session(:user_token, token)
-    |> put_session(:live_socket_id, user_session_topic(token))
+    |> put_session(:live_socket_id, user_session_topic(UserToken.hash_token(token)))
   end
 
   @doc """
@@ -187,7 +188,9 @@ defmodule NewtonWeb.UserAuth do
     end)
   end
 
-  defp user_session_topic(token), do: "users_sessions:#{Base.url_encode64(token)}"
+  # Named for the token's stored (hashed) form, which is all revocation has to
+  # work from — the raw value never leaves the browser's cookie.
+  defp user_session_topic(hashed_token), do: "users_sessions:#{Base.url_encode64(hashed_token)}"
 
   @doc """
   Handles mounting and authenticating the current_scope in LiveViews.

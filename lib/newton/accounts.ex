@@ -253,7 +253,8 @@ defmodule Newton.Accounts do
   """
   @spec delete_user_session_token(binary()) :: :ok
   def delete_user_session_token(token) do
-    Repo.delete_all(from(UserToken, where: [token: ^token, context: "session"]))
+    hashed = UserToken.hash_token(token)
+    Repo.delete_all(from(UserToken, where: [token: ^hashed, context: "session"]))
     :ok
   end
 

@@ -68,11 +68,13 @@ defmodule Newton.AccountsFixtures do
     )
   end
 
+  # Takes the session token as the browser holds it; rows store only its hash.
   def offset_user_token(token, amount_to_add, unit) do
     dt = DateTime.add(DateTime.utc_now(:second), amount_to_add, unit)
+    hashed = Accounts.UserToken.hash_token(token)
 
     Newton.Repo.update_all(
-      from(ut in Accounts.UserToken, where: ut.token == ^token),
+      from(ut in Accounts.UserToken, where: ut.token == ^hashed),
       set: [inserted_at: dt, authenticated_at: dt]
     )
   end

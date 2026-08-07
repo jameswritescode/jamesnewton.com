@@ -279,9 +279,18 @@ defmodule Newton.AccountsTest do
       %{user: user_fixture()}
     end
 
+    test "stores only a hash, never the token handed to the browser", %{user: user} do
+      token = Accounts.generate_user_session_token(user)
+
+      refute Repo.get_by(UserToken, token: token)
+      assert Repo.get_by(UserToken, token: :crypto.hash(:sha256, token))
+      assert {%{id: id}, _} = Accounts.get_user_by_session_token(token)
+      assert id == user.id
+    end
+
     test "generates a token", %{user: user} do
       token = Accounts.generate_user_session_token(user)
-      assert user_token = Repo.get_by(UserToken, token: token)
+      assert user_token = Repo.get_by(UserToken, token: :crypto.hash(:sha256, token))
       assert user_token.context == "session"
       assert user_token.authenticated_at != nil
 
@@ -298,7 +307,7 @@ defmodule Newton.AccountsTest do
     test "duplicates the authenticated_at of given user in new token", %{user: user} do
       user = %{user | authenticated_at: DateTime.add(DateTime.utc_now(:second), -3600)}
       token = Accounts.generate_user_session_token(user)
-      assert user_token = Repo.get_by(UserToken, token: token)
+      assert user_token = Repo.get_by(UserToken, token: :crypto.hash(:sha256, token))
       assert user_token.authenticated_at == user.authenticated_at
       assert DateTime.compare(user_token.inserted_at, user.authenticated_at) == :gt
     end

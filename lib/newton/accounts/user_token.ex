@@ -20,30 +20,31 @@ defmodule Newton.Accounts.UserToken do
   end
 
   @doc """
-  Generates a token that will be stored in a signed place,
-  such as session or cookie. As they are signed, those
-  tokens do not need to be hashed.
+  Generates a session token, returning the value for the cookie alongside the
+  row to persist.
 
-  The reason why we store session tokens in the database, even
-  though Phoenix already provides a session cookie, is because
-  Phoenix's default session cookies are not persisted, they are
-  simply signed and potentially encrypted. This means they are
-  valid indefinitely, unless you change the signing/encryption
-  salt.
-
-  Therefore, storing them allows individual user
-  sessions to be expired. The token system can also be extended
-  to store additional data, such as the device used for logging in.
-  You could then use this information to display all valid sessions
-  and devices in the UI and allow users to explicitly expire any
-  session they deem invalid.
+  Session tokens are stored in the database — rather than relying on Phoenix's
+  signed cookie alone — so that individual sessions can be expired. Only the
+  hash is persisted: the cookie already travels signed and encrypted, so the
+  database never needs the value that would let a reader resume a live session.
   """
   @spec build_session_token(%Newton.Accounts.User{}) :: {binary(), %__MODULE__{}}
   def build_session_token(user) do
     token = :crypto.strong_rand_bytes(@rand_size)
     dt = user.authenticated_at || DateTime.utc_now(:second)
-    {token, %UserToken{token: token, context: "session", user_id: user.id, authenticated_at: dt}}
+
+    {token,
+     %UserToken{
+       token: hash_token(token),
+       context: "session",
+       user_id: user.id,
+       authenticated_at: dt
+     }}
   end
+
+  @doc "The stored form of a session token. Also names its PubSub disconnect topic."
+  @spec hash_token(binary()) :: binary()
+  def hash_token(token), do: :crypto.hash(@hash_algorithm, token)
 
   @doc """
   Checks if the token is valid and returns its underlying lookup query.
@@ -56,7 +57,7 @@ defmodule Newton.Accounts.UserToken do
   @spec verify_session_token_query(binary()) :: {:ok, Ecto.Query.t()}
   def verify_session_token_query(token) do
     query =
-      from token in by_token_and_context_query(token, "session"),
+      from token in by_token_and_context_query(hash_token(token), "session"),
         join: user in assoc(token, :user),
         where: token.inserted_at > ago(@session_validity_in_days, "day"),
         select: {%{user | authenticated_at: token.authenticated_at}, token.inserted_at}

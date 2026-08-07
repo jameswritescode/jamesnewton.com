@@ -24,7 +24,10 @@ defmodule NewtonWeb.UserAuthTest do
     test "stores the user token in the session", %{conn: conn, user: user} do
       conn = UserAuth.log_in_user(conn, user)
       assert token = get_session(conn, :user_token)
-      assert get_session(conn, :live_socket_id) == "users_sessions:#{Base.url_encode64(token)}"
+
+      assert get_session(conn, :live_socket_id) ==
+               "users_sessions:#{Base.url_encode64(:crypto.hash(:sha256, token))}"
+
       assert redirected_to(conn) == ~p"/admin"
       assert Accounts.get_user_by_session_token(token)
     end
@@ -176,7 +179,7 @@ defmodule NewtonWeb.UserAuthTest do
       assert get_session(conn, :user_remember_me)
 
       assert get_session(conn, :live_socket_id) ==
-               "users_sessions:#{Base.url_encode64(user_token)}"
+               "users_sessions:#{Base.url_encode64(:crypto.hash(:sha256, user_token))}"
     end
 
     test "does not authenticate if data is missing", %{conn: conn, user: user} do
@@ -370,6 +373,27 @@ defmodule NewtonWeb.UserAuthTest do
   end
 
   describe "disconnect_sessions/1" do
+    test "reaches the topic a logged-in session actually subscribes to" do
+      user = user_fixture()
+      token = Accounts.generate_user_session_token(user)
+
+      # The socket id the browser's session carries, set at log-in.
+      conn =
+        build_conn()
+        |> Plug.Test.init_test_session(%{})
+        |> UserAuth.log_in_user(user)
+
+      socket_id = Plug.Conn.get_session(conn, :live_socket_id)
+      NewtonWeb.Endpoint.subscribe(socket_id)
+
+      # Revocation only ever holds the persisted rows, never the raw token.
+      rows = Newton.Repo.all(Newton.Accounts.UserToken) |> Enum.filter(&(&1.context == "session"))
+      UserAuth.disconnect_sessions(rows)
+
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect", topic: ^socket_id}
+      assert is_binary(token)
+    end
+
     test "broadcasts disconnect messages for each token" do
       tokens = [%{token: "token1"}, %{token: "token2"}]
 

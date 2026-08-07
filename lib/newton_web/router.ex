@@ -20,6 +20,15 @@ defmodule NewtonWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Headers for machine-facing routes that skip :browser (no session, no CSRF).
+  # The CSP plug is here for its `@csp_nonce` assign as much as its header: these
+  # routes render the HTML error page on a miss, and the root layout's inline
+  # script needs a nonce once a policy is in force.
+  pipeline :machine_readable do
+    plug :put_secure_browser_headers
+    plug NewtonWeb.ContentSecurityPolicy
+  end
+
   scope "/", NewtonWeb do
     pipe_through :browser
 
@@ -34,15 +43,19 @@ defmodule NewtonWeb.Router do
     get "/links", LinksController, :index
   end
 
-  # Social card images. No :browser pipeline — these are PNGs, so we skip
-  # accepts/session/CSRF and let the controller set content-type + caching.
+  # Social card images. Skips :browser (no session/CSRF) but still carries
+  # security headers, because an unknown slug renders the HTML error page.
   scope "/og", NewtonWeb do
+    pipe_through :machine_readable
+
     get "/posts/:slug", OgImageController, :show
   end
 
-  # Crawler endpoints. No :browser pipeline — plain XML/text, no session/CSRF;
-  # the controller sets content-type + caching.
+  # Crawler endpoints. Skips :browser (no session/CSRF); the controller sets
+  # content-type + caching, the pipeline sets the security headers.
   scope "/", NewtonWeb do
+    pipe_through :machine_readable
+
     get "/sitemap.xml", SitemapController, :sitemap
     get "/robots.txt", SitemapController, :robots
     get "/.well-known/site.standard.publication", StandardController, :publication

@@ -25,4 +25,31 @@ defmodule NewtonWeb.ContentSecurityPolicyTest do
 
     assert html =~ ~s(<script nonce="#{nonce}">)
   end
+
+  describe "machine-readable routes" do
+    for path <- ["/sitemap.xml", "/robots.txt", "/.well-known/site.standard.publication"] do
+      test "#{path} carries security headers despite skipping :browser", %{conn: conn} do
+        conn = get(conn, unquote(path))
+
+        assert conn.status == 200
+        assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
+        assert [csp] = get_resp_header(conn, "content-security-policy")
+        assert csp =~ "frame-ancestors 'none'"
+      end
+    end
+
+    test "an unknown OG slug renders the error page with a usable nonce", %{conn: conn} do
+      # The miss returns HTML through the root layout. Once a CSP is in force the
+      # layout's inline script must be nonce'd, or it is blocked on this page only.
+      {404, headers, html} =
+        assert_error_sent(404, fn -> get(conn, ~p"/og/posts/no-such-post") end)
+
+      assert {_, csp} = List.keyfind(headers, "content-security-policy", 0)
+      assert [_, nonce] = Regex.run(~r/'nonce-([A-Za-z0-9_-]+)'/, csp)
+
+      for tag <- Regex.scan(~r/<script(?![^>]*\ssrc=)[^>]*>/, html) do
+        assert hd(tag) =~ ~s(nonce="#{nonce}"), "inline script without the CSP nonce: #{hd(tag)}"
+      end
+    end
+  end
 end

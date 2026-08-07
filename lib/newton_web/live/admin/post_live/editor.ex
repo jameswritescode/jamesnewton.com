@@ -15,6 +15,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   @autosave_debounce_ms 1500
 
+  @autosave_fields ~w(title slug excerpt body_markdown)
+  @autosave_keys @autosave_fields ++ Enum.map(@autosave_fields, &("_unused_" <> &1))
+
   @upload_accept ~w(.jpg .jpeg .png .webp .gif)
   @upload_max_entries 10
   @upload_max_file_size 50_000_000
@@ -503,7 +506,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, params, _published?) do
-    assign(socket, :autosave_params, params)
+    assign(socket, :autosave_params, content_params(params))
   end
 
   defp track_save_state(socket, params, false), do: maybe_schedule_autosave(socket, params, true)
@@ -522,10 +525,17 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp maybe_schedule_autosave(socket, params, true) do
     socket
-    |> assign(:autosave_params, params)
+    |> assign(:autosave_params, content_params(params))
     |> assign(:save_state, :unsaved)
     |> reschedule_autosave_timer()
   end
+
+  # Autosave writes whatever it buffered without the publish-state scrubbing the
+  # explicit "save" handler does, so only content fields are buffered. The
+  # `_unused_` markers ride along because reoffer_identity/3 reads them to tell
+  # an untouched blank from one the author cleared. `published_at` is set from
+  # socket assigns, never from the client.
+  defp content_params(params), do: Map.take(params, @autosave_keys)
 
   defp reschedule_autosave_timer(socket) do
     if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)

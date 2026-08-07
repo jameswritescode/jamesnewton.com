@@ -868,4 +868,43 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     render_upload(image, "fresh.png")
     assert has_element?(view, "#post-images")
   end
+
+  test "a crafted validate payload cannot publish a draft through autosave", %{conn: conn} do
+    {view, post} = open_draft(conn)
+
+    render_change(view, "validate", %{
+      "post" => %{
+        "title" => post.title,
+        "slug" => post.slug,
+        "body_markdown" => "smuggling a publish",
+        "published_at" => "2020-01-01T00:00:00Z"
+      }
+    })
+
+    send(view.pid, :autosave)
+    render(view)
+
+    reloaded = Newton.Blog.get_post!(post.id)
+    assert reloaded.body_markdown == "smuggling a publish"
+    assert is_nil(reloaded.published_at)
+  end
+
+  test "a crafted validate payload cannot rewrite the preview token", %{conn: conn} do
+    {view, post} = open_draft(conn)
+    {:ok, post} = Newton.Blog.enable_preview(post)
+
+    render_change(view, "validate", %{
+      "post" => %{
+        "title" => post.title,
+        "slug" => post.slug,
+        "body_markdown" => "body",
+        "preview_token" => "attacker-chosen-token"
+      }
+    })
+
+    send(view.pid, :autosave)
+    render(view)
+
+    assert Newton.Blog.get_post!(post.id).preview_token == post.preview_token
+  end
 end

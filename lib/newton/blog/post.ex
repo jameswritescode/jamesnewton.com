@@ -24,7 +24,7 @@ defmodule Newton.Blog.Post do
   def changeset(post, attrs) do
     post
     |> cast(attrs, [:slug, :title, :excerpt, :body_markdown, :published_at])
-    |> clear_preview_token_when_published()
+    |> clear_preview_token_when_live()
     |> ensure_body()
     |> validate_required([:slug, :title])
     |> unique_constraint(:slug)
@@ -32,15 +32,21 @@ defmodule Newton.Blog.Post do
     |> render_derived_fields()
   end
 
-  # A published post never carries a preview token — every publish path runs the
-  # changeset, so clearing it here covers them all.
-  defp clear_preview_token_when_published(changeset) do
-    if get_field(changeset, :published_at) do
+  # A token is only redundant once the post is readable without it. Scheduling
+  # sets published_at to a future date, and the post stays private until then —
+  # clearing on any published_at would silently break a link already shared.
+  defp clear_preview_token_when_live(changeset) do
+    if changeset |> get_field(:published_at) |> live?() do
       put_change(changeset, :preview_token, nil)
     else
       changeset
     end
   end
+
+  @doc "Whether `published_at` puts the post in front of readers right now."
+  @spec live?(DateTime.t() | nil) :: boolean()
+  def live?(nil), do: false
+  def live?(%DateTime{} = at), do: DateTime.compare(at, DateTime.utc_now()) != :gt
 
   # The body column is non-null and `cast` nils out empty strings, so a bodyless
   # draft would violate the constraint. Coerce a missing body to "".

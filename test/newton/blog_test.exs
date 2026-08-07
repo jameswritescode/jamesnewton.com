@@ -196,6 +196,45 @@ defmodule Newton.BlogTest do
       assert is_nil(Blog.get_post_by_preview_token("d3", "wrong-token"))
       assert is_nil(Blog.get_post_by_preview_token("d3", ""))
     end
+
+    defp future, do: DateTime.utc_now() |> DateTime.add(7, :day) |> DateTime.truncate(:second)
+
+    test "scheduling keeps the token, so a shared link survives until the post goes live" do
+      {:ok, draft} = Blog.create_post(%{slug: "d4", title: "D4", body_markdown: "x"})
+      {:ok, shared} = Blog.enable_preview(draft)
+
+      {:ok, scheduled} = Blog.update_post(shared, %{"published_at" => future()})
+
+      assert scheduled.preview_token == shared.preview_token
+      assert %{id: id} = Blog.get_post_by_preview_token("d4", shared.preview_token)
+      assert id == shared.id
+    end
+
+    test "enable_preview mints a token for a scheduled post" do
+      {:ok, post} =
+        Blog.create_post(%{slug: "d5", title: "D5", body_markdown: "x", published_at: future()})
+
+      {:ok, shared} = Blog.enable_preview(post)
+      assert is_binary(shared.preview_token)
+    end
+
+    test "the lookup refuses a live post even when a token was forced onto it" do
+      {:ok, post} =
+        Blog.create_post(%{
+          slug: "d6",
+          title: "D6",
+          body_markdown: "x",
+          published_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      # Bypass the changeset the way enable_preview/disable_preview do, so the
+      # query cannot lean on the invariant being upheld elsewhere.
+      {:ok, forced} =
+        post |> Ecto.Changeset.change(preview_token: "forced-token") |> Newton.Repo.update()
+
+      assert forced.preview_token == "forced-token"
+      assert is_nil(Blog.get_post_by_preview_token("d6", "forced-token"))
+    end
   end
 
   describe "update_post/2 optimistic locking" do

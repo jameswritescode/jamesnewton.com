@@ -875,7 +875,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           />
         </div>
 
-        <div :if={is_nil(@published_at)} class="border-t border-(--admin-border) pt-3">
+        <div :if={not Post.live?(@published_at)} class="border-t border-(--admin-border) pt-3">
           <div class="mb-1 text-[0.78rem] font-medium text-(--admin-text)">Preview link</div>
           <%= cond do %>
             <% is_nil(@post.id) -> %>

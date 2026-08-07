@@ -77,16 +77,19 @@ defmodule Newton.Blog do
   @spec get_post_by_slug!(String.t()) :: %Post{}
   def get_post_by_slug!(slug), do: Repo.get_by!(Post, slug: slug)
 
-  @doc "Mint a preview token for a draft (idempotent). No-op once published."
+  @doc "Mint a preview token for a post that isn't live yet (idempotent)."
   @spec enable_preview(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
-  def enable_preview(%Post{published_at: nil} = post) do
-    token =
-      post.preview_token || 32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
+  def enable_preview(%Post{} = post) do
+    if Post.live?(post.published_at) do
+      {:ok, post}
+    else
+      token =
+        post.preview_token ||
+          32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
 
-    post |> Ecto.Changeset.change(preview_token: token) |> Repo.update()
+      post |> Ecto.Changeset.change(preview_token: token) |> Repo.update()
+    end
   end
-
-  def enable_preview(%Post{} = post), do: {:ok, post}
 
   @doc "Clear a post's preview token, invalidating any shared link."
   @spec disable_preview(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
@@ -99,7 +102,12 @@ defmodule Newton.Blog do
   def get_post_by_preview_token(slug, token) when is_binary(token) do
     case Repo.get_by(Post, slug: slug) do
       %Post{preview_token: stored} = post when is_binary(stored) ->
-        if Plug.Crypto.secure_compare(token, stored), do: post, else: nil
+        # A live post is readable without a token, so the preview branch must
+        # never serve one. Checked here rather than trusted from the changeset,
+        # since enable_preview/disable_preview write the column directly.
+        if Plug.Crypto.secure_compare(token, stored) and not Post.live?(post.published_at),
+          do: post,
+          else: nil
 
       _ ->
         nil

@@ -14,6 +14,39 @@ defmodule NewtonWeb.ContentSecurityPolicyTest do
     refute csp =~ "script-src 'self' 'unsafe-inline'"
   end
 
+  describe "style-src" do
+    for path <- ["/", "/posts", "/photos", "/reading", "/links", "/resume"] do
+      test "#{path} forbids inline styles", %{conn: conn} do
+        conn = get(conn, unquote(path))
+
+        assert [csp] = get_resp_header(conn, "content-security-policy")
+        assert csp =~ "style-src 'self' https://fonts.googleapis.com"
+        refute csp =~ "style-src 'self' 'unsafe-inline'"
+      end
+
+      test "#{path} renders no inline style attribute to be blocked", %{conn: conn} do
+        html = conn |> get(unquote(path)) |> response(200)
+        refute html =~ ~r/\sstyle="/
+      end
+    end
+
+    test "the admin permits them, since bar widths cannot carry a nonce", %{conn: conn} do
+      conn = conn |> log_in_user(user_fixture()) |> get(~p"/admin")
+
+      assert [csp] = get_resp_header(conn, "content-security-policy")
+      assert csp =~ "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
+    end
+
+    test "the admin's header nonce still matches the markup after the override", %{conn: conn} do
+      conn = conn |> log_in_user(user_fixture()) |> get(~p"/admin")
+      html = html_response(conn, 200)
+
+      [csp] = get_resp_header(conn, "content-security-policy")
+      assert [_, nonce] = Regex.run(~r/'nonce-([A-Za-z0-9_-]+)'/, csp)
+      assert html =~ ~s(<script nonce="#{nonce}">)
+    end
+  end
+
   # The public site is dark-only with no inline scripts, so the nonce'd inline
   # setup script now lives only in the admin layout (its theme toggle).
   test "the admin inline setup script carries the matching CSP nonce", %{conn: conn} do

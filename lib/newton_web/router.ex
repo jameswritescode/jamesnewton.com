@@ -20,6 +20,14 @@ defmodule NewtonWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # The admin renders bar widths as `style=` attributes, which no nonce can
+  # cover. Re-running the plug after :browser replaces the strict header (and
+  # its nonce assign) with one that permits them, keeping the relaxation behind
+  # authentication instead of applying it site-wide.
+  pipeline :admin_csp do
+    plug NewtonWeb.ContentSecurityPolicy, style_src: :allow_inline
+  end
+
   # Headers for machine-facing routes that skip :browser (no session, no CSRF).
   # The CSP plug is here for its `@csp_nonce` assign as much as its header: these
   # routes render the HTML error page on a miss, and the root layout's inline
@@ -62,7 +70,7 @@ defmodule NewtonWeb.Router do
   end
 
   scope "/admin", NewtonWeb.Admin do
-    pipe_through [:browser, :require_authenticated_user]
+    pipe_through [:browser, :require_authenticated_user, :admin_csp]
 
     live_session :admin,
       on_mount: [{NewtonWeb.UserAuth, :require_authenticated}],

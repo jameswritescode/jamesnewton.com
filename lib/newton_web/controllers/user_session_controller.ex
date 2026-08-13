@@ -99,6 +99,8 @@ defmodule NewtonWeb.UserSessionController do
     else
       _ ->
         conn
+        # A challenge is single use: spend it whether or not it verified.
+        |> delete_session(:passkey_challenge)
         |> put_status(:unauthorized)
         |> json(%{error: "Passkey authentication failed."})
     end

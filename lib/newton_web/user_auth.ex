@@ -52,6 +52,16 @@ defmodule NewtonWeb.UserAuth do
   end
 
   @doc """
+  Re-authenticates an already-signed-in user (sudo mode).
+
+  Unlike a plain login this rotates the session identifier: the session's
+  privileges change, so it should not keep the identifier it had beforehand.
+  """
+  def elevate_session(conn, user, params \\ %{}) do
+    create_or_extend_session(conn, user, params, rotate: true)
+  end
+
+  @doc """
   Logs the user out.
 
   It clears all session data for safety. See renew_session.
@@ -119,14 +129,25 @@ defmodule NewtonWeb.UserAuth do
   # When the session is created, rather than extended, the renew_session
   # function will clear the session to avoid fixation attacks. See the
   # renew_session function to customize this behaviour.
-  defp create_or_extend_session(conn, user, params) do
-    token = Accounts.generate_user_session_token(user)
+  defp create_or_extend_session(conn, user, params, opts \\ []) do
+    # Read both before renew_session/2, which may clear the session.
+    previous_token = get_session(conn, :user_token)
     remember_me = get_session(conn, :user_remember_me)
+    token = Accounts.generate_user_session_token(user)
 
     conn
-    |> renew_session(user)
+    |> renew_session(user, opts)
     |> put_token_in_session(token)
     |> maybe_write_remember_me_cookie(token, params, remember_me)
+    |> tap(fn _ -> previous_token && Accounts.delete_user_session_token(previous_token) end)
+  end
+
+  # Elevation changes what the session is allowed to do, so the identifier is
+  # rotated even though the user is unchanged.
+  defp renew_session(conn, user, opts) do
+    if Keyword.get(opts, :rotate, false),
+      do: renew_session(conn, nil),
+      else: renew_session(conn, user)
   end
 
   # Do not renew session if the user is already logged in

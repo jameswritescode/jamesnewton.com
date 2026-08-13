@@ -29,6 +29,77 @@ defmodule NewtonWeb.SudoTest do
     end
   end
 
+  describe "session hygiene on elevation" do
+    setup %{conn: conn} do
+      user = user_fixture() |> set_password()
+      %{conn: log_in_user(conn, user) |> make_stale(), user: user}
+    end
+
+    defp session_token_count(user) do
+      import Ecto.Query
+
+      Newton.Repo.aggregate(
+        from(t in Newton.Accounts.UserToken,
+          where: t.user_id == ^user.id and t.context == "session"
+        ),
+        :count
+      )
+    end
+
+    test "elevating rotates the session, discarding anything held in it", %{conn: conn} do
+      conn = conn |> put_session(:stale_marker, "value") |> put_session(:user_return_to, "/x")
+
+      conn =
+        post(conn, ~p"/login/confirm-access", %{"user" => %{"password" => valid_user_password()}})
+
+      assert redirected_to(conn) == ~p"/admin/settings"
+      refute get_session(conn, :stale_marker)
+      refute get_session(conn, :user_return_to)
+      assert get_session(conn, :user_token)
+    end
+
+    test "elevating replaces the old token instead of leaving it valid", %{
+      conn: conn,
+      user: user
+    } do
+      before_token = get_session(conn, :user_token)
+      assert session_token_count(user) == 1
+
+      conn =
+        post(conn, ~p"/login/confirm-access", %{"user" => %{"password" => valid_user_password()}})
+
+      after_token = get_session(conn, :user_token)
+      assert after_token != before_token
+      assert session_token_count(user) == 1
+      refute Newton.Accounts.get_user_by_session_token(before_token)
+    end
+
+    test "a failed password attempt leaves the session untouched", %{conn: conn, user: user} do
+      before_token = get_session(conn, :user_token)
+
+      conn = post(conn, ~p"/login/confirm-access", %{"user" => %{"password" => "wrong"}})
+
+      assert get_session(conn, :user_token) == before_token
+      assert session_token_count(user) == 1
+    end
+
+    test "a failed passkey attempt burns the challenge", %{conn: conn} do
+      conn = get(conn, ~p"/login/passkey/challenge")
+      assert get_session(conn, :passkey_challenge)
+
+      conn =
+        post(conn, ~p"/login/confirm-access/passkey", %{
+          "id" => "bogus",
+          "authenticatorData" => "bogus",
+          "clientDataJSON" => "bogus",
+          "signature" => "bogus"
+        })
+
+      assert json_response(conn, 401)
+      refute get_session(conn, :passkey_challenge)
+    end
+  end
+
   describe "password re-authentication" do
     setup %{conn: conn} do
       user = user_fixture() |> set_password()

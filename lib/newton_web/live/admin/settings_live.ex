@@ -91,18 +91,19 @@ defmodule NewtonWeb.Admin.SettingsLive do
   end
 
   def handle_event("passkey_registered", params, socket) do
-    %{"rawId" => raw_id, "clientDataJSON" => cdj, "attestationObject" => att, "label" => label} =
-      params
+    %{"clientDataJSON" => cdj, "attestationObject" => att, "label" => label} = params
 
     challenge = socket.assigns.reg_challenge
 
+    # Both the id and the key come from the attestation Wax just verified. The
+    # client also sends `rawId`, but trusting it would let the browser name a
+    # credential the attestation never covered.
     with {:ok, att_obj} <- Base.url_decode64(att, padding: false),
          {:ok, client_data} <- Base.url_decode64(cdj, padding: false),
-         {:ok, {auth_data, _}} <- Wax.register(att_obj, client_data, challenge),
-         {:ok, cred_id} <- Base.url_decode64(raw_id, padding: false) do
+         {:ok, {auth_data, _}} <- Wax.register(att_obj, client_data, challenge) do
       {:ok, _} =
         Accounts.create_credential(socket.assigns.user, %{
-          credential_id: cred_id,
+          credential_id: auth_data.attested_credential_data.credential_id,
           public_key:
             Newton.Webauthn.dump_key(auth_data.attested_credential_data.credential_public_key),
           sign_count: auth_data.sign_count,
@@ -117,7 +118,11 @@ defmodule NewtonWeb.Admin.SettingsLive do
        |> assign(:new_recovery_codes, nil)
        |> put_flash(:info, "Passkey added.")}
     else
-      _ -> {:noreply, put_flash(socket, :error, "Could not add that passkey.")}
+      _ ->
+        {:noreply,
+         socket
+         |> assign(:reg_challenge, nil)
+         |> put_flash(:error, "Could not add that passkey.")}
     end
   end
 

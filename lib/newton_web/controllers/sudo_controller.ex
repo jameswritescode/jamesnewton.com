@@ -19,7 +19,7 @@ defmodule NewtonWeb.SudoController do
     # a fresh one — that's what reopens the sudo window.
     if user = Accounts.get_user_by_email_and_password(email, password) do
       conn
-      |> UserAuth.log_in_user_session(user, %{"remember_me" => "true"})
+      |> UserAuth.elevate_session(user, %{"remember_me" => "true"})
       |> redirect(to: @return_to)
     else
       conn
@@ -58,11 +58,13 @@ defmodule NewtonWeb.SudoController do
 
       conn
       |> delete_session(:passkey_challenge)
-      |> UserAuth.log_in_user_session(cred.user, %{"remember_me" => "true"})
+      |> UserAuth.elevate_session(cred.user, %{"remember_me" => "true"})
       |> json(%{ok: true, to: @return_to})
     else
       _ ->
         conn
+        # A challenge is single use: spend it whether or not it verified.
+        |> delete_session(:passkey_challenge)
         |> put_status(:unauthorized)
         |> json(%{error: "Passkey verification failed."})
     end

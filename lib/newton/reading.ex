@@ -82,6 +82,41 @@ defmodule Newton.Reading do
     )
   end
 
+  @type feed_item :: %Entry{} | {:series, String.t(), [%Entry{}]}
+
+  @doc """
+  Public reading feed: `list_entries/0` order, but all entries of a series are
+  pulled together into a `{:series, name, entries}` tuple positioned where the
+  series' newest entry falls. Singleton series stay plain entries.
+  """
+  @spec feed_entries() :: [feed_item()]
+  def feed_entries do
+    entries = list_entries()
+
+    groups =
+      entries
+      |> Enum.reject(&is_nil(&1.series))
+      |> Enum.group_by(& &1.series)
+
+    entries
+    |> Enum.reduce({[], MapSet.new()}, fn entry, {acc, seen} ->
+      cond do
+        is_nil(entry.series) -> {[entry | acc], seen}
+        MapSet.member?(seen, entry.series) -> {acc, seen}
+        true -> {[feed_group(entry.series, groups) | acc], MapSet.put(seen, entry.series)}
+      end
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+  end
+
+  defp feed_group(series, groups) do
+    case groups[series] do
+      [single] -> single
+      group -> {:series, series, group}
+    end
+  end
+
   @spec verb(:read | :reading | :listened | :listening) :: String.t()
   def verb(:read), do: "Read"
   def verb(:reading), do: "Reading"

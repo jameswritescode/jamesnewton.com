@@ -124,4 +124,56 @@ defmodule Newton.ReadingTest do
 
     assert Reading.series_names() == ["Alpha", "Zeta"]
   end
+
+  describe "feed_entries/0" do
+    defp entry!(title, opts) do
+      {:ok, entry} =
+        Reading.create_entry(%{
+          title: title,
+          author: Keyword.get(opts, :author, "A"),
+          status: Keyword.get(opts, :status, :read),
+          finished_at: Keyword.get(opts, :finished_at),
+          series: Keyword.get(opts, :series)
+        })
+
+      entry
+    end
+
+    test "groups a series at its newest entry, newest first within the group" do
+      entry!("Book 1", series: "Saga", finished_at: ~D[2026-02-01])
+      entry!("Between", finished_at: ~D[2026-03-01])
+      entry!("Book 2", series: "Saga", finished_at: ~D[2026-04-01])
+      entry!("Oldest", finished_at: ~D[2026-01-01])
+
+      assert [{:series, "Saga", [b2, b1]}, between, oldest] = Reading.feed_entries()
+      assert b2.title == "Book 2"
+      assert b1.title == "Book 1"
+      assert between.title == "Between"
+      assert oldest.title == "Oldest"
+    end
+
+    test "an in-progress series book floats the group to the top" do
+      entry!("Newest standalone", finished_at: ~D[2026-05-01])
+      entry!("Book 1", series: "Saga", finished_at: ~D[2026-01-01])
+      entry!("Book 2", series: "Saga", status: :reading, finished_at: nil)
+
+      assert [{:series, "Saga", [b2, b1]}, standalone] = Reading.feed_entries()
+      assert b2.title == "Book 2"
+      assert b1.title == "Book 1"
+      assert standalone.title == "Newest standalone"
+    end
+
+    test "a singleton series renders as a plain entry" do
+      entry!("Solo", series: "Saga", finished_at: ~D[2026-01-01])
+
+      assert [%Newton.Reading.Entry{title: "Solo"}] = Reading.feed_entries()
+    end
+
+    test "entries without a series pass through in order" do
+      entry!("Old", finished_at: ~D[2025-01-01])
+      entry!("New", finished_at: ~D[2026-01-01])
+
+      assert ["New", "Old"] = Reading.feed_entries() |> Enum.map(& &1.title)
+    end
+  end
 end

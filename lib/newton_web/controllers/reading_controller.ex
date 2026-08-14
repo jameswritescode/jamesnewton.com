@@ -9,6 +9,6 @@ defmodule NewtonWeb.ReadingController do
       description: "Books read and listened to, with occasional notes.",
       path: "/reading"
     })
-    |> render(:index, page_title: "Reading", entries: Reading.list_entries())
+    |> render(:index, page_title: "Reading", entries: Reading.feed_entries())
   end
 end

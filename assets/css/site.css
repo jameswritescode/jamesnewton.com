@@ -663,6 +663,39 @@ html.gibson-takeover #main {
   max-width: 60ch;
 }
 
+.feed-series {
+  margin-top: 1rem;
+}
+
+.feed-series:first-child {
+  margin-top: 0;
+}
+
+.feed-series + .feed-item {
+  margin-top: 1rem;
+}
+
+.feed-series-label {
+  font-size: 0.78rem;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: var(--label-tracking);
+  color: var(--text-muted);
+  padding: 0 24px;
+  margin-bottom: 0.2rem;
+}
+
+.feed-series .feed-item {
+  margin-left: 24px;
+  padding: 14px 24px;
+  border-left: 1px solid rgba(var(--dot), 0.18);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+.feed-series .feed-item + .feed-item {
+  margin-top: 0;
+}
+
 .feed-item-photo {
   display: block;
   max-width: 100%;

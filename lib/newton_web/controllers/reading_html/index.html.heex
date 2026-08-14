@@ -5,18 +5,23 @@
     </header>
 
     <.feed>
-      <.feed_item
-        :for={entry <- @entries}
-        id={Newton.Slug.slugify(entry.title)}
-        variant="book"
-        date={format_date(entry.finished_at)}
-      >
-        <p class="feed-item-book">
-          {verb(entry.status)} <cite>{entry.title}</cite> by {entry.author}
-        </p>
-
-        <p :if={entry.note} class="feed-item-book-caption">{entry.note}</p>
-      </.feed_item>
+      <%= for item <- @entries do %>
+        <%= case item do %>
+          <% {:series, name, entries} -> %>
+            <section class="feed-series">
+              <h3 class="feed-series-label">
+                {name}<span :if={shared_author(entries)}> · {shared_author(entries)}</span>
+              </h3>
+              <.book_item
+                :for={entry <- entries}
+                entry={entry}
+                show_author={is_nil(shared_author(entries))}
+              />
+            </section>
+          <% entry -> %>
+            <.book_item entry={entry} />
+        <% end %>
+      <% end %>
     </.feed>
   </article>
 </Layouts.app>

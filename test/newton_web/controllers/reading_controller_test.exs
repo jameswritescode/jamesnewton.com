@@ -18,4 +18,68 @@ defmodule NewtonWeb.ReadingControllerTest do
     assert html =~ "John Ousterhout"
     assert html =~ "deep modules"
   end
+
+  test "GET /reading groups series entries under a shared-author label", %{conn: conn} do
+    {:ok, _} =
+      Reading.create_entry(%{
+        title: "Book One",
+        author: "Ann Author",
+        status: :read,
+        finished_at: ~D[2026-01-10],
+        series: "The Saga"
+      })
+
+    {:ok, _} =
+      Reading.create_entry(%{
+        title: "Standalone",
+        author: "Someone Else",
+        status: :read,
+        finished_at: ~D[2026-02-10]
+      })
+
+    {:ok, _} =
+      Reading.create_entry(%{
+        title: "Book Two",
+        author: "Ann Author",
+        status: :read,
+        finished_at: ~D[2026-03-10],
+        series: "The Saga"
+      })
+
+    html = conn |> get(~p"/reading") |> html_response(200)
+    series = html |> LazyHTML.from_document() |> LazyHTML.query(".feed-series") |> LazyHTML.text()
+
+    assert series =~ "Book One"
+    assert series =~ "Book Two"
+    assert series =~ "The Saga · Ann Author"
+    refute series =~ "Standalone"
+    refute series =~ "by Ann Author"
+  end
+
+  test "GET /reading keeps per-entry authors when a series has several", %{conn: conn} do
+    {:ok, _} =
+      Reading.create_entry(%{
+        title: "Book One",
+        author: "Ann Author",
+        status: :read,
+        finished_at: ~D[2026-01-10],
+        series: "The Saga"
+      })
+
+    {:ok, _} =
+      Reading.create_entry(%{
+        title: "Book Two",
+        author: "Bob Writer",
+        status: :read,
+        finished_at: ~D[2026-03-10],
+        series: "The Saga"
+      })
+
+    html = conn |> get(~p"/reading") |> html_response(200)
+    series = html |> LazyHTML.from_document() |> LazyHTML.query(".feed-series") |> LazyHTML.text()
+
+    assert series =~ "by Ann Author"
+    assert series =~ "by Bob Writer"
+    refute series =~ "The Saga ·"
+  end
 end

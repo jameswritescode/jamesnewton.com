@@ -25,6 +25,18 @@ defmodule Newton.Reading do
     Entry.changeset(entry, attrs)
   end
 
+  @doc "Distinct series names in use, sorted, for the admin autocomplete."
+  @spec series_names() :: [String.t()]
+  def series_names do
+    Repo.all(
+      from e in Entry,
+        where: not is_nil(e.series),
+        distinct: true,
+        order_by: e.series,
+        select: e.series
+    )
+  end
+
   @statuses [:reading, :read, :listening, :listened]
 
   @spec status_counts() :: %{

@@ -102,4 +102,26 @@ defmodule Newton.ReadingTest do
 
     assert Reading.status_counts() == %{read: 2, reading: 1, listened: 0, listening: 0}
   end
+
+  test "series is optional and blank normalizes to nil" do
+    {:ok, blank} = Reading.create_entry(%{title: "T", author: "A", status: :read, series: "   "})
+    assert blank.series == nil
+
+    {:ok, trimmed} =
+      Reading.create_entry(%{title: "T2", author: "A", status: :read, series: " First Law "})
+
+    assert trimmed.series == "First Law"
+
+    {:ok, cleared} = Reading.update_entry(trimmed, %{series: ""})
+    assert cleared.series == nil
+  end
+
+  test "series_names/0 returns distinct sorted names excluding nil" do
+    {:ok, _} = Reading.create_entry(%{title: "A", author: "x", status: :read, series: "Zeta"})
+    {:ok, _} = Reading.create_entry(%{title: "B", author: "x", status: :read, series: "Alpha"})
+    {:ok, _} = Reading.create_entry(%{title: "C", author: "x", status: :read, series: "Alpha"})
+    {:ok, _} = Reading.create_entry(%{title: "D", author: "x", status: :read})
+
+    assert Reading.series_names() == ["Alpha", "Zeta"]
+  end
 end

@@ -42,17 +42,47 @@ domain layer precisely because it never touches routes; it takes URLs as data.
 crash the admin editor. Every failure (non-2xx or transport error) becomes a
 logged warning, not a raise.
 
-**Config-gated.** `Newton.IndexNow` submits only when `enabled: true`. In dev
-and test — and currently in prod — `submit/1` returns `:ok` without an HTTP
-call, so the notifier still runs end-to-end but nothing leaves the machine.
-It is off in prod while `jamesnewton-com.fly.dev` serves as the staging host;
-flip `enabled` to `true` in `config/prod.exs` once `jamesnewton.com` goes live.
+**Config-gated.** `Newton.IndexNow` submits only when `enabled: true` — see
+Configuration and enabling below.
 
 **Telemetry.** Each submission is a `[:newton, :indexnow, :submit]` span.
 Metadata is deliberately bounded — `result` (`:ok | :error`), HTTP `status`,
 `url_count` — so it is safe as metric dimensions. The URLs themselves appear
 only in log messages, never in telemetry (unbounded values would explode metric
 cardinality).
+
+## Configuration and enabling
+
+Everything lives in `config/config.exs`; there is no secret and nothing to read
+from the environment:
+
+```elixir
+config :newton, Newton.IndexNow,
+  key: "d1258f1d59aea5c8f3e604eb494cc477",
+  enabled: false
+```
+
+### What `enabled` gates
+
+`enabled: true` turns on the outbound POST. When false, `submit/1` returns `:ok`
+without an HTTP call, so `IndexNowNotifier` still computes the changed URL set
+and runs end to end — nothing leaves the machine. That is the dev and test
+posture, and it means the notifier's behaviour is exercised by tests without
+network access.
+
+The key file at `priv/static/<key>.txt` is served regardless of the flag, since
+it is static content.
+
+### Enabling
+
+Flip `enabled: true` in `config/prod.exs` and deploy. There is no other step —
+IndexNow has no registration, and ownership is proven by the key file already
+being served from the host.
+
+**Do this only once `jamesnewton.com` points at the app.** Submissions are built
+from the endpoint's configured host, so enabling it while
+`jamesnewton-com.fly.dev` is the live host would ask engines to crawl the
+staging domain — the reason it stayed off through the migration.
 
 ## The key
 

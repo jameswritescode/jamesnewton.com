@@ -35,7 +35,8 @@ against Postgres 14.
 
 ## Docs
 
-- `docs/production.md` — deploy/launch runbook
 - `docs/known-issues.md` — accepted upstream issues and why
-- `docs/analytics.md`, `docs/indexnow.md`, `docs/design.md` — subsystem notes
+- `docs/indexnow.md`, `docs/standard-site.md` — search and ATmosphere
+  publishing, each with a configuration/enabling section
+- `docs/analytics.md`, `docs/design.md` — subsystem notes
 - `docs/superpowers/specs/` — design docs for larger features

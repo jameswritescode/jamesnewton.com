@@ -65,7 +65,7 @@ defmodule NewtonWeb.Admin.Components do
   attr :label, :string, default: nil
   attr :options, :list, default: []
   attr :errors, :list, default: []
-  attr :rest, :global, include: ~w(rows placeholder autocomplete readonly required)
+  attr :rest, :global, include: ~w(rows placeholder autocomplete readonly required list)
 
   def field(%{field: %Phoenix.HTML.FormField{}} = assigns) do
     ~H"""

@@ -112,4 +112,34 @@ defmodule NewtonWeb.Admin.ReadingLiveTest do
     assert_patch(view, ~p"/admin/reading")
     assert_raise Ecto.NoResultsError, fn -> Reading.get_entry!(entry.id) end
   end
+
+  test "creates an entry with a series", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/reading/new")
+
+    view
+    |> form("#reading-form",
+      entry: %{title: "New Book", author: "Auth", status: :read, series: "The Saga"}
+    )
+    |> render_submit()
+
+    assert_patch(view, ~p"/admin/reading")
+    assert Enum.any?(Reading.list_entries(), &(&1.series == "The Saga"))
+  end
+
+  test "series field suggests existing series names, including just-saved ones", %{conn: conn} do
+    entry_fixture(%{title: "Earlier", series: "The Saga"})
+    {:ok, view, _html} = live(conn, ~p"/admin/reading/new")
+
+    assert has_element?(view, ~s(#series-names option[value="The Saga"]))
+    refute has_element?(view, ~s(#series-names option[value="Fresh Series"]))
+
+    view
+    |> form("#reading-form",
+      entry: %{title: "New Book", author: "Auth", status: :read, series: "Fresh Series"}
+    )
+    |> render_submit()
+
+    {:ok, view, _html} = live(conn, ~p"/admin/reading/new")
+    assert has_element?(view, ~s(#series-names option[value="Fresh Series"]))
+  end
 end

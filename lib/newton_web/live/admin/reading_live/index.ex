@@ -19,6 +19,7 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
      socket
      |> assign(:status_options, @status_options)
      |> assign(:status_counts, Reading.status_counts())
+     |> assign(:series_names, Reading.series_names())
      |> stream(:entries, Reading.list_entries())}
   end
 
@@ -117,6 +118,7 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
     socket
     |> stream(:entries, Reading.list_entries(), reset: true)
     |> assign(:status_counts, Reading.status_counts())
+    |> assign(:series_names, Reading.series_names())
   end
 
   @impl true
@@ -155,6 +157,7 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
         form={@form}
         entry={@entry}
         status_options={@status_options}
+        series_names={@series_names}
       />
     </Layouts.admin>
     """
@@ -234,6 +237,7 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
   attr :form, :map, required: true
   attr :entry, :map, required: true
   attr :status_options, :list, required: true
+  attr :series_names, :list, required: true
 
   defp reading_drawer(assigns) do
     ~H"""
@@ -249,6 +253,10 @@ defmodule NewtonWeb.Admin.ReadingLive.Index do
       >
         <Components.field field={@form[:title]} label="Title" />
         <Components.field field={@form[:author]} label="Author" />
+        <Components.field field={@form[:series]} label="Series" list="series-names" />
+        <datalist id="series-names">
+          <option :for={name <- @series_names} value={name}></option>
+        </datalist>
         <Components.field field={@form[:link]} label="Link" />
         <Components.field
           field={@form[:status]}

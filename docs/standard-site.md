@@ -122,15 +122,22 @@ than exiting quietly.
 ## Backfilling already-published posts
 
 Records are written on post mutations, so anything published before `enabled`
-went true has no document record. Either touch-save each post in the editor, or
-from a production shell:
+went true has no document record. This is optional — posts without a record are
+simply absent from ATmosphere apps until their next edit, which writes one.
+
+To do it anyway, either touch-save each post in the editor, or from a
+production shell:
 
 ```bash
 fly ssh console -C '/app/bin/newton rpc "
-  Newton.Blog.list_published_posts()
-  |> Enum.each(&Newton.Standard.put_document(Newton.Blog.get_post!(&1.id)))
+Newton.Blog.list_published_posts()
+|> Enum.map(&{&1.slug, Newton.Standard.put_document(Newton.Blog.get_post!(&1.id))})
+|> IO.inspect(label: :backfill)
 "'
 ```
+
+Map rather than `Enum.each`, so a failed write is visible instead of silently
+swallowed — `put_document/1` returns `{:error, reason}` rather than raising.
 
 `put_document/1` no-ops when `enabled` is false, so this must run after step 3.
 

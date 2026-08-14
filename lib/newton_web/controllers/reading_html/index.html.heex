@@ -8,17 +8,8 @@
       <%= for item <- @entries do %>
         <%= case item do %>
           <% {:series, name, entries} -> %>
-            <section class="feed-series">
-              <h3 class="feed-series-label">
-                {name}<span :if={shared_author(entries)}> · {shared_author(entries)}</span>
-              </h3>
-              <.book_item
-                :for={entry <- entries}
-                entry={entry}
-                show_author={is_nil(shared_author(entries))}
-              />
-            </section>
-          <% entry -> %>
+            <.series_group name={name} entries={entries} />
+          <% %Newton.Reading.Entry{} = entry -> %>
             <.book_item entry={entry} />
         <% end %>
       <% end %>

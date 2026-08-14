@@ -58,7 +58,7 @@ defmodule Newton.Reading do
 
   @spec list_entries() :: [%Entry{}]
   def list_entries do
-    Repo.all(from e in Entry, order_by: [desc: e.finished_at])
+    Repo.all(from e in Entry, order_by: [desc_nulls_first: e.finished_at, desc: e.id])
   end
 
   @doc "Total number of reading entries."

@@ -139,7 +139,7 @@ defmodule NewtonWeb.Admin.ReadingLiveTest do
     )
     |> render_submit()
 
-    {:ok, view, _html} = live(conn, ~p"/admin/reading/new")
+    view |> element("a", "Add entry") |> render_click()
     assert has_element?(view, ~s(#series-names option[value="Fresh Series"]))
   end
 end

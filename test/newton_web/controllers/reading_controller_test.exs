@@ -52,6 +52,7 @@ defmodule NewtonWeb.ReadingControllerTest do
     assert series =~ "Book One"
     assert series =~ "Book Two"
     assert series =~ "The Saga · Ann Author"
+    assert html =~ "Standalone"
     refute series =~ "Standalone"
     refute series =~ "by Ann Author"
   end

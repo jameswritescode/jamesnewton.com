@@ -25,8 +25,23 @@ defmodule NewtonWeb.ReadingHTML do
     """
   end
 
-  @doc "The single author shared by every entry in a series group, or nil."
-  def shared_author([first | rest]) do
+  attr :name, :string, required: true
+  attr :entries, :list, required: true
+
+  def series_group(assigns) do
+    assigns = assign(assigns, :author, shared_author(assigns.entries))
+
+    ~H"""
+    <section class="feed-series" aria-labelledby={"series-#{Newton.Slug.slugify(@name)}"}>
+      <h2 id={"series-#{Newton.Slug.slugify(@name)}"} class="feed-series-label">
+        {@name}<span :if={@author}> · {@author}</span>
+      </h2>
+      <.book_item :for={entry <- @entries} entry={entry} show_author={is_nil(@author)} />
+    </section>
+    """
+  end
+
+  defp shared_author([first | rest]) do
     if Enum.all?(rest, &(&1.author == first.author)), do: first.author
   end
 end

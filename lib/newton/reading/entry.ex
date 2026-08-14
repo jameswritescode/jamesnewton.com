@@ -24,12 +24,15 @@ defmodule Newton.Reading.Entry do
   end
 
   defp normalize_series(changeset) do
-    with series when is_binary(series) <- get_change(changeset, :series),
-         "" <- String.trim(series) do
-      put_change(changeset, :series, nil)
-    else
-      trimmed when is_binary(trimmed) -> put_change(changeset, :series, trimmed)
-      _ -> changeset
+    case get_change(changeset, :series) do
+      series when is_binary(series) ->
+        case String.trim(series) do
+          "" -> put_change(changeset, :series, nil)
+          trimmed -> put_change(changeset, :series, trimmed)
+        end
+
+      _ ->
+        changeset
     end
   end
 end

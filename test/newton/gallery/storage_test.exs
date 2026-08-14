@@ -60,6 +60,20 @@ defmodule Newton.Gallery.StorageTest do
     File.rm(src)
   end
 
+  test "delete/1 refuses keys that would escape the media root" do
+    name = "outside-#{System.unique_integer([:positive])}.txt"
+    outside = Path.join(System.tmp_dir!(), name)
+
+    for key <- ["../" <> name, "sub/../../" <> name, outside] do
+      File.write!(outside, "do not delete me")
+
+      assert Storage.delete(key) == :ok
+      assert File.exists?(outside), "delete/1 followed #{inspect(key)} out of media_root"
+    end
+
+    File.rm(outside)
+  end
+
   test "delete/1 removes the file and is idempotent" do
     src = Path.join(@root, "upload-#{System.unique_integer([:positive])}.tmp")
     File.write!(src, @png)

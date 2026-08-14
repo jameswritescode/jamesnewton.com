@@ -65,6 +65,19 @@ defmodule Newton.Gallery do
   @spec get_photo!(term()) :: %Photo{}
   def get_photo!(id), do: Repo.get!(Photo, id)
 
+  @doc """
+  Fetch a photo that belongs to `group`, raising otherwise.
+
+  The gallery id in the URL is the caller's claim about where a photo lives, so
+  editing routes resolve through here rather than by photo id alone. A photo in
+  a different gallery is as absent as one that never existed — same 404, so the
+  response says nothing about ids outside this gallery.
+  """
+  @spec get_group_photo!(%PhotoGroup{}, term()) :: %Photo{}
+  def get_group_photo!(%PhotoGroup{id: group_id}, id) do
+    Repo.get_by!(Photo, id: id, photo_group_id: group_id)
+  end
+
   @spec update_photo(%Photo{}, map()) :: {:ok, %Photo{}} | {:error, Ecto.Changeset.t()}
   def update_photo(%Photo{} = photo, attrs) do
     photo |> Photo.changeset(attrs) |> Repo.update()

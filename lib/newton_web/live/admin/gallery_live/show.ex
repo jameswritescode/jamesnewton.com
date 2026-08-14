@@ -35,7 +35,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
   defp apply_action(socket, :show, _params), do: close_drawers(socket)
 
   defp apply_action(socket, :photo, %{"photo_id" => photo_id}) do
-    photo = Gallery.get_photo!(photo_id)
+    photo = Gallery.get_group_photo!(socket.assigns.group, photo_id)
 
     socket
     |> close_drawers()

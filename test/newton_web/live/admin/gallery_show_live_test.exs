@@ -147,4 +147,37 @@ defmodule NewtonWeb.Admin.GalleryShowLiveTest do
     assert is_binary(created.thumb_key)
     assert String.ends_with?(created.thumb_key, ".webp")
   end
+
+  describe "photo scoping" do
+    test "a photo from another gallery 404s, the same as one that never existed", %{conn: conn} do
+      mine = group_fixture(%{title: "Mine"})
+      theirs = group_fixture(%{title: "Theirs"})
+      stranger = photo_fixture(theirs, %{alt: "Not mine"})
+
+      assert_error_sent(404, fn ->
+        live(conn, ~p"/admin/photos/#{mine.id}/photo/#{stranger.id}")
+      end)
+
+      assert_error_sent(404, fn ->
+        live(conn, ~p"/admin/photos/#{mine.id}/photo/#{stranger.id + 10_000}")
+      end)
+
+      assert Gallery.get_photo!(stranger.id).alt == "Not mine"
+    end
+
+    test "a photo in this gallery still opens for editing", %{conn: conn} do
+      group = group_fixture()
+      photo = photo_fixture(group, %{alt: "Mine"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/photos/#{group.id}/photo/#{photo.id}")
+
+      assert has_element?(view, "#photo-drawer")
+
+      view
+      |> form("#photo-form", %{"photo" => %{"alt" => "Renamed"}})
+      |> render_submit()
+
+      assert Gallery.get_photo!(photo.id).alt == "Renamed"
+    end
+  end
 end

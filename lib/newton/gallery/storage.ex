@@ -45,8 +45,23 @@ defmodule Newton.Gallery.Storage do
   def delete(nil), do: :ok
 
   def delete(key) when is_binary(key) do
-    media_root() |> Path.join(key) |> File.rm()
+    # File.rm/1 follows `../` out of the root, so resolve the path first and
+    # refuse anything that lands outside. Deliberately a containment check
+    # rather than a filename pattern: a pattern would silently no-op on any key
+    # shaped differently from today's, turning a deletion into nothing at all.
+    case contained_path(key) do
+      {:ok, path} -> File.rm(path)
+      :error -> :ok
+    end
+
     :ok
+  end
+
+  defp contained_path(key) do
+    root = Path.expand(media_root())
+    path = root |> Path.join(key) |> Path.expand()
+
+    if String.starts_with?(path, root <> "/"), do: {:ok, path}, else: :error
   end
 
   defp media_root, do: Application.fetch_env!(:newton, :media_root)

@@ -374,9 +374,12 @@ defmodule Newton.Accounts do
     candidates =
       Repo.all(from r in RecoveryCode, where: r.user_id == ^user_id and is_nil(r.used_at))
 
+    # No Bcrypt.no_user_verify/0 on the miss: unlike valid_password?/2, which
+    # uses it so a missing user costs the same as a wrong password, this path
+    # has already run a real verify per unused code. It would equalise nothing
+    # and add another full-cost hash.
     case Enum.find(candidates, &Bcrypt.verify_pass(normalized, &1.code_hash)) do
       nil ->
-        Bcrypt.no_user_verify()
         :error
 
       %RecoveryCode{id: id} ->

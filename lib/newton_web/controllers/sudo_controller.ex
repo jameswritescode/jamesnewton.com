@@ -84,11 +84,18 @@ defmodule NewtonWeb.SudoController do
     end
   end
 
-  # Only a same-origin local path is trusted as a return address — anything
-  # else (an absolute URL, a protocol-relative `//host` address) is an open
-  # redirect and falls back to `@return_to` instead.
+  # Only a same-origin local path is trusted as a return address. Rejects the
+  # obvious open-redirect shapes (an absolute URL, a protocol-relative
+  # `//host` address) as well as the slash-normalization tricks browsers
+  # apply when resolving a URL: a backslash is treated as a path separator
+  # (`/\evil.com` becomes `//evil.com`), and control characters like tabs are
+  # stripped (`/\t/evil.com` becomes `//evil.com`). Anything that fails falls
+  # back to `@return_to` instead.
   defp valid_return_to(v) do
-    if is_binary(v) and String.starts_with?(v, "/") and not String.starts_with?(v, "//") do
+    if is_binary(v) and String.starts_with?(v, "/") and
+         not String.starts_with?(v, "//") and
+         not String.contains?(v, "\\") and
+         not String.match?(v, ~r/[\x00-\x1F]/) do
       v
     end
   end

@@ -9,6 +9,62 @@ defmodule NewtonWeb.SudoTest do
     conn
   end
 
+  @unsafe_return_tos [
+    "https://evil.example",
+    "//evil.example",
+    "/\\evil.example",
+    "/\t/evil.example"
+  ]
+
+  defp generate_p256_key do
+    {pub, priv} = :crypto.generate_key(:ecdh, :prime256v1)
+    x = binary_part(pub, 1, 32)
+    y = binary_part(pub, 33, 32)
+    {%{1 => 2, 3 => -7, -1 => 1, -2 => x, -3 => y}, priv}
+  end
+
+  defp register_passkey!(user) do
+    {cose_key, priv} = generate_p256_key()
+    credential_id = :crypto.strong_rand_bytes(16)
+
+    {:ok, _cred} =
+      Newton.Accounts.create_credential(user, %{
+        credential_id: credential_id,
+        public_key: Newton.Webauthn.dump_key(cose_key),
+        sign_count: 0,
+        label: "Test passkey"
+      })
+
+    {credential_id, priv}
+  end
+
+  defp passkey_assertion_params(conn, credential_id, priv) do
+    conn = get(conn, ~p"/login/passkey/challenge")
+    %{"challenge" => challenge_b64, "rpId" => rp_id} = json_response(conn, 200)
+
+    origin = Application.fetch_env!(:newton, :webauthn)[:origin]
+
+    auth_data =
+      :crypto.hash(:sha256, rp_id) <>
+        <<5>> <>
+        <<1::unsigned-big-integer-size(32)>>
+
+    client_data_json =
+      Jason.encode!(%{type: "webauthn.get", challenge: challenge_b64, origin: origin})
+
+    client_data_hash = :crypto.hash(:sha256, client_data_json)
+    sig = :crypto.sign(:ecdsa, :sha256, auth_data <> client_data_hash, [priv, :prime256v1])
+
+    params = %{
+      "id" => Base.url_encode64(credential_id, padding: false),
+      "authenticatorData" => Base.url_encode64(auth_data, padding: false),
+      "clientDataJSON" => Base.url_encode64(client_data_json, padding: false),
+      "signature" => Base.url_encode64(sig, padding: false)
+    }
+
+    {conn, params}
+  end
+
   describe "sudo gate on /admin/settings" do
     test "a fresh session reaches settings directly", %{conn: conn} do
       conn = log_in_user(conn, user_fixture())
@@ -126,8 +182,8 @@ defmodule NewtonWeb.SudoTest do
       assert redirected_to(conn) == "/oauth/authorize?client_id=abc"
     end
 
-    test "an absolute or protocol-relative return_to falls back to the default", %{user: user} do
-      for unsafe_return_to <- ["https://evil.example", "//evil.example"] do
+    test "an unsafe return_to falls back to the default", %{user: user} do
+      for unsafe_return_to <- @unsafe_return_tos do
         conn = log_in_user(build_conn(), user) |> make_stale()
 
         conn =
@@ -192,6 +248,37 @@ defmodule NewtonWeb.SudoTest do
 
       conn = post(conn, ~p"/login/confirm-access/passkey", @bogus_assertion)
       assert json_response(conn, 401)
+    end
+
+    test "a valid local return_to lands back on that path, and an unsafe one falls back",
+         %{conn: conn} do
+      user = user_fixture()
+      {credential_id, priv} = register_passkey!(user)
+      conn = log_in_user(conn, user) |> make_stale()
+
+      {conn, params} = passkey_assertion_params(conn, credential_id, priv)
+
+      conn =
+        post(conn, ~p"/login/confirm-access/passkey", Map.put(params, "return_to", "/settings"))
+
+      assert %{"ok" => true, "to" => "/settings"} = json_response(conn, 200)
+
+      for unsafe_return_to <- @unsafe_return_tos do
+        unsafe_user = user_fixture()
+        {credential_id, priv} = register_passkey!(unsafe_user)
+        conn = log_in_user(build_conn(), unsafe_user) |> make_stale()
+
+        {conn, params} = passkey_assertion_params(conn, credential_id, priv)
+
+        conn =
+          post(
+            conn,
+            ~p"/login/confirm-access/passkey",
+            Map.put(params, "return_to", unsafe_return_to)
+          )
+
+        assert %{"ok" => true, "to" => "/admin/settings"} = json_response(conn, 200)
+      end
     end
 
     test "rejects when there is no challenge in the session", %{conn: conn} do

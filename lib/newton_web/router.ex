@@ -122,6 +122,9 @@ defmodule NewtonWeb.Router do
 
     post "/login/confirm-access", SudoController, :password
     post "/login/confirm-access/passkey", SudoController, :passkey
+
+    get "/oauth/authorize", OAuthAuthorizationController, :authorize
+    post "/oauth/authorize", OAuthAuthorizationController, :approve
   end
 
   # Other scopes may use custom stacks.

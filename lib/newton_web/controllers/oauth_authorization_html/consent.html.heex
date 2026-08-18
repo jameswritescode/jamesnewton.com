@@ -1,0 +1,19 @@
+<Layouts.app flash={@flash}>
+  <article class="post">
+    <header>
+      <h1 class="post-title">Authorize {@client.client_name}</h1>
+    </header>
+
+    <p>
+      <strong>{@client.client_name}</strong>
+      wants read access to your posts, drafts included. Approving sends it back to <strong>{URI.parse(@redirect_uri).host}</strong>.
+    </p>
+
+    <form method="post" action={~p"/oauth/authorize"} id="oauth-consent-form">
+      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+      <input :for={{name, value} <- @params} type="hidden" name={name} value={value} />
+      <button type="submit" name="decision" value="approve">Approve</button>
+      <button type="submit" name="decision" value="deny">Deny</button>
+    </form>
+  </article>
+</Layouts.app>

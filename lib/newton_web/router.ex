@@ -74,6 +74,7 @@ defmodule NewtonWeb.Router do
 
     get "/.well-known/oauth-authorization-server", OAuthController, :authorization_server_metadata
     post "/oauth/register", OAuthController, :register
+    post "/oauth/token", OAuthController, :token
   end
 
   scope "/admin", NewtonWeb.Admin do

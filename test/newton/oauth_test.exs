@@ -169,13 +169,14 @@ defmodule Newton.OAuthTest do
       assert {:error, :invalid_token} = OAuth.verify_access_token(at)
     end
 
-    test "refresh rotates both tokens and old access token dies at expiry only" do
+    test "refresh rotates both tokens and invalidates the previous access token" do
       {client, _} = registered_client()
       {:ok, %{access_token: at1, refresh_token: rt1}} = issued_tokens(client)
 
       assert {:ok, %{access_token: at2, refresh_token: rt2}} = OAuth.refresh(client, rt1)
       assert at2 != at1 and rt2 != rt1
       assert {:ok, _} = OAuth.verify_access_token(at2)
+      assert {:error, :invalid_token} = OAuth.verify_access_token(at1)
     end
 
     test "reusing a rotated refresh token revokes the grant" do
@@ -208,6 +209,45 @@ defmodule Newton.OAuthTest do
     test "garbage bearer values fail closed" do
       assert {:error, :invalid_token} = OAuth.verify_access_token("nonsense")
       assert {:error, :invalid_token} = OAuth.verify_access_token("")
+    end
+
+    test "refresh token absolute expiry is never extended" do
+      {client, _} = registered_client()
+      {:ok, %{refresh_token: rt1}} = issued_tokens(client)
+
+      grant = find_grant_by_refresh_token(rt1)
+      original_expiry = grant.refresh_token_expires_at
+
+      {:ok, %{refresh_token: _rt2}} = OAuth.refresh(client, rt1)
+
+      grant = find_grant_by_previous_refresh_token(rt1)
+      assert grant.refresh_token_expires_at == original_expiry
+    end
+
+    test "second code exchange attempt returns invalid_grant without side effects" do
+      {client, _} = registered_client()
+      {verifier, challenge} = pkce_pair()
+
+      {:ok, code} =
+        OAuth.issue_code(client, redirect_uri(), challenge, OAuth.canonical_resource())
+
+      {:ok, %{access_token: at1}} = OAuth.exchange_code(client, code, redirect_uri(), verifier)
+
+      assert {:error, :invalid_grant} =
+               OAuth.exchange_code(client, code, redirect_uri(), verifier)
+
+      assert {:error, :invalid_token} = OAuth.verify_access_token(at1)
+    end
+
+    test "second refresh attempt with rotated token returns invalid_grant without side effects" do
+      {client, _} = registered_client()
+      {:ok, %{refresh_token: rt1}} = issued_tokens(client)
+
+      {:ok, %{access_token: at2, refresh_token: _rt2}} = OAuth.refresh(client, rt1)
+
+      assert {:error, :invalid_grant} = OAuth.refresh(client, rt1)
+
+      assert {:error, :invalid_token} = OAuth.verify_access_token(at2)
     end
   end
 
@@ -252,5 +292,25 @@ defmodule Newton.OAuthTest do
         from(g in Newton.OAuth.Grant, where: field(g, ^hash_field) == ^OAuth.hash(secret)),
         set: [{expiry_field, past}]
       )
+  end
+
+  defp find_grant_by_refresh_token(token) do
+    import Ecto.Query
+
+    Newton.Repo.one(
+      from(g in Newton.OAuth.Grant,
+        where: g.refresh_token_hash == ^OAuth.hash(token)
+      )
+    )
+  end
+
+  defp find_grant_by_previous_refresh_token(token) do
+    import Ecto.Query
+
+    Newton.Repo.one(
+      from(g in Newton.OAuth.Grant,
+        where: g.previous_refresh_token_hash == ^OAuth.hash(token)
+      )
+    )
   end
 end

@@ -2,6 +2,7 @@ defmodule NewtonWeb.OAuthController do
   use NewtonWeb, :controller
 
   alias Newton.OAuth
+  alias Newton.OAuth.Client
 
   def authorization_server_metadata(conn, _params) do
     base = NewtonWeb.Endpoint.url()
@@ -25,10 +26,14 @@ defmodule NewtonWeb.OAuthController do
           client_id: client.client_id,
           client_name: client.client_name,
           redirect_uris: client.redirect_uris,
-          token_endpoint_auth_method: client.token_endpoint_auth_method
+          token_endpoint_auth_method: client.token_endpoint_auth_method,
+          client_id_issued_at: DateTime.to_unix(client.inserted_at)
         }
 
-        response = if secret, do: Map.put(response, :client_secret, secret), else: response
+        response =
+          if secret,
+            do: Map.merge(response, %{client_secret: secret, client_secret_expires_at: 0}),
+            else: response
 
         conn |> put_status(201) |> json(response)
 
@@ -48,7 +53,7 @@ defmodule NewtonWeb.OAuthController do
              params["redirect_uri"],
              params["code_verifier"]
            ) do
-      json(conn, tokens)
+      conn |> put_no_store() |> json(tokens)
     else
       error -> token_error(conn, error)
     end
@@ -57,7 +62,7 @@ defmodule NewtonWeb.OAuthController do
   def token(conn, %{"grant_type" => "refresh_token"} = params) do
     with {:ok, client} <- authenticated_client(conn, params),
          {:ok, tokens} <- OAuth.refresh(client, params["refresh_token"]) do
-      json(conn, tokens)
+      conn |> put_no_store() |> json(tokens)
     else
       error -> token_error(conn, error)
     end
@@ -65,6 +70,7 @@ defmodule NewtonWeb.OAuthController do
 
   def token(conn, _params) do
     conn
+    |> put_no_store()
     |> put_status(400)
     |> json(%{
       error: "unsupported_grant_type",
@@ -73,28 +79,106 @@ defmodule NewtonWeb.OAuthController do
   end
 
   defp authenticated_client(conn, params) do
-    {client_id, secret} =
+    {basic_id, basic_secret, used_basic?} =
       case Plug.BasicAuth.parse_basic_auth(conn) do
-        {basic_id, basic_secret} -> {basic_id, basic_secret}
-        :error -> {params["client_id"], params["client_secret"]}
+        {id, secret} -> {id, secret, true}
+        :error -> {nil, nil, false}
       end
 
-    OAuth.authenticate_client(client_id, secret)
+    client_id = basic_id || params["client_id"]
+    client = OAuth.get_client(client_id)
+
+    case client_channel_secret(client, used_basic?, basic_secret, params["client_secret"]) do
+      {:ok, secret} ->
+        case OAuth.authenticate_client(client_id, secret) do
+          {:ok, authenticated} ->
+            {:ok, authenticated}
+
+          {:error, :invalid_client} ->
+            {:error, :invalid_client, www_authenticate?(client, used_basic?)}
+        end
+
+      :error ->
+        {:error, :invalid_client, www_authenticate?(client, used_basic?)}
+    end
   end
 
-  defp token_error(conn, {:error, :invalid_client}) do
+  defp client_channel_secret(
+         %Client{token_endpoint_auth_method: "client_secret_basic"},
+         true,
+         basic_secret,
+         nil
+       ),
+       do: {:ok, basic_secret}
+
+  defp client_channel_secret(%Client{token_endpoint_auth_method: "client_secret_basic"}, _, _, _),
+    do: :error
+
+  defp client_channel_secret(
+         %Client{token_endpoint_auth_method: "client_secret_post"},
+         false,
+         nil,
+         body_secret
+       ),
+       do: {:ok, body_secret}
+
+  defp client_channel_secret(%Client{token_endpoint_auth_method: "client_secret_post"}, _, _, _),
+    do: :error
+
+  defp client_channel_secret(%Client{token_endpoint_auth_method: "none"}, false, nil, nil),
+    do: {:ok, nil}
+
+  defp client_channel_secret(%Client{token_endpoint_auth_method: "none"}, _, _, _), do: :error
+
+  defp client_channel_secret(nil, _used_basic?, basic_secret, body_secret),
+    do: {:ok, basic_secret || body_secret}
+
+  defp www_authenticate?(
+         %Client{token_endpoint_auth_method: "client_secret_basic"},
+         _used_basic?
+       ),
+       do: true
+
+  defp www_authenticate?(_client, used_basic?), do: used_basic?
+
+  defp put_no_store(conn) do
     conn
-    |> put_resp_header("www-authenticate", "Basic realm=\"oauth\"")
+    |> put_resp_header("cache-control", "no-store")
+    |> put_resp_header("pragma", "no-cache")
+  end
+
+  # The catch-all clause below is unreachable given today's two call sites;
+  # it exists so a future error shape fails safe as invalid_request instead
+  # of a FunctionClauseError. Dialyzer proves it dead from the closed call
+  # graph, so silence that one check for this function.
+  @dialyzer {:no_match, token_error: 2}
+
+  defp token_error(conn, {:error, :invalid_client, add_realm?}) do
+    conn =
+      if add_realm?,
+        do: put_resp_header(conn, "www-authenticate", "Basic realm=\"oauth\""),
+        else: conn
+
+    conn
+    |> put_no_store()
     |> put_status(401)
     |> json(%{error: "invalid_client", error_description: "client authentication failed"})
   end
 
   defp token_error(conn, {:error, :invalid_grant}) do
     conn
+    |> put_no_store()
     |> put_status(400)
     |> json(%{
       error: "invalid_grant",
       error_description: "the grant is invalid, expired, or revoked"
     })
+  end
+
+  defp token_error(conn, _) do
+    conn
+    |> put_no_store()
+    |> put_status(400)
+    |> json(%{error: "invalid_request"})
   end
 end

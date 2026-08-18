@@ -37,6 +37,22 @@ defmodule NewtonWeb.OAuthAuthorizationControllerTest do
     )
   end
 
+  test "the consent POST is protected by CSRF", %{conn: conn, client: client} do
+    conn = %{conn | private: Map.delete(conn.private, :plug_skip_csrf_protection)}
+
+    assert_raise Plug.CSRFProtection.InvalidCSRFTokenError, fn ->
+      post(conn, ~p"/oauth/authorize", Map.put(authorize_params(client), "decision", "approve"))
+    end
+  end
+
+  test "a non-binary state does not crash the authorize endpoint", %{conn: conn, client: client} do
+    query = authorize_params(client) |> Map.delete("state") |> URI.encode_query()
+
+    conn = get(conn, "/oauth/authorize?#{query}&state[]=a&state[]=b")
+
+    assert conn.status in [200, 302, 400]
+  end
+
   test "unauthenticated authorize redirects to login" do
     conn = build_conn()
     conn = get(conn, ~p"/oauth/authorize")

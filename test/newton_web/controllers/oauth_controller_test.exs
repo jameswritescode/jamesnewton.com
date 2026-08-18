@@ -35,6 +35,8 @@ defmodule NewtonWeb.OAuthControllerTest do
       assert body["client_name"] == "Claude"
       assert body["redirect_uris"] == ["https://claude.ai/api/mcp/auth_callback"]
       assert body["token_endpoint_auth_method"] == "client_secret_basic"
+      assert is_integer(body["client_id_issued_at"])
+      assert body["client_secret_expires_at"] == 0
     end
 
     test "public clients get no client_secret key", %{conn: conn} do
@@ -48,6 +50,8 @@ defmodule NewtonWeb.OAuthControllerTest do
         |> json_response(201)
 
       refute Map.has_key?(body, "client_secret")
+      refute Map.has_key?(body, "client_secret_expires_at")
+      assert is_integer(body["client_id_issued_at"])
     end
 
     test "invalid registration returns RFC 7591 error", %{conn: conn} do
@@ -126,6 +130,24 @@ defmodule NewtonWeb.OAuthControllerTest do
              } = body
     end
 
+    test "token responses are never cached", %{conn: conn} do
+      {client, secret} = register!("client_secret_basic")
+      {verifier, challenge} = pkce()
+      code = code_for(client, challenge)
+
+      conn =
+        conn
+        |> put_req_header(
+          "authorization",
+          "Basic " <> Base.encode64(client.client_id <> ":" <> secret)
+        )
+        |> post(~p"/oauth/token", exchange_params(client, code, verifier))
+
+      assert json_response(conn, 200)
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      assert get_resp_header(conn, "pragma") == ["no-cache"]
+    end
+
     test "exchanges a code with client_secret_post auth", %{conn: conn} do
       {client, secret} = register!("client_secret_post")
       {verifier, challenge} = pkce()
@@ -151,15 +173,44 @@ defmodule NewtonWeb.OAuthControllerTest do
       {verifier, challenge} = pkce()
       code = code_for(client, challenge)
 
-      body =
+      conn =
         conn
         |> put_req_header(
           "authorization",
           "Basic " <> Base.encode64(client.client_id <> ":wrong")
         )
         |> post(~p"/oauth/token", exchange_params(client, code, verifier))
-        |> json_response(401)
 
+      body = json_response(conn, 401)
+      assert body["error"] == "invalid_client"
+      assert get_resp_header(conn, "www-authenticate") == ["Basic realm=\"oauth\""]
+    end
+
+    test "a basic-registered client sending its secret via the body is rejected", %{conn: conn} do
+      {client, secret} = register!("client_secret_basic")
+      {verifier, challenge} = pkce()
+      code = code_for(client, challenge)
+
+      params = Map.put(exchange_params(client, code, verifier), "client_secret", secret)
+
+      body = conn |> post(~p"/oauth/token", params) |> json_response(401)
+      assert body["error"] == "invalid_client"
+    end
+
+    test "a post-registered client sending Basic auth is rejected", %{conn: conn} do
+      {client, secret} = register!("client_secret_post")
+      {verifier, challenge} = pkce()
+      code = code_for(client, challenge)
+
+      conn =
+        conn
+        |> put_req_header(
+          "authorization",
+          "Basic " <> Base.encode64(client.client_id <> ":" <> secret)
+        )
+        |> post(~p"/oauth/token", exchange_params(client, code, verifier))
+
+      body = json_response(conn, 401)
       assert body["error"] == "invalid_client"
     end
 

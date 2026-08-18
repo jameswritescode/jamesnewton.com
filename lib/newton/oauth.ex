@@ -50,6 +50,14 @@ defmodule Newton.OAuth do
   @spec authenticate_client(String.t() | nil, String.t() | nil) ::
           {:ok, %Client{}} | {:error, :invalid_client}
   def authenticate_client(client_id, secret) do
+    Newton.Telemetry.span(:oauth, :grant, %{operation: :authenticate_client}, fn ->
+      result = do_authenticate_client(client_id, secret)
+      telemetry_result = if match?({:ok, _}, result), do: :ok, else: :invalid_client
+      {result, %{operation: :authenticate_client, result: telemetry_result}}
+    end)
+  end
+
+  defp do_authenticate_client(client_id, secret) do
     client = client_id && get_client(client_id)
 
     cond do
@@ -124,126 +132,150 @@ defmodule Newton.OAuth do
           {:ok, token_response()} | {:error, :invalid_grant}
   def exchange_code(%Client{} = client, code, redirect_uri, code_verifier)
       when is_binary(code) and is_binary(code_verifier) do
-    code_hash = hash(code)
-    grant = Repo.get_by(Grant, code_hash: code_hash)
+    Newton.Telemetry.span(:oauth, :grant, %{operation: :exchange_code}, fn ->
+      code_hash = hash(code)
+      grant = Repo.get_by(Grant, code_hash: code_hash)
 
-    cond do
-      is_nil(grant) or not is_nil(grant.revoked_at) ->
-        {:error, :invalid_grant}
-
-      not is_nil(grant.code_used_at) ->
-        revoke(grant)
-        {:error, :invalid_grant}
-
-      grant.client_id != client.id ->
-        {:error, :invalid_grant}
-
-      expired?(grant.code_expires_at) ->
-        {:error, :invalid_grant}
-
-      grant.redirect_uri != redirect_uri ->
-        {:error, :invalid_grant}
-
-      not pkce_valid?(grant.code_challenge, code_verifier) ->
-        {:error, :invalid_grant}
-
-      true ->
-        Repo.transaction(fn ->
-          now_ts = now()
-          refresh_expiry = expires_in(@refresh_ttl_seconds)
-
-          {rows, _} =
-            Repo.update_all(
-              from(g in Grant,
-                where: g.id == ^grant.id and is_nil(g.code_used_at)
-              ),
-              set: [
-                code_used_at: now_ts,
-                refresh_token_expires_at: refresh_expiry
-              ]
-            )
-
-          if rows == 1 do
-            issue_tokens(grant, %{code_used_at: now_ts})
-          else
-            revoke(grant)
-            {:error, :invalid_grant}
-          end
-        end)
-        |> case do
-          {:ok, result} -> result
-          {:error, _} -> {:error, :invalid_grant}
-        end
-    end
+      {result, telemetry_result} = do_exchange_code(client, grant, redirect_uri, code_verifier)
+      {result, %{operation: :exchange_code, result: telemetry_result}}
+    end)
   end
 
   def exchange_code(_, _, _, _), do: {:error, :invalid_grant}
 
+  defp do_exchange_code(client, grant, redirect_uri, code_verifier) do
+    cond do
+      is_nil(grant) or not is_nil(grant.revoked_at) ->
+        {{:error, :invalid_grant}, :invalid_grant}
+
+      not is_nil(grant.code_used_at) ->
+        revoke(grant)
+        {{:error, :invalid_grant}, :reused_code}
+
+      grant.client_id != client.id ->
+        {{:error, :invalid_grant}, :invalid_grant}
+
+      expired?(grant.code_expires_at) ->
+        {{:error, :invalid_grant}, :invalid_grant}
+
+      grant.redirect_uri != redirect_uri ->
+        {{:error, :invalid_grant}, :invalid_grant}
+
+      not pkce_valid?(grant.code_challenge, code_verifier) ->
+        {{:error, :invalid_grant}, :invalid_grant}
+
+      true ->
+        exchange_code_transaction(grant)
+    end
+  end
+
+  defp exchange_code_transaction(grant) do
+    Repo.transaction(fn ->
+      now_ts = now()
+      refresh_expiry = expires_in(@refresh_ttl_seconds)
+
+      {rows, _} =
+        Repo.update_all(
+          from(g in Grant,
+            where: g.id == ^grant.id and is_nil(g.code_used_at)
+          ),
+          set: [
+            code_used_at: now_ts,
+            refresh_token_expires_at: refresh_expiry
+          ]
+        )
+
+      if rows == 1 do
+        issue_tokens(grant, %{code_used_at: now_ts})
+      else
+        revoke(grant)
+        {:error, :reused}
+      end
+    end)
+    |> case do
+      {:ok, {:ok, tokens}} -> {{:ok, tokens}, :ok}
+      {:ok, {:error, :reused}} -> {{:error, :invalid_grant}, :reused_code}
+      {:error, _} -> {{:error, :invalid_grant}, :invalid_grant}
+    end
+  end
+
   @spec refresh(%Client{}, String.t()) :: {:ok, token_response()} | {:error, :invalid_grant}
   def refresh(%Client{} = client, refresh_token) when is_binary(refresh_token) do
+    Newton.Telemetry.span(:oauth, :grant, %{operation: :refresh}, fn ->
+      {result, telemetry_result} = do_refresh(client, refresh_token)
+      {result, %{operation: :refresh, result: telemetry_result}}
+    end)
+  end
+
+  def refresh(_, _), do: {:error, :invalid_grant}
+
+  defp do_refresh(client, refresh_token) do
     hashed = hash(refresh_token)
     grant = active_grant_by(client, refresh_token_hash: hashed)
 
     cond do
       grant && not expired?(grant.refresh_token_expires_at) ->
-        Repo.transaction(fn ->
-          new_refresh_token = generate_secret()
-          new_refresh_hash = hash(new_refresh_token)
-
-          {rows, _} =
-            Repo.update_all(
-              from(g in Grant,
-                where:
-                  g.id == ^grant.id and g.refresh_token_hash == ^hashed and is_nil(g.revoked_at)
-              ),
-              set: [
-                previous_refresh_token_hash: hashed,
-                refresh_token_hash: new_refresh_hash
-              ]
-            )
-
-          if rows == 1 do
-            access_token = generate_secret()
-            grant = Repo.get!(Grant, grant.id)
-
-            grant
-            |> Ecto.Changeset.change(%{
-              access_token_hash: hash(access_token),
-              access_token_expires_at: expires_in(@access_ttl_seconds)
-            })
-            |> Repo.update!()
-
-            {:ok,
-             %{
-               access_token: access_token,
-               token_type: "Bearer",
-               expires_in: @access_ttl_seconds,
-               refresh_token: new_refresh_token
-             }}
-          else
-            {:error, :invalid_grant}
-          end
-        end)
-        |> case do
-          {:ok, result} -> result
-          {:error, _} -> {:error, :invalid_grant}
-        end
+        refresh_transaction(grant, hashed)
 
       grant ->
-        {:error, :invalid_grant}
+        {{:error, :invalid_grant}, :invalid_grant}
 
       true ->
         grant_with_reuse = active_grant_by(client, previous_refresh_token_hash: hashed)
 
         if grant_with_reuse do
           revoke(grant_with_reuse)
+          {{:error, :invalid_grant}, :reused_refresh}
+        else
+          {{:error, :invalid_grant}, :invalid_grant}
         end
-
-        {:error, :invalid_grant}
     end
   end
 
-  def refresh(_, _), do: {:error, :invalid_grant}
+  defp refresh_transaction(grant, hashed) do
+    Repo.transaction(fn ->
+      new_refresh_token = generate_secret()
+      new_refresh_hash = hash(new_refresh_token)
+
+      {rows, _} =
+        Repo.update_all(
+          from(g in Grant,
+            where: g.id == ^grant.id and g.refresh_token_hash == ^hashed and is_nil(g.revoked_at)
+          ),
+          set: [
+            previous_refresh_token_hash: hashed,
+            refresh_token_hash: new_refresh_hash
+          ]
+        )
+
+      if rows == 1 do
+        access_token = generate_secret()
+        grant = Repo.get!(Grant, grant.id)
+
+        grant
+        |> Ecto.Changeset.change(%{
+          access_token_hash: hash(access_token),
+          access_token_expires_at: expires_in(@access_ttl_seconds)
+        })
+        |> Repo.update!()
+
+        {:ok,
+         %{
+           access_token: access_token,
+           token_type: "Bearer",
+           expires_in: @access_ttl_seconds,
+           refresh_token: new_refresh_token
+         }}
+      else
+        {:error, :invalid_grant}
+      end
+    end)
+    |> case do
+      {:ok, {:ok, tokens}} -> {{:ok, tokens}, :ok}
+      {:ok, {:error, :invalid_grant}} -> {{:error, :invalid_grant}, :invalid_grant}
+      {:error, _} -> {{:error, :invalid_grant}, :invalid_grant}
+    end
+  end
 
   @spec verify_access_token(String.t()) :: {:ok, map()} | {:error, :invalid_token}
   def verify_access_token(token) when is_binary(token) and token != "" do
@@ -254,7 +286,8 @@ defmodule Newton.OAuth do
           preload: [:client]
       )
 
-    if grant && not expired?(grant.access_token_expires_at) do
+    if grant && not expired?(grant.access_token_expires_at) &&
+         grant.resource == canonical_resource() do
       {:ok, %{"sub" => @subject, "aud" => grant.resource, "client_id" => grant.client.client_id}}
     else
       {:error, :invalid_token}

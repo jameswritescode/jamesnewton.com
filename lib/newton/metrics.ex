@@ -27,6 +27,12 @@ defmodule Newton.Metrics do
         unit: {:native, :millisecond},
         tags: [:operation, :result],
         reporter_options: [buckets: [100, 250, 500, 1_000, 2_500, 5_000]]
+      ),
+      distribution("newton.oauth.grant.stop.duration",
+        event_name: [:newton, :oauth, :grant, :stop],
+        unit: {:native, :millisecond},
+        tags: [:operation, :result],
+        reporter_options: [buckets: [1, 5, 10, 25, 50, 100]]
       )
     ]
   end

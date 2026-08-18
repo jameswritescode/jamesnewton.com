@@ -20,7 +20,8 @@ defmodule Newton.OAuth.Client do
     client
     |> cast(attrs, [:client_name, :redirect_uris, :token_endpoint_auth_method])
     |> validate_required([:client_name, :redirect_uris])
-    |> validate_length(:redirect_uris, min: 1)
+    |> validate_length(:client_name, max: 120)
+    |> validate_length(:redirect_uris, min: 1, max: 5)
     |> validate_inclusion(:token_endpoint_auth_method, @auth_methods)
     |> validate_change(:redirect_uris, &validate_redirect_uris/2)
   end
@@ -33,11 +34,11 @@ defmodule Newton.OAuth.Client do
 
   defp allowed_redirect_uri?(uri) do
     case URI.new(uri) do
-      {:ok, %URI{scheme: "https", host: host, fragment: nil}}
+      {:ok, %URI{scheme: "https", host: host, fragment: nil, userinfo: nil}}
       when is_binary(host) and host != "" ->
         true
 
-      {:ok, %URI{scheme: "http", host: host, fragment: nil}} ->
+      {:ok, %URI{scheme: "http", host: host, fragment: nil, userinfo: nil}} ->
         host in ["127.0.0.1", "localhost", "::1"]
 
       _ ->

@@ -41,7 +41,8 @@ defmodule Newton.OAuthTest do
             "ftp://x/cb",
             "not a url",
             "claude.ai/cb",
-            "https://claude.ai/cb#fragment"
+            "https://claude.ai/cb#fragment",
+            "https://user@evil.example/cb"
           ] do
         attrs = Map.put(@valid_registration, "redirect_uris", [bad])
         assert {:error, changeset} = OAuth.register_client(attrs)
@@ -62,6 +63,21 @@ defmodule Newton.OAuthTest do
                OAuth.register_client(
                  Map.put(@valid_registration, "token_endpoint_auth_method", "private_key_jwt")
                )
+    end
+
+    test "rejects an overlong client name" do
+      attrs = Map.put(@valid_registration, "client_name", String.duplicate("a", 121))
+
+      assert {:error, changeset} = OAuth.register_client(attrs)
+      assert %{client_name: _} = errors_on(changeset)
+    end
+
+    test "rejects more than five redirect uris" do
+      uris = for n <- 1..6, do: "https://claude.ai/cb#{n}"
+      attrs = Map.put(@valid_registration, "redirect_uris", uris)
+
+      assert {:error, changeset} = OAuth.register_client(attrs)
+      assert %{redirect_uris: _} = errors_on(changeset)
     end
   end
 
@@ -217,6 +233,36 @@ defmodule Newton.OAuthTest do
       assert {:error, :invalid_token} = OAuth.verify_access_token("")
     end
 
+    test "a token bound to a non-canonical resource fails verification" do
+      {client, _} = registered_client()
+      {:ok, %{access_token: at}} = issued_tokens(client)
+
+      set_grant_resource(at, "https://other.example/mcp")
+
+      assert {:error, :invalid_token} = OAuth.verify_access_token(at)
+    end
+
+    test "code reuse emits a [:newton, :oauth, :grant, :stop] event tagged reused_code" do
+      ref = :telemetry_test.attach_event_handlers(self(), [[:newton, :oauth, :grant, :stop]])
+
+      {client, _} = registered_client()
+      {verifier, challenge} = pkce_pair()
+
+      {:ok, code} =
+        OAuth.issue_code(client, redirect_uri(), challenge, OAuth.canonical_resource())
+
+      {:ok, _tokens} = OAuth.exchange_code(client, code, redirect_uri(), verifier)
+
+      assert_received {[:newton, :oauth, :grant, :stop], ^ref, %{duration: _},
+                       %{operation: :exchange_code, result: :ok}}
+
+      assert {:error, :invalid_grant} =
+               OAuth.exchange_code(client, code, redirect_uri(), verifier)
+
+      assert_received {[:newton, :oauth, :grant, :stop], ^ref, %{duration: _},
+                       %{operation: :exchange_code, result: :reused_code}}
+    end
+
     test "refresh token absolute expiry is never extended" do
       {client, _} = registered_client()
       {:ok, %{refresh_token: rt1}} = issued_tokens(client)
@@ -317,6 +363,16 @@ defmodule Newton.OAuthTest do
       Newton.Repo.update_all(
         from(g in Newton.OAuth.Grant, where: field(g, ^hash_field) == ^OAuth.hash(secret)),
         set: [{expiry_field, past}]
+      )
+  end
+
+  defp set_grant_resource(access_token, resource) do
+    import Ecto.Query
+
+    {1, _} =
+      Newton.Repo.update_all(
+        from(g in Newton.OAuth.Grant, where: g.access_token_hash == ^OAuth.hash(access_token)),
+        set: [resource: resource]
       )
   end
 

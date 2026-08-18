@@ -4,6 +4,8 @@ defmodule NewtonWeb.OAuthAuthorizationController do
   alias Newton.OAuth
 
   def authorize(conn, params) do
+    params = normalize_state(params)
+
     with {:ok, client, redirect_uri} <- fetch_client_and_redirect(params),
          :ok <- validate_request(params) do
       render(conn, :consent,
@@ -24,6 +26,8 @@ defmodule NewtonWeb.OAuthAuthorizationController do
   end
 
   def approve(conn, %{"decision" => "approve"} = params) do
+    params = normalize_state(params)
+
     with {:ok, client, redirect_uri} <- fetch_client_and_redirect(params),
          :ok <- validate_request(params) do
       {:ok, code} =
@@ -42,6 +46,8 @@ defmodule NewtonWeb.OAuthAuthorizationController do
   end
 
   def approve(conn, params) do
+    params = normalize_state(params)
+
     case fetch_client_and_redirect(params) do
       {:ok, _client, redirect_uri} ->
         redirect_back(conn, redirect_uri, %{
@@ -83,6 +89,11 @@ defmodule NewtonWeb.OAuthAuthorizationController do
   end
 
   defp resource(params), do: params["resource"] || OAuth.canonical_resource()
+
+  defp normalize_state(%{"state" => state} = params) when not is_binary(state),
+    do: Map.delete(params, "state")
+
+  defp normalize_state(params), do: params
 
   defp redirect_with_error(conn, params, error) do
     redirect_back(conn, params["redirect_uri"], %{"error" => error, "state" => params["state"]})

@@ -69,6 +69,13 @@ defmodule NewtonWeb.Router do
     get "/.well-known/site.standard.publication", StandardController, :publication
   end
 
+  scope "/", NewtonWeb do
+    pipe_through :api
+
+    get "/.well-known/oauth-authorization-server", OAuthController, :authorization_server_metadata
+    post "/oauth/register", OAuthController, :register
+  end
+
   scope "/admin", NewtonWeb.Admin do
     pipe_through [:browser, :require_authenticated_user, :admin_csp]
 

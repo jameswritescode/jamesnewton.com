@@ -27,6 +27,9 @@ defmodule NewtonWeb.UserAuth do
   # the reissuing of tokens completely.
   @session_reissue_age_in_days 7
 
+  # How many minutes a re-authentication (sudo mode) stays valid for.
+  @sudo_window_minutes -10
+
   @doc """
   Logs the user in.
 
@@ -268,12 +271,12 @@ defmodule NewtonWeb.UserAuth do
     socket = mount_current_scope(socket, session)
     scope = socket.assigns.current_scope
 
-    if scope && Accounts.sudo_mode?(scope.user, -10) do
+    if scope && Accounts.sudo_mode?(scope.user, @sudo_window_minutes) do
       {:cont, socket}
     else
       socket =
         socket
-        |> Phoenix.LiveView.put_flash(:error, "Confirm it's you to manage security settings.")
+        |> Phoenix.LiveView.put_flash(:error, "Confirm it's you to continue.")
         |> Phoenix.LiveView.redirect(to: ~p"/login/confirm-access")
 
       {:halt, socket}
@@ -321,13 +324,23 @@ defmodule NewtonWeb.UserAuth do
   def require_sudo_mode(conn, _opts) do
     scope = conn.assigns.current_scope
 
-    if scope && Accounts.sudo_mode?(scope.user, -10) do
+    if scope && Accounts.sudo_mode?(scope.user, @sudo_window_minutes) do
       conn
     else
       conn
-      |> put_flash(:error, "Confirm it's you to manage security settings.")
-      |> redirect(to: ~p"/login/confirm-access")
+      |> put_flash(:error, "Confirm it's you to continue.")
+      |> redirect(to: confirm_access_path(conn))
       |> halt()
     end
   end
+
+  # Carries a GET request forward across the re-auth bounce so a stale-sudo
+  # visit (e.g. `/oauth/authorize?...`) resumes where it left off instead of
+  # dead-ending at the default return path. Not preserved for non-GET
+  # requests — there's no safe way to replay a POST body after redirecting.
+  defp confirm_access_path(%{method: "GET"} = conn) do
+    ~p"/login/confirm-access?return_to=#{current_path(conn)}"
+  end
+
+  defp confirm_access_path(_conn), do: ~p"/login/confirm-access"
 end

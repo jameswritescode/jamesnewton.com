@@ -69,10 +69,26 @@ defmodule NewtonWeb.OAuthAuthorizationControllerTest do
     client: client
   } do
     conn = make_stale(conn)
-    conn = get(conn, ~p"/oauth/authorize?#{authorize_params(client)}")
+    original_path = "/oauth/authorize?#{URI.encode_query(authorize_params(client))}"
+    conn = get(conn, original_path)
 
-    assert redirected_to(conn) == ~p"/login/confirm-access"
+    location = redirected_to(conn)
+    uri = URI.parse(location)
+    query = URI.decode_query(uri.query)
+
+    assert uri.path == "/login/confirm-access"
+    assert query["return_to"] == original_path
     assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Confirm it's you"
+  end
+
+  test "a stale sudo session on the POST approve path is redirected to confirm access, not a code",
+       %{conn: conn, client: client} do
+    conn = make_stale(conn)
+
+    conn =
+      post(conn, ~p"/oauth/authorize", Map.put(authorize_params(client), "decision", "approve"))
+
+    assert redirected_to(conn) |> URI.parse() |> Map.fetch!(:path) == "/login/confirm-access"
   end
 
   test "renders consent for a valid request", %{conn: conn, client: client} do

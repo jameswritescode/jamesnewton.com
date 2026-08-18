@@ -116,6 +116,30 @@ defmodule NewtonWeb.SudoTest do
       assert {:ok, _view, _html} = live(conn, ~p"/admin/settings")
     end
 
+    test "a valid local return_to lands back on that path instead of the default", %{conn: conn} do
+      conn =
+        post(conn, ~p"/login/confirm-access", %{
+          "user" => %{"password" => valid_user_password()},
+          "return_to" => "/oauth/authorize?client_id=abc"
+        })
+
+      assert redirected_to(conn) == "/oauth/authorize?client_id=abc"
+    end
+
+    test "an absolute or protocol-relative return_to falls back to the default", %{user: user} do
+      for unsafe_return_to <- ["https://evil.example", "//evil.example"] do
+        conn = log_in_user(build_conn(), user) |> make_stale()
+
+        conn =
+          post(conn, ~p"/login/confirm-access", %{
+            "user" => %{"password" => valid_user_password()},
+            "return_to" => unsafe_return_to
+          })
+
+        assert redirected_to(conn) == ~p"/admin/settings"
+      end
+    end
+
     test "a wrong password stays gated with an error", %{conn: conn} do
       conn =
         post(conn, ~p"/login/confirm-access", %{"user" => %{"password" => "not the password"}})
@@ -133,6 +157,22 @@ defmodule NewtonWeb.SudoTest do
 
       assert has_element?(view, "#sudo_form")
       assert has_element?(view, "#sudo-passkey-button")
+    end
+
+    test "the confirm page carries a return_to param into the password form and passkey button",
+         %{conn: conn} do
+      {:ok, _view, html} =
+        live(conn, ~p"/login/confirm-access?#{[return_to: "/oauth/authorize?client_id=abc"]}")
+
+      document = LazyHTML.from_fragment(html)
+
+      assert document
+             |> LazyHTML.query("#sudo_form input[name='return_to']")
+             |> LazyHTML.attribute("value") == ["/oauth/authorize?client_id=abc"]
+
+      assert document
+             |> LazyHTML.query("#sudo-passkey-button")
+             |> LazyHTML.attribute("data-return-to") == ["/oauth/authorize?client_id=abc"]
     end
   end
 

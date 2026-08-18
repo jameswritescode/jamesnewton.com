@@ -1,7 +1,9 @@
 defmodule Newton.MCP.Tools.ListPosts do
   @moduledoc "Lists this site's posts — drafts included — with their publish status."
 
-  use Anubis.Server.Component, type: :tool
+  use Anubis.Server.Component,
+    type: :tool,
+    annotations: %{"readOnlyHint" => true, "idempotentHint" => true, "openWorldHint" => false}
 
   alias Anubis.Server.Response
   alias Newton.Blog
@@ -25,7 +27,8 @@ defmodule Newton.MCP.Tools.ListPosts do
           &%{slug: &1.slug, title: &1.title, status: status_of(&1), updated_at: &1.updated_at}
         )
 
-      reply = Response.text(Response.tool(), Jason.encode!(rows))
+      # anubis specs Response.json/3 as data :: map; rows is a list.
+      reply = Response.text(Response.tool(), JSON.encode!(rows))
       {{:reply, reply, frame}, %{tool: "list_posts", result: :ok}}
     end)
   end

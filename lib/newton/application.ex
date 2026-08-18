@@ -16,8 +16,6 @@ defmodule Newton.Application do
       {Task.Supervisor, name: Newton.TaskSupervisor},
       Newton.Analytics.Collector,
       Newton.SocialCard.Cache,
-      # Start to serve requests, typically the last entry
-      NewtonWeb.Endpoint,
       {Newton.MCP.Server,
        transport: {:streamable_http, start: true},
        authorization: [
@@ -26,7 +24,9 @@ defmodule Newton.Application do
          ],
          resource: Newton.OAuth.canonical_resource(),
          validator: {Newton.MCP.TokenValidator, []}
-       ]}
+       ]},
+      # Start to serve requests, typically the last entry
+      NewtonWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

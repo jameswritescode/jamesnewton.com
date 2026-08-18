@@ -3,7 +3,7 @@ import {bufToB64url, b64urlToBuf} from "../webauthn"
 // Sudo-page hook: re-authenticate with a passkey. Reuses the login challenge
 // endpoint, then POSTs the assertion to the sudo verifier (which confirms the
 // credential belongs to the current user) and navigates back on success.
-async function run() {
+async function run(returnTo) {
   const res = await fetch("/login/passkey/challenge", {headers: {accept: "application/json"}})
   const {challenge, rpId, userVerification} = await res.json()
 
@@ -25,6 +25,7 @@ async function run() {
       authenticatorData: bufToB64url(cred.response.authenticatorData),
       clientDataJSON: bufToB64url(cred.response.clientDataJSON),
       signature: bufToB64url(cred.response.signature),
+      return_to: returnTo,
     }),
   })
 
@@ -36,6 +37,6 @@ async function run() {
 
 export const PasskeySudo = {
   mounted() {
-    this.el.addEventListener("click", () => run().catch(() => {}))
+    this.el.addEventListener("click", () => run(this.el.dataset.returnTo).catch(() => {}))
   },
 }

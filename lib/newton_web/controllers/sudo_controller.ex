@@ -9,10 +9,12 @@ defmodule NewtonWeb.SudoController do
   alias Newton.Accounts
   alias NewtonWeb.UserAuth
 
-  # The only sudo-gated page today; where a successful re-auth returns.
+  # Both `/admin/settings` and `/oauth/authorize`'s approval step gate on
+  # sudo mode; this is the default return path when the request didn't carry
+  # a trusted `return_to`.
   @return_to "/admin/settings"
 
-  def password(conn, %{"user" => %{"password" => password}}) do
+  def password(conn, %{"user" => %{"password" => password}} = params) do
     email = conn.assigns.current_scope.user.email
 
     # The verified user carries no authenticated_at, so the rotated token stamps
@@ -20,20 +22,23 @@ defmodule NewtonWeb.SudoController do
     if user = Accounts.get_user_by_email_and_password(email, password) do
       conn
       |> UserAuth.elevate_session(user, %{"remember_me" => "true"})
-      |> redirect(to: @return_to)
+      |> redirect(to: return_to(params))
     else
       conn
       |> put_flash(:error, "That password didn't match.")
-      |> redirect(to: ~p"/login/confirm-access")
+      |> redirect(to: confirm_access_path(params))
     end
   end
 
-  def passkey(conn, %{
-        "id" => raw_id,
-        "authenticatorData" => auth_data_b64,
-        "clientDataJSON" => cdj_b64,
-        "signature" => sig_b64
-      }) do
+  def passkey(
+        conn,
+        %{
+          "id" => raw_id,
+          "authenticatorData" => auth_data_b64,
+          "clientDataJSON" => cdj_b64,
+          "signature" => sig_b64
+        } = params
+      ) do
     user = conn.assigns.current_scope.user
     challenge = get_session(conn, :passkey_challenge)
 
@@ -59,7 +64,7 @@ defmodule NewtonWeb.SudoController do
       conn
       |> delete_session(:passkey_challenge)
       |> UserAuth.elevate_session(cred.user, %{"remember_me" => "true"})
-      |> json(%{ok: true, to: @return_to})
+      |> json(%{ok: true, to: return_to(params)})
     else
       _ ->
         conn
@@ -67,6 +72,24 @@ defmodule NewtonWeb.SudoController do
         |> delete_session(:passkey_challenge)
         |> put_status(:unauthorized)
         |> json(%{error: "Passkey verification failed."})
+    end
+  end
+
+  defp return_to(params), do: valid_return_to(params["return_to"]) || @return_to
+
+  defp confirm_access_path(params) do
+    case valid_return_to(params["return_to"]) do
+      nil -> ~p"/login/confirm-access"
+      return_to -> ~p"/login/confirm-access?#{[return_to: return_to]}"
+    end
+  end
+
+  # Only a same-origin local path is trusted as a return address — anything
+  # else (an absolute URL, a protocol-relative `//host` address) is an open
+  # redirect and falls back to `@return_to` instead.
+  defp valid_return_to(v) do
+    if is_binary(v) and String.starts_with?(v, "/") and not String.starts_with?(v, "//") do
+      v
     end
   end
 end

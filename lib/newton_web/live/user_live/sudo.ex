@@ -17,7 +17,7 @@ defmodule NewtonWeb.UserLive.Sudo do
         <div class="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-6 shadow-sm">
           <h1 class="text-[1.1rem] font-semibold text-(--admin-text)">Confirm it's you</h1>
           <p class="mt-1 mb-5 text-[0.82rem] text-(--admin-text-subtle)">
-            Managing security settings needs a fresh sign-in.
+            This step needs a fresh sign-in.
           </p>
 
           <.form
@@ -27,6 +27,7 @@ defmodule NewtonWeb.UserLive.Sudo do
             method="post"
             class="flex flex-col gap-3"
           >
+            <input type="hidden" name="return_to" value={@return_to} />
             <div>
               <label
                 for={@form[:password].id}
@@ -57,6 +58,7 @@ defmodule NewtonWeb.UserLive.Sudo do
               id="sudo-passkey-button"
               type="button"
               phx-hook="PasskeySudo"
+              data-return-to={@return_to}
               class="w-full rounded-md border border-(--admin-border) px-3 py-2 text-[0.85rem] text-(--admin-text) hover:border-(--admin-accent)"
             >
               Use a passkey instead
@@ -70,6 +72,11 @@ defmodule NewtonWeb.UserLive.Sudo do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :form, to_form(%{}, as: :user))}
+    {:ok, assign(socket, form: to_form(%{}, as: :user), return_to: nil)}
+  end
+
+  @impl true
+  def handle_params(params, _uri, socket) do
+    {:noreply, assign(socket, :return_to, params["return_to"])}
   end
 end

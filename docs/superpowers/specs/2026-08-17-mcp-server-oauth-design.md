@@ -74,8 +74,9 @@ requires. Validates every `redirect_uri` is absolute `https://` (exception:
 `http://127.0.0.1`/`http://localhost` loopback for local CLI clients).
 Returns `client_id` (+ `client_secret` once, when the method needs one).
 
-**`GET/POST /oauth/authorize`** — inside the existing
-`require_authenticated_user` browser scope: only a logged-in admin can ever
+**`GET/POST /oauth/authorize`** — lives in a dedicated
+`[:browser, :require_authenticated_user, :require_sudo_mode]` scope: only a
+logged-in admin who has re-authenticated within the last 10 minutes can
 approve a grant.
 - `code_challenge` required, method `S256` only; `plain` and absent → error
 - `redirect_uri` must exactly match a registered URI; on mismatch render an
@@ -114,6 +115,10 @@ Failures → 401 with `WWW-Authenticate` as above.
 - Unknown slug → MCP tool error ("no post with slug …"), never a raise
 - Telemetry: `[:newton, :mcp, :tool_call]` span, metadata bounded to tool
   name and result class; wired into `Newton.Metrics.definitions/0`
+- CORS: anubis emits no CORS headers, and `/mcp` uses header-based (not
+  cookie) auth, so browser-origin JS can neither read the response nor
+  forge an authenticated request. Browser-based MCP clients are
+  unsupported by design — do not add a permissive CORS plug.
 
 ## Error handling
 

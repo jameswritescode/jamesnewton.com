@@ -1,7 +1,9 @@
 defmodule Newton.MCP.Tools.ReadPost do
   @moduledoc "Reads one post by slug — the markdown source, drafts included."
 
-  use Anubis.Server.Component, type: :tool
+  use Anubis.Server.Component,
+    type: :tool,
+    annotations: %{"readOnlyHint" => true, "idempotentHint" => true, "openWorldHint" => false}
 
   alias Anubis.Server.Response
   alias Newton.Blog
@@ -15,7 +17,12 @@ defmodule Newton.MCP.Tools.ReadPost do
     Newton.Telemetry.span(:mcp, :tool_call, %{tool: "read_post"}, fn ->
       case Blog.get_post_by_slug(slug) do
         nil ->
-          reply = Response.error(Response.tool(), "no post with slug #{inspect(slug)}")
+          reply =
+            Response.error(
+              Response.tool(),
+              "no post with slug #{inspect(slug)} — call list_posts to see available slugs"
+            )
+
           {{:reply, reply, frame}, %{tool: "read_post", result: :not_found}}
 
         post ->

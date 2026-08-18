@@ -147,12 +147,6 @@ defmodule NewtonWeb.OAuthController do
     |> put_resp_header("pragma", "no-cache")
   end
 
-  # The catch-all clause below is unreachable given today's two call sites;
-  # it exists so a future error shape fails safe as invalid_request instead
-  # of a FunctionClauseError. Dialyzer proves it dead from the closed call
-  # graph, so silence that one check for this function.
-  @dialyzer {:no_match, token_error: 2}
-
   defp token_error(conn, {:error, :invalid_client, add_realm?}) do
     conn =
       if add_realm?,
@@ -173,12 +167,5 @@ defmodule NewtonWeb.OAuthController do
       error: "invalid_grant",
       error_description: "the grant is invalid, expired, or revoked"
     })
-  end
-
-  defp token_error(conn, _) do
-    conn
-    |> put_no_store()
-    |> put_status(400)
-    |> json(%{error: "invalid_request"})
   end
 end

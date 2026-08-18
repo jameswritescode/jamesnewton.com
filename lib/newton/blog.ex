@@ -77,6 +77,10 @@ defmodule Newton.Blog do
   @spec get_post_by_slug!(String.t()) :: %Post{}
   def get_post_by_slug!(slug), do: Repo.get_by!(Post, slug: slug)
 
+  @doc "Fetch any post by slug (drafts included), nil when absent."
+  @spec get_post_by_slug(String.t()) :: %Post{} | nil
+  def get_post_by_slug(slug), do: Repo.get_by(Post, slug: slug)
+
   @doc "Mint a preview token for a post that isn't live yet (idempotent)."
   @spec enable_preview(%Post{}) :: {:ok, %Post{}} | {:error, Ecto.Changeset.t()}
   def enable_preview(%Post{} = post) do

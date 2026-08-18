@@ -133,6 +133,14 @@ defmodule Newton.BlogTest do
     assert_raise Ecto.NoResultsError, fn -> Blog.get_post_by_slug!("missing") end
   end
 
+  test "get_post_by_slug/1 returns drafts and nil for unknown slugs" do
+    {:ok, post} =
+      Blog.create_post(%{title: "Draft post", slug: "draft-post", body_markdown: "hello"})
+
+    assert Blog.get_post_by_slug(post.slug).id == post.id
+    assert Blog.get_post_by_slug("no-such-slug") == nil
+  end
+
   test "delete_post/1 removes the post" do
     {:ok, post} = Blog.create_post(@valid)
     {:ok, _} = Blog.delete_post(post)

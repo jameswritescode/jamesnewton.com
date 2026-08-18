@@ -89,7 +89,8 @@ defmodule Newton.MixProject do
       # Plug.Cowboy, not Bandit — an optional dep PromEx resolves at runtime,
       # so nothing fails at compile time without it.
       {:plug_cowboy, "~> 2.7"},
-      {:tzdata, "~> 1.1"}
+      {:tzdata, "~> 1.1"},
+      {:anubis_mcp, "~> 2.0"}
     ]
   end
 

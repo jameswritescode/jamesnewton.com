@@ -33,6 +33,12 @@ defmodule Newton.Metrics do
         unit: {:native, :millisecond},
         tags: [:operation, :result],
         reporter_options: [buckets: [1, 5, 10, 25, 50, 100]]
+      ),
+      distribution("newton.mcp.tool_call.stop.duration",
+        event_name: [:newton, :mcp, :tool_call, :stop],
+        unit: {:native, :millisecond},
+        tags: [:tool, :result],
+        reporter_options: [buckets: [5, 10, 25, 50, 100, 250, 1_000]]
       )
     ]
   end

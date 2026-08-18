@@ -25,7 +25,8 @@ defmodule Newton.MCP.Tools.ListPosts do
           &%{slug: &1.slug, title: &1.title, status: status_of(&1), updated_at: &1.updated_at}
         )
 
-      {{:reply, Response.json(Response.tool(), rows), frame}, %{tool: "list_posts", result: :ok}}
+      reply = Response.text(Response.tool(), Jason.encode!(rows))
+      {{:reply, reply, frame}, %{tool: "list_posts", result: :ok}}
     end)
   end
 

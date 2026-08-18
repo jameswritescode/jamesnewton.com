@@ -77,6 +77,7 @@ defmodule Newton.MCP.ToolsTest do
       assert_receive {[:newton, :mcp, :tool_call, :stop], _ref, _measurements, metadata}
       assert metadata.tool == "list_posts"
       assert metadata.result == :ok
+      assert Map.keys(metadata) |> Enum.sort() == [:result, :telemetry_span_context, :tool]
     end
   end
 end

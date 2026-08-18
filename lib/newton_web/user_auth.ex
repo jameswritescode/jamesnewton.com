@@ -314,4 +314,20 @@ defmodule NewtonWeb.UserAuth do
   end
 
   defp maybe_store_return_to(conn), do: conn
+
+  @doc """
+  Plug for routes that require a recent authentication (sudo mode).
+  """
+  def require_sudo_mode(conn, _opts) do
+    scope = conn.assigns.current_scope
+
+    if scope && Accounts.sudo_mode?(scope.user, -10) do
+      conn
+    else
+      conn
+      |> put_flash(:error, "Confirm it's you to manage security settings.")
+      |> redirect(to: ~p"/login/confirm-access")
+      |> halt()
+    end
+  end
 end

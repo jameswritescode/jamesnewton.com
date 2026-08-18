@@ -123,6 +123,10 @@ defmodule NewtonWeb.Router do
 
     post "/login/confirm-access", SudoController, :password
     post "/login/confirm-access/passkey", SudoController, :passkey
+  end
+
+  scope "/", NewtonWeb do
+    pipe_through [:browser, :require_authenticated_user, :require_sudo_mode]
 
     get "/oauth/authorize", OAuthAuthorizationController, :authorize
     post "/oauth/authorize", OAuthAuthorizationController, :approve

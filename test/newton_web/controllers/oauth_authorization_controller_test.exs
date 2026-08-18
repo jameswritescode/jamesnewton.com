@@ -16,6 +16,11 @@ defmodule NewtonWeb.OAuthAuthorizationControllerTest do
     %{conn: log_in_user(conn, user_fixture()), client: client}
   end
 
+  defp make_stale(conn) do
+    offset_user_token(get_session(conn, :user_token), -11, :minute)
+    conn
+  end
+
   defp challenge do
     Base.url_encode64(:crypto.hash(:sha256, "test-verifier-test-verifier-test-verifier"),
       padding: false
@@ -57,6 +62,17 @@ defmodule NewtonWeb.OAuthAuthorizationControllerTest do
     conn = build_conn()
     conn = get(conn, ~p"/oauth/authorize")
     assert redirected_to(conn) == ~p"/login"
+  end
+
+  test "a stale sudo session is redirected to confirm access instead of consent", %{
+    conn: conn,
+    client: client
+  } do
+    conn = make_stale(conn)
+    conn = get(conn, ~p"/oauth/authorize?#{authorize_params(client)}")
+
+    assert redirected_to(conn) == ~p"/login/confirm-access"
+    assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Confirm it's you"
   end
 
   test "renders consent for a valid request", %{conn: conn, client: client} do

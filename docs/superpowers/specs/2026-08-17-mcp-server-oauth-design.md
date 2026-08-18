@@ -9,9 +9,10 @@ links, whose caching in agent harnesses has proven unreliable.
 - **Clients served:** claude.ai custom connectors and Claude Code both speak
   the MCP authorization flow, so OAuth 2.1 is the single auth path. No bearer
   side-channel.
-- **Protocol layer:** `hermes_mcp` (maintained Elixir MCP library) handles
-  streamable HTTP transport, sessions, and version negotiation; we write only
-  tool modules and the auth plug.
+- **Protocol layer:** `anubis_mcp ~> 2.0` (maintained fork of hermes_mcp;
+  hermes upstream deleted, frozen at 0.14.1) handles streamable HTTP
+  transport, sessions, and version negotiation; we write only tool modules
+  and the token validator.
 - **OAuth layer:** hand-rolled single-user subset. Elixir OAuth-provider
   libraries (boruta, ex_oauth2_provider) are heavyweight or predate
   OAuth 2.1/DCR; for one user the subset is less code than their config.
@@ -23,11 +24,14 @@ links, whose caching in agent harnesses has proven unreliable.
 |---|---|
 | `Newton.OAuth` (domain) | Clients, grants, tokens: registration, code issuance, PKCE verification, token exchange/rotation, bearer verification. All hashing and expiry logic. |
 | OAuth web layer | Four endpoints (metadata ×2, register, authorize+token) plus the consent page. Thin: parameter validation and rendering; rules live in `Newton.OAuth`. |
-| MCP server | `hermes_mcp` mounted at `/mcp` behind a bearer-auth plug; tool modules call `Newton.Blog`. |
+| MCP server | `anubis_mcp` mounted at `/mcp`, authorizing every request via `Newton.MCP.TokenValidator`; tool modules call `Newton.Blog`. |
 
-The bearer plug resolves `Authorization: Bearer <token>` via `Newton.OAuth`
-before hermes sees the request. `/mcp` lives outside the browser pipeline —
-no session, no CSRF.
+`Newton.MCP.TokenValidator` resolves `Authorization: Bearer <token>` via
+`Newton.OAuth` before anubis dispatches the request to a tool. `/mcp` lives
+outside the browser pipeline — no session, no CSRF. Anubis's own transport
+serves `GET /.well-known/oauth-protected-resource` and emits 401 +
+`WWW-Authenticate` on missing/invalid bearer, replacing the hand-written
+bearer plug and metadata endpoint this spec originally assumed.
 
 ## Data model
 
@@ -38,7 +42,7 @@ no session, no CSRF.
   exactly at authorize/token time; no wildcards, no prefix matching
 - `token_endpoint_auth_method`: `none` | `client_secret_post` | `client_secret_basic`
 
-**`oauth_tokens`** — one row per grant lifecycle (code → access + refresh are
+**`oauth_grants`** — one row per grant lifecycle (code → access + refresh are
 phases of one grant):
 - authorization-code phase: `code_hash`, `code_expires_at`, `code_challenge`
   (S256 only), `redirect_uri`, `resource`, `code_used_at`
@@ -53,11 +57,15 @@ second user exists.
 
 ## OAuth endpoints and their security requirements
 
-**`GET /.well-known/oauth-authorization-server`** (RFC 8414) and
-**`GET /.well-known/oauth-protected-resource`** (RFC 9728): static JSON built
-from the endpoint URL. `grant_types_supported`:
+**`GET /.well-known/oauth-authorization-server`** (RFC 8414): static JSON
+built from the endpoint URL. `grant_types_supported`:
 `["authorization_code", "refresh_token"]`; `code_challenge_methods_supported`:
-`["S256"]`. 401 responses from `/mcp` carry
+`["S256"]`.
+
+**`GET /.well-known/oauth-protected-resource`** (RFC 9728): served by
+anubis's own transport (`Anubis.Server.Transport.WellKnown`), not a
+hand-written endpoint. 401 responses from `/mcp` also come from anubis's
+transport, via `Newton.MCP.TokenValidator`, carrying
 `WWW-Authenticate: Bearer resource_metadata="…"` so clients discover the flow
 (MCP authorization spec).
 
@@ -89,13 +97,15 @@ only. No implicit, password, or client_credentials.
 
 **Bearer validation at `/mcp`:** hashed lookup, expiry check, and audience
 check — the token's `resource` must equal the canonical MCP URL (the MCP
-spec's token-audience/passthrough rule). Failures → 401 with
-`WWW-Authenticate` as above.
+spec's token-audience/passthrough rule), all via `Newton.MCP.TokenValidator`.
+Failures → 401 with `WWW-Authenticate` as above.
 
 ## MCP server
 
-- Dep: `hermes_mcp`, version pinned at plan time from hex
-- Mounted at `/mcp`; pipeline is just the bearer plug
+- Dep: `anubis_mcp ~> 2.0`, version pinned at plan time from hex
+- Mounted at `/mcp`; every request is authorized by
+  `Newton.MCP.TokenValidator`, configured on `Newton.MCP.Server`'s
+  transport — no separate hand-written bearer plug
 - Tools:
   - `list_posts(status: "all" | "draft" | "published", default "all")` →
     rows of slug, title, status, updated_at. Maps onto `Blog.list_posts/1`.
@@ -112,7 +122,7 @@ spec's token-audience/passthrough rule). Failures → 401 with
   `unsupported_grant_type`) with correct HTTP statuses
 - Authorize-time validation failures that can safely redirect do (with
   `error` + `state`); redirect_uri problems never redirect
-- The MCP layer never 500s on bad tool input — hermes returns tool errors
+- The MCP layer never 500s on bad tool input — anubis returns tool errors
 
 ## Testing
 
@@ -127,7 +137,7 @@ spec's token-audience/passthrough rule). Failures → 401 with
   `resource` is not the MCP URL · unauthenticated authorize → login redirect
 - Metadata endpoints return spec-required fields
 
-**MCP (hermes test harness):**
+**MCP (anubis test harness):**
 - `list_posts` includes drafts; status filter works
 - `read_post` returns markdown body for a draft
 - Unknown slug → tool error, not a crash

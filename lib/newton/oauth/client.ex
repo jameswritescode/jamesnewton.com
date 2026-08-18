@@ -33,9 +33,15 @@ defmodule Newton.OAuth.Client do
 
   defp allowed_redirect_uri?(uri) do
     case URI.new(uri) do
-      {:ok, %URI{scheme: "https", host: host}} when is_binary(host) and host != "" -> true
-      {:ok, %URI{scheme: "http", host: host}} -> host in ["127.0.0.1", "localhost", "::1"]
-      _ -> false
+      {:ok, %URI{scheme: "https", host: host, fragment: nil}}
+      when is_binary(host) and host != "" ->
+        true
+
+      {:ok, %URI{scheme: "http", host: host, fragment: nil}} ->
+        host in ["127.0.0.1", "localhost", "::1"]
+
+      _ ->
+        false
     end
   end
 end

@@ -90,7 +90,14 @@ defmodule NewtonWeb.OAuthAuthorizationController do
 
   defp redirect_back(conn, redirect_uri, query) do
     query = query |> Enum.reject(fn {_k, v} -> is_nil(v) end) |> URI.encode_query()
-    redirect(conn, external: redirect_uri <> "?" <> query)
+
+    location =
+      redirect_uri
+      |> URI.parse()
+      |> URI.append_query(query)
+      |> URI.to_string()
+
+    redirect(conn, external: location)
   end
 
   defp consent_params(params) do

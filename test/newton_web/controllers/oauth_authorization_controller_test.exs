@@ -126,4 +126,77 @@ defmodule NewtonWeb.OAuthAuthorizationControllerTest do
     query = conn |> redirected_to() |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
     assert is_binary(query["code"])
   end
+
+  test "a redirect_uri with an existing query string keeps its params alongside the issued code",
+       %{conn: conn} do
+    {:ok, {client, _secret}} =
+      OAuth.register_client(%{
+        "client_name" => "Multi-tenant client",
+        "redirect_uris" => ["http://127.0.0.1:9000/cb?tenant=1"],
+        "token_endpoint_auth_method" => "none"
+      })
+
+    params =
+      authorize_params(client, %{
+        "redirect_uri" => "http://127.0.0.1:9000/cb?tenant=1",
+        "decision" => "approve"
+      })
+
+    conn = post(conn, ~p"/oauth/authorize", params)
+
+    query = conn |> redirected_to() |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
+    assert query["tenant"] == "1"
+    assert query["state"] == "xyz"
+    assert is_binary(query["code"])
+  end
+
+  test "approval with a non-S256 code_challenge_method redirects back with invalid_request and no code",
+       %{conn: conn, client: client} do
+    params =
+      authorize_params(client, %{"code_challenge_method" => "plain", "decision" => "approve"})
+
+    conn = post(conn, ~p"/oauth/authorize", params)
+
+    query = conn |> redirected_to() |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
+    assert query["error"] == "invalid_request"
+    assert query["state"] == "xyz"
+    refute Map.has_key?(query, "code")
+  end
+
+  test "approval with an unregistered redirect_uri renders an error page and never redirects",
+       %{conn: conn, client: client} do
+    params =
+      authorize_params(client, %{
+        "redirect_uri" => "https://evil.example/cb",
+        "decision" => "approve"
+      })
+
+    conn = post(conn, ~p"/oauth/authorize", params)
+
+    assert html_response(conn, 400) =~ "redirect"
+  end
+
+  test "the rendered consent form's hidden fields round-trip into a working approval",
+       %{conn: conn, client: client} do
+    params = authorize_params(client)
+    html = conn |> get(~p"/oauth/authorize?#{params}") |> html_response(200)
+
+    hidden_fields =
+      html
+      |> LazyHTML.from_document()
+      |> LazyHTML.query("#oauth-consent-form input[type=hidden]")
+      |> LazyHTML.attributes()
+      |> Map.new(fn attrs ->
+        attrs = Map.new(attrs)
+        {attrs["name"], attrs["value"]}
+      end)
+
+    assert hidden_fields["code_challenge"] == params["code_challenge"]
+
+    conn = post(conn, ~p"/oauth/authorize", Map.put(hidden_fields, "decision", "approve"))
+
+    query = conn |> redirected_to() |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
+    assert is_binary(query["code"])
+    assert query["state"] == "xyz"
+  end
 end

@@ -36,7 +36,13 @@ defmodule Newton.OAuthTest do
     end
 
     test "rejects non-https redirect uris except loopback http" do
-      for bad <- ["http://evil.example/cb", "ftp://x/cb", "not a url", "claude.ai/cb"] do
+      for bad <- [
+            "http://evil.example/cb",
+            "ftp://x/cb",
+            "not a url",
+            "claude.ai/cb",
+            "https://claude.ai/cb#fragment"
+          ] do
         attrs = Map.put(@valid_registration, "redirect_uris", [bad])
         assert {:error, changeset} = OAuth.register_client(attrs)
         assert %{redirect_uris: _} = errors_on(changeset)

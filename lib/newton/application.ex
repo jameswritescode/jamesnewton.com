@@ -17,7 +17,16 @@ defmodule Newton.Application do
       Newton.Analytics.Collector,
       Newton.SocialCard.Cache,
       # Start to serve requests, typically the last entry
-      NewtonWeb.Endpoint
+      NewtonWeb.Endpoint,
+      {Newton.MCP.Server,
+       transport: {:streamable_http, start: true},
+       authorization: [
+         authorization_servers: [
+           Newton.OAuth.canonical_resource() |> String.trim_trailing("/mcp")
+         ],
+         resource: Newton.OAuth.canonical_resource(),
+         validator: {Newton.MCP.TokenValidator, []}
+       ]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

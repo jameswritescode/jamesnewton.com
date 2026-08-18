@@ -77,6 +77,15 @@ defmodule NewtonWeb.Router do
     post "/oauth/token", OAuthController, :token
   end
 
+  # No pipeline: anubis owns auth and content negotiation for these routes,
+  # and the browser plugs would CSRF-reject POSTs and break SSE.
+  scope "/" do
+    forward "/mcp", Anubis.Server.Transport.StreamableHTTP.Plug, server: Newton.MCP.Server
+
+    forward "/.well-known/oauth-protected-resource", Anubis.Server.Transport.WellKnown,
+      server: Newton.MCP.Server
+  end
+
   scope "/admin", NewtonWeb.Admin do
     pipe_through [:browser, :require_authenticated_user, :admin_csp]
 

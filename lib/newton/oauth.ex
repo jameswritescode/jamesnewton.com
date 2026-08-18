@@ -131,6 +131,10 @@ defmodule Newton.OAuth do
       is_nil(grant) or not is_nil(grant.revoked_at) ->
         {:error, :invalid_grant}
 
+      not is_nil(grant.code_used_at) ->
+        revoke(grant)
+        {:error, :invalid_grant}
+
       grant.client_id != client.id ->
         {:error, :invalid_grant}
 
@@ -144,25 +148,31 @@ defmodule Newton.OAuth do
         {:error, :invalid_grant}
 
       true ->
-        now_ts = now()
-        refresh_expiry = expires_in(@refresh_ttl_seconds)
+        Repo.transaction(fn ->
+          now_ts = now()
+          refresh_expiry = expires_in(@refresh_ttl_seconds)
 
-        {rows, _} =
-          Repo.update_all(
-            from(g in Grant,
-              where: g.id == ^grant.id and is_nil(g.code_used_at)
-            ),
-            set: [
-              code_used_at: now_ts,
-              refresh_token_expires_at: refresh_expiry
-            ]
-          )
+          {rows, _} =
+            Repo.update_all(
+              from(g in Grant,
+                where: g.id == ^grant.id and is_nil(g.code_used_at)
+              ),
+              set: [
+                code_used_at: now_ts,
+                refresh_token_expires_at: refresh_expiry
+              ]
+            )
 
-        if rows == 1 do
-          issue_tokens(grant, %{code_used_at: now_ts})
-        else
-          revoke(grant)
-          {:error, :invalid_grant}
+          if rows == 1 do
+            issue_tokens(grant, %{code_used_at: now_ts})
+          else
+            revoke(grant)
+            {:error, :invalid_grant}
+          end
+        end)
+        |> case do
+          {:ok, result} -> result
+          {:error, _} -> {:error, :invalid_grant}
         end
     end
   end
@@ -176,41 +186,47 @@ defmodule Newton.OAuth do
 
     cond do
       grant && not expired?(grant.refresh_token_expires_at) ->
-        new_refresh_token = generate_secret()
-        new_refresh_hash = hash(new_refresh_token)
+        Repo.transaction(fn ->
+          new_refresh_token = generate_secret()
+          new_refresh_hash = hash(new_refresh_token)
 
-        {rows, _} =
-          Repo.update_all(
-            from(g in Grant,
-              where:
-                g.id == ^grant.id and g.refresh_token_hash == ^hashed and is_nil(g.revoked_at)
-            ),
-            set: [
-              previous_refresh_token_hash: hashed,
-              refresh_token_hash: new_refresh_hash
-            ]
-          )
+          {rows, _} =
+            Repo.update_all(
+              from(g in Grant,
+                where:
+                  g.id == ^grant.id and g.refresh_token_hash == ^hashed and is_nil(g.revoked_at)
+              ),
+              set: [
+                previous_refresh_token_hash: hashed,
+                refresh_token_hash: new_refresh_hash
+              ]
+            )
 
-        if rows == 1 do
-          access_token = generate_secret()
-          grant = Repo.get!(Grant, grant.id)
+          if rows == 1 do
+            access_token = generate_secret()
+            grant = Repo.get!(Grant, grant.id)
 
-          grant
-          |> Ecto.Changeset.change(%{
-            access_token_hash: hash(access_token),
-            access_token_expires_at: expires_in(@access_ttl_seconds)
-          })
-          |> Repo.update!()
+            grant
+            |> Ecto.Changeset.change(%{
+              access_token_hash: hash(access_token),
+              access_token_expires_at: expires_in(@access_ttl_seconds)
+            })
+            |> Repo.update!()
 
-          {:ok,
-           %{
-             access_token: access_token,
-             token_type: "Bearer",
-             expires_in: @access_ttl_seconds,
-             refresh_token: new_refresh_token
-           }}
-        else
-          {:error, :invalid_grant}
+            {:ok,
+             %{
+               access_token: access_token,
+               token_type: "Bearer",
+               expires_in: @access_ttl_seconds,
+               refresh_token: new_refresh_token
+             }}
+          else
+            {:error, :invalid_grant}
+          end
+        end)
+        |> case do
+          {:ok, result} -> result
+          {:error, _} -> {:error, :invalid_grant}
         end
 
       grant ->

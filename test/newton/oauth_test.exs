@@ -249,6 +249,26 @@ defmodule Newton.OAuthTest do
 
       assert {:error, :invalid_token} = OAuth.verify_access_token(at2)
     end
+
+    test "already-used code with wrong verifier revokes grant" do
+      {client, _} = registered_client()
+      {verifier, challenge} = pkce_pair()
+
+      {:ok, code} =
+        OAuth.issue_code(client, redirect_uri(), challenge, OAuth.canonical_resource())
+
+      {:ok, %{access_token: at}} = OAuth.exchange_code(client, code, redirect_uri(), verifier)
+
+      assert {:error, :invalid_grant} =
+               OAuth.exchange_code(
+                 client,
+                 code,
+                 redirect_uri(),
+                 "wrong-verifier-wrong-verifier-wrong-verifier"
+               )
+
+      assert {:error, :invalid_token} = OAuth.verify_access_token(at)
+    end
   end
 
   defp redirect_uri, do: "https://claude.ai/api/mcp/auth_callback"

@@ -3,6 +3,7 @@ defmodule Newton.OAuth.Client do
   import Ecto.Changeset
 
   @auth_methods ~w(none client_secret_post client_secret_basic)
+  @loopback_hosts ~w(127.0.0.1 localhost ::1)
 
   schema "oauth_clients" do
     field :client_id, :string
@@ -39,10 +40,14 @@ defmodule Newton.OAuth.Client do
         true
 
       {:ok, %URI{scheme: "http", host: host, fragment: nil, userinfo: nil}} ->
-        host in ["127.0.0.1", "localhost", "::1"]
+        loopback_host?(host)
 
       _ ->
         false
     end
   end
+
+  @doc "Whether `host` is a loopback host eligible for the http exception."
+  @spec loopback_host?(term()) :: boolean()
+  def loopback_host?(host), do: host in @loopback_hosts
 end

@@ -104,6 +104,60 @@ defmodule Newton.OAuthTest do
     end
   end
 
+  describe "redirect_uri_registered?/2" do
+    test "accepts an ephemeral loopback port that differs from the registered port" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://localhost:3118/callback"])
+        )
+
+      assert OAuth.redirect_uri_registered?(client, "http://localhost:53786/callback")
+    end
+
+    test "rejects a loopback URI with a different path" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://localhost:3118/callback"])
+        )
+
+      refute OAuth.redirect_uri_registered?(client, "http://localhost:53786/cb")
+    end
+
+    test "rejects a loopback URI with a different host" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://localhost:3118/callback"])
+        )
+
+      refute OAuth.redirect_uri_registered?(client, "http://127.0.0.2:53786/callback")
+    end
+
+    test "grants no port exception to https redirect uris" do
+      {:ok, {client, _secret}} = OAuth.register_client(@valid_registration)
+
+      refute OAuth.redirect_uri_registered?(
+               client,
+               "https://claude.ai:8443/api/mcp/auth_callback"
+             )
+    end
+
+    test "still accepts an exact match" do
+      {:ok, {client, _secret}} = OAuth.register_client(@valid_registration)
+
+      assert OAuth.redirect_uri_registered?(client, "https://claude.ai/api/mcp/auth_callback")
+    end
+
+    test "rejects garbage or nil presented uris" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://localhost:3118/callback"])
+        )
+
+      refute OAuth.redirect_uri_registered?(client, "not a url")
+      refute OAuth.redirect_uri_registered?(client, nil)
+    end
+  end
+
   describe "grant lifecycle" do
     test "full happy path: code -> tokens -> verified bearer" do
       {client, _} = registered_client()
@@ -138,6 +192,23 @@ defmodule Newton.OAuthTest do
                  code,
                  redirect_uri(),
                  "wrong-verifier-wrong-verifier-wrong-verifier"
+               )
+    end
+
+    test "issue_code accepts a loopback redirect_uri on an unregistered ephemeral port" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://localhost:3118/callback"])
+        )
+
+      {_verifier, challenge} = pkce_pair()
+
+      assert {:ok, _code} =
+               OAuth.issue_code(
+                 client,
+                 "http://localhost:53786/callback",
+                 challenge,
+                 OAuth.canonical_resource()
                )
     end
 

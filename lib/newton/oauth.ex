@@ -104,10 +104,37 @@ defmodule Newton.OAuth do
     URI.to_string(%URI{scheme: scheme, host: host, port: port})
   end
 
+  @doc """
+  Whether `presented_uri` is a valid redirect target for `client`: either an
+  exact match against a registered URI, or an http loopback URI that matches
+  a registered loopback URI on everything but port (RFC 8252 §7.3 requires
+  the authorization server to accept any ephemeral port for loopback
+  redirects).
+  """
+  @spec redirect_uri_registered?(%Client{}, term()) :: boolean()
+  def redirect_uri_registered?(%Client{} = client, presented_uri) when is_binary(presented_uri) do
+    presented_uri in client.redirect_uris or
+      Enum.any?(client.redirect_uris, &loopback_port_match?(&1, presented_uri))
+  end
+
+  def redirect_uri_registered?(%Client{}, _presented_uri), do: false
+
+  defp loopback_port_match?(registered_uri, presented_uri) do
+    with {:ok, %URI{scheme: "http"} = registered} <- URI.new(registered_uri),
+         {:ok, %URI{scheme: "http"} = presented} <- URI.new(presented_uri),
+         true <- Client.loopback_host?(registered.host),
+         true <- Client.loopback_host?(presented.host) do
+      registered.host == presented.host and registered.path == presented.path and
+        registered.query == presented.query
+    else
+      _ -> false
+    end
+  end
+
   @spec issue_code(%Client{}, String.t(), String.t(), String.t()) :: {:ok, String.t()}
   def issue_code(%Client{} = client, redirect_uri, code_challenge, resource)
       when is_binary(redirect_uri) and is_binary(code_challenge) and is_binary(resource) do
-    unless redirect_uri in client.redirect_uris,
+    unless redirect_uri_registered?(client, redirect_uri),
       do: raise(ArgumentError, "redirect_uri not registered for client")
 
     unless resource == canonical_resource(),

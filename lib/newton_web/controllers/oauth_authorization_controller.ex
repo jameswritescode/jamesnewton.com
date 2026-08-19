@@ -69,7 +69,7 @@ defmodule NewtonWeb.OAuthAuthorizationController do
       is_nil(client) ->
         {:render_error, "Unknown client. Check the client_id and register the client first."}
 
-      params["redirect_uri"] not in client.redirect_uris ->
+      not OAuth.redirect_uri_registered?(client, params["redirect_uri"]) ->
         {:render_error, "The redirect address is not registered for this client."}
 
       true ->

@@ -247,4 +247,42 @@ defmodule NewtonWeb.OAuthAuthorizationControllerTest do
     assert is_binary(query["code"])
     assert query["state"] == "xyz"
   end
+
+  test "an ephemeral loopback port that differs from the registered one is accepted end to end",
+       %{conn: conn} do
+    {:ok, {client, _secret}} =
+      OAuth.register_client(%{
+        "client_name" => "Claude Code",
+        "redirect_uris" => ["http://localhost:3118/callback"],
+        "token_endpoint_auth_method" => "none"
+      })
+
+    ephemeral_redirect_uri = "http://localhost:53786/callback"
+
+    params =
+      authorize_params(client, %{
+        "redirect_uri" => ephemeral_redirect_uri,
+        "decision" => "approve"
+      })
+
+    conn = post(conn, ~p"/oauth/authorize", params)
+
+    query = conn |> redirected_to() |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
+    code = query["code"]
+    assert is_binary(code)
+    assert query["state"] == "xyz"
+
+    token_response =
+      build_conn()
+      |> post(~p"/oauth/token", %{
+        "grant_type" => "authorization_code",
+        "code" => code,
+        "redirect_uri" => ephemeral_redirect_uri,
+        "code_verifier" => "test-verifier-test-verifier-test-verifier",
+        "client_id" => client.client_id
+      })
+      |> json_response(200)
+
+    assert is_binary(token_response["access_token"])
+  end
 end

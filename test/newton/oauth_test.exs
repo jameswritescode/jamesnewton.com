@@ -156,6 +156,42 @@ defmodule Newton.OAuthTest do
       refute OAuth.redirect_uri_registered?(client, "not a url")
       refute OAuth.redirect_uri_registered?(client, nil)
     end
+
+    test "rejects a presented uri carrying userinfo" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://localhost:3118/callback"])
+        )
+
+      refute OAuth.redirect_uri_registered?(client, "http://x@localhost:53786/callback")
+    end
+
+    test "rejects a presented uri carrying a fragment" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://localhost:3118/callback"])
+        )
+
+      refute OAuth.redirect_uri_registered?(client, "http://localhost:53786/callback#frag")
+    end
+
+    test "rejects a lookalike host that merely has localhost as a subdomain label" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://localhost:3118/callback"])
+        )
+
+      refute OAuth.redirect_uri_registered?(client, "http://localhost.evil.com:53786/callback")
+    end
+
+    test "rejects a lookalike host that merely has 127.0.0.1 as a subdomain label" do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(
+          Map.put(@valid_registration, "redirect_uris", ["http://127.0.0.1:3118/callback"])
+        )
+
+      refute OAuth.redirect_uri_registered?(client, "http://127.0.0.1.evil.com:53786/callback")
+    end
   end
 
   describe "grant lifecycle" do

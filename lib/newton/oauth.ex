@@ -120,8 +120,10 @@ defmodule Newton.OAuth do
   def redirect_uri_registered?(%Client{}, _presented_uri), do: false
 
   defp loopback_port_match?(registered_uri, presented_uri) do
-    with {:ok, %URI{scheme: "http"} = registered} <- URI.new(registered_uri),
-         {:ok, %URI{scheme: "http"} = presented} <- URI.new(presented_uri),
+    with {:ok, %URI{scheme: "http", userinfo: nil, fragment: nil} = registered} <-
+           URI.new(registered_uri),
+         {:ok, %URI{scheme: "http", userinfo: nil, fragment: nil} = presented} <-
+           URI.new(presented_uri),
          true <- Client.loopback_host?(registered.host),
          true <- Client.loopback_host?(presented.host) do
       registered.host == presented.host and registered.path == presented.path and

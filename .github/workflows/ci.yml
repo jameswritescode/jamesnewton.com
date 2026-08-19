@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main, phoenix-migration]
+    branches: [main]
   pull_request:
 permissions:
   contents: read

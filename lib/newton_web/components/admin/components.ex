@@ -272,4 +272,25 @@ defmodule NewtonWeb.Admin.Components do
   defp link_attrs(nil, nil), do: %{}
   defp link_attrs(nil, patch), do: %{patch: patch}
   defp link_attrs(navigate, _patch), do: %{navigate: navigate}
+
+  @doc "A bordered settings list row: title + meta line on the left, action on the right."
+  attr :id, :string, required: true
+  slot :title, required: true
+  slot :meta, required: true
+  slot :action, required: true
+
+  def settings_row(assigns) do
+    ~H"""
+    <li
+      id={@id}
+      class="flex items-center justify-between rounded-md border border-(--admin-border) px-3 py-2"
+    >
+      <div>
+        <div class="text-[0.85rem] text-(--admin-text)">{render_slot(@title)}</div>
+        <div class="text-[0.72rem] text-(--admin-text-subtle)">{render_slot(@meta)}</div>
+      </div>
+      {render_slot(@action)}
+    </li>
+    """
+  end
 end

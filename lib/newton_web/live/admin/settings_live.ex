@@ -238,26 +238,20 @@ defmodule NewtonWeb.Admin.SettingsLive do
         <h2 class="mb-3 text-[0.95rem] font-medium">Passkeys</h2>
 
         <ul :if={@credentials != []} id="passkey-list" class="mb-4 flex flex-col gap-2">
-          <li
-            :for={c <- @credentials}
-            id={"passkey-#{c.id}"}
-            class="flex items-center justify-between rounded-md border border-(--admin-border) px-3 py-2"
-          >
-            <div>
-              <div class="text-[0.85rem] text-(--admin-text)">{c.label}</div>
-              <div class="text-[0.72rem] text-(--admin-text-subtle)">
-                Added {format_day(c.inserted_at)} · Last used {format_day(c.last_used_at)}
-              </div>
-            </div>
-            <Components.button
-              variant="secondary"
-              phx-click="delete_passkey"
-              phx-value-id={c.id}
-              data-confirm="Remove this passkey?"
-            >
-              Remove
-            </Components.button>
-          </li>
+          <Components.settings_row :for={c <- @credentials} id={"passkey-#{c.id}"}>
+            <:title>{c.label}</:title>
+            <:meta>Added {format_day(c.inserted_at)} · Last used {format_day(c.last_used_at)}</:meta>
+            <:action>
+              <Components.button
+                variant="secondary"
+                phx-click="delete_passkey"
+                phx-value-id={c.id}
+                data-confirm="Remove this passkey?"
+              >
+                Remove
+              </Components.button>
+            </:action>
+          </Components.settings_row>
         </ul>
 
         <p :if={@credentials == []} class="mb-4 text-[0.82rem] text-(--admin-text-subtle)">
@@ -309,28 +303,27 @@ defmodule NewtonWeb.Admin.SettingsLive do
         <h2 class="mb-3 text-[0.95rem] font-medium">Connected apps</h2>
 
         <ul :if={@authorized_clients != []} id="connected-apps" class="flex flex-col gap-2">
-          <li
+          <Components.settings_row
             :for={entry <- @authorized_clients}
             id={"connected-app-#{entry.client.id}"}
-            class="flex items-center justify-between rounded-md border border-(--admin-border) px-3 py-2"
           >
-            <div>
-              <div class="text-[0.85rem] text-(--admin-text)">{entry.client.client_name}</div>
-              <div class="text-[0.72rem] text-(--admin-text-subtle)">
-                First connected {format_day(entry.first_connected_at)} · Last active {format_day(
-                  entry.last_active_at
-                )} · {entry.grant_count} {if(entry.grant_count == 1, do: "grant", else: "grants")}
-              </div>
-            </div>
-            <Components.button
-              variant="secondary"
-              phx-click="revoke_client"
-              phx-value-id={entry.client.id}
-              data-confirm={"Revoke #{entry.client.client_name}'s access?"}
-            >
-              Revoke
-            </Components.button>
-          </li>
+            <:title>{entry.client.client_name}</:title>
+            <:meta>
+              First connected {format_day(entry.first_connected_at)} · Last active {format_day(
+                entry.last_active_at
+              )} · {entry.grant_count} {if(entry.grant_count == 1, do: "grant", else: "grants")}
+            </:meta>
+            <:action>
+              <Components.button
+                variant="secondary"
+                phx-click="revoke_client"
+                phx-value-id={entry.client.id}
+                data-confirm={"Revoke #{entry.client.client_name}'s access?"}
+              >
+                Revoke
+              </Components.button>
+            </:action>
+          </Components.settings_row>
         </ul>
 
         <p

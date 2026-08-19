@@ -570,6 +570,31 @@ defmodule Newton.OAuthTest do
       assert OAuth.list_authorized_clients() == []
     end
 
+    test "includes an idle client with a live refresh token but an expired access token, excludes a code-phase client with no tokens yet" do
+      {idle_client, _tokens} = connected_client("Idle app")
+      expire_access_only(idle_client)
+
+      {:ok, {code_phase_client, _secret}} =
+        OAuth.register_client(%{
+          "client_name" => "Never exchanged",
+          "redirect_uris" => ["https://claude.ai/api/mcp/auth_callback"],
+          "token_endpoint_auth_method" => "none"
+        })
+
+      {_verifier, challenge} = pkce_pair()
+
+      {:ok, _code} =
+        OAuth.issue_code(
+          code_phase_client,
+          "https://claude.ai/api/mcp/auth_callback",
+          challenge,
+          OAuth.canonical_resource()
+        )
+
+      assert [entry] = OAuth.list_authorized_clients()
+      assert entry.client.id == idle_client.id
+    end
+
     test "revoke kills every active grant and its tokens" do
       {client, tokens1} = connected_client("Doomed app")
       tokens2 = connect(client)
@@ -619,6 +644,18 @@ defmodule Newton.OAuthTest do
         Newton.Repo.update_all(
           from(g in Newton.OAuth.Grant, where: g.client_id == ^client.id),
           set: [access_token_expires_at: past, refresh_token_expires_at: past]
+        )
+    end
+
+    defp expire_access_only(client) do
+      import Ecto.Query
+
+      past = DateTime.add(DateTime.utc_now(), -60, :second) |> DateTime.truncate(:second)
+
+      {_, _} =
+        Newton.Repo.update_all(
+          from(g in Newton.OAuth.Grant, where: g.client_id == ^client.id),
+          set: [access_token_expires_at: past]
         )
     end
   end

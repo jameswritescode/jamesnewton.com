@@ -1,9 +1,12 @@
-<Layouts.app flash={@flash}>
-  <article class="post">
-    <header>
-      <h1 class="post-title">Authorization error</h1>
-    </header>
+<div class="flex min-h-screen items-center justify-center px-4">
+  <div class="w-full max-w-sm">
+    <div class="mb-6 flex items-center justify-center gap-2 text-[1.05rem] font-semibold tracking-tight text-(--admin-text)">
+      <span class="size-2.5 rounded-full bg-(--admin-accent)"></span> newton
+    </div>
 
-    <p>{@message}</p>
-  </article>
-</Layouts.app>
+    <div class="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-6 shadow-sm">
+      <h1 class="text-[1.1rem] font-semibold text-(--admin-text)">Authorization error</h1>
+      <p class="mt-1 text-[0.82rem] text-(--admin-text-subtle)">{@message}</p>
+    </div>
+  </div>
+</div>

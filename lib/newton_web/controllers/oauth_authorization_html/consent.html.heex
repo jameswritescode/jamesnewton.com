@@ -1,19 +1,48 @@
-<Layouts.app flash={@flash}>
-  <article class="post">
-    <header>
-      <h1 class="post-title">Authorize {@client.client_name}</h1>
-    </header>
+<div class="flex min-h-screen items-center justify-center px-4">
+  <div class="w-full max-w-sm">
+    <div class="mb-6 flex items-center justify-center gap-2 text-[1.05rem] font-semibold tracking-tight text-(--admin-text)">
+      <span class="size-2.5 rounded-full bg-(--admin-accent)"></span> newton
+    </div>
 
-    <p>
-      <strong>{@client.client_name}</strong>
-      wants read access to your posts, drafts included. Approving sends it back to <strong>{URI.parse(@redirect_uri).host}</strong>.
-    </p>
+    <div class="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-6 shadow-sm">
+      <h1 class="text-[1.1rem] font-semibold text-(--admin-text)">Authorize access</h1>
+      <p class="mt-1 text-[0.82rem] text-(--admin-text-subtle)">
+        <span class="font-medium text-(--admin-text)">{@client.client_name}</span>
+        wants read access to your posts, drafts included.
+      </p>
 
-    <form method="post" action={~p"/oauth/authorize"} id="oauth-consent-form">
-      <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-      <input :for={{name, value} <- @params} type="hidden" name={name} value={value} />
-      <button type="submit" name="decision" value="approve">Approve</button>
-      <button type="submit" name="decision" value="deny">Deny</button>
-    </form>
-  </article>
-</Layouts.app>
+      <p class="mt-3 mb-5 text-[0.78rem] text-(--admin-text-muted)">
+        Returns to
+        <code class="font-mono text-[0.72rem] break-all text-(--admin-text-subtle)">
+          {@redirect_uri}
+        </code>
+      </p>
+
+      <form
+        method="post"
+        action={~p"/oauth/authorize"}
+        id="oauth-consent-form"
+        class="grid grid-cols-2 gap-3"
+      >
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <input :for={{name, value} <- @params} type="hidden" name={name} value={value} />
+        <button
+          type="submit"
+          name="decision"
+          value="approve"
+          class="rounded-md bg-(--admin-accent) px-3 py-2 text-[0.85rem] font-medium text-white hover:bg-(--admin-accent-hover)"
+        >
+          Approve
+        </button>
+        <button
+          type="submit"
+          name="decision"
+          value="deny"
+          class="rounded-md border border-(--admin-border) px-3 py-2 text-[0.85rem] text-(--admin-text) hover:border-(--admin-accent)"
+        >
+          Deny
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

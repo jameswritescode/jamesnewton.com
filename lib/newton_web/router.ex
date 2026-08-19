@@ -135,7 +135,7 @@ defmodule NewtonWeb.Router do
   end
 
   scope "/", NewtonWeb do
-    pipe_through [:browser, :require_authenticated_user, :require_sudo_mode]
+    pipe_through [:browser, :require_authenticated_user, :require_sudo_mode, :admin_csp]
 
     get "/oauth/authorize", OAuthAuthorizationController, :authorize
     post "/oauth/authorize", OAuthAuthorizationController, :approve

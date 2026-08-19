@@ -1,6 +1,8 @@
 defmodule NewtonWeb.OAuthAuthorizationController do
   use NewtonWeb, :controller
 
+  plug :put_root_layout, html: {NewtonWeb.Layouts, :admin_root}
+
   alias Newton.OAuth
 
   def authorize(conn, params) do

@@ -47,6 +47,48 @@ defmodule Newton.OAuth do
 
   def get_client(_), do: nil
 
+  @type authorized_client :: %{
+          client: %Client{},
+          first_connected_at: DateTime.t(),
+          last_active_at: DateTime.t(),
+          grant_count: pos_integer()
+        }
+
+  @doc "Clients holding at least one live grant, most recently active first."
+  @spec list_authorized_clients() :: [authorized_client()]
+  def list_authorized_clients do
+    now = DateTime.utc_now()
+
+    Repo.all(
+      from g in Grant,
+        join: c in assoc(g, :client),
+        where: is_nil(g.revoked_at),
+        where: g.access_token_expires_at > ^now or g.refresh_token_expires_at > ^now,
+        group_by: c.id,
+        order_by: [desc: max(g.updated_at)],
+        select: %{
+          client: c,
+          first_connected_at: min(g.inserted_at),
+          last_active_at: max(g.updated_at),
+          grant_count: count(g.id)
+        }
+    )
+  end
+
+  @doc "Revokes every unrevoked grant for the client; the registration survives."
+  @spec revoke_client_grants(%Client{}) :: non_neg_integer()
+  def revoke_client_grants(%Client{} = client) do
+    Newton.Telemetry.span(:oauth, :grant, %{operation: :admin_revoke}, fn ->
+      {count, _} =
+        Repo.update_all(
+          from(g in Grant, where: g.client_id == ^client.id and is_nil(g.revoked_at)),
+          set: [revoked_at: now()]
+        )
+
+      {count, %{operation: :admin_revoke, result: :ok}}
+    end)
+  end
+
   @spec authenticate_client(String.t() | nil, String.t() | nil) ::
           {:ok, %Client{}} | {:error, :invalid_client}
   def authenticate_client(client_id, secret) do

@@ -502,4 +502,124 @@ defmodule Newton.OAuthTest do
       )
     )
   end
+
+  describe "authorized clients" do
+    defp connected_client(name) do
+      {:ok, {client, _secret}} =
+        OAuth.register_client(%{
+          "client_name" => name,
+          "redirect_uris" => ["https://claude.ai/api/mcp/auth_callback"],
+          "token_endpoint_auth_method" => "none"
+        })
+
+      {client, connect(client)}
+    end
+
+    defp connect(client) do
+      verifier = OAuth.generate_secret()
+      challenge = Base.url_encode64(:crypto.hash(:sha256, verifier), padding: false)
+
+      {:ok, code} =
+        OAuth.issue_code(
+          client,
+          "https://claude.ai/api/mcp/auth_callback",
+          challenge,
+          OAuth.canonical_resource()
+        )
+
+      {:ok, tokens} =
+        OAuth.exchange_code(client, code, "https://claude.ai/api/mcp/auth_callback", verifier)
+
+      tokens
+    end
+
+    test "lists clients with active grants and their aggregates" do
+      {client, _tokens1} = connected_client("Claude Code")
+      _tokens2 = connect(client)
+
+      assert [entry] = OAuth.list_authorized_clients()
+      assert entry.client.id == client.id
+      assert entry.grant_count == 2
+      assert %DateTime{} = entry.first_connected_at
+      assert %DateTime{} = entry.last_active_at
+      assert DateTime.compare(entry.first_connected_at, entry.last_active_at) != :gt
+    end
+
+    test "orders clients by most recent activity first" do
+      {older, _} = connected_client("Older")
+      {newer, _} = connected_client("Newer")
+
+      bump_last_activity(newer)
+
+      assert [first, second] = OAuth.list_authorized_clients()
+      assert first.client.id == newer.id
+      assert second.client.id == older.id
+    end
+
+    test "excludes clients whose grants are all revoked" do
+      {client, _tokens} = connected_client("Revoked app")
+      assert OAuth.revoke_client_grants(client) == 1
+
+      assert OAuth.list_authorized_clients() == []
+    end
+
+    test "excludes clients whose grants are fully expired" do
+      {client, _tokens} = connected_client("Expired app")
+      expire_all_tokens(client)
+
+      assert OAuth.list_authorized_clients() == []
+    end
+
+    test "revoke kills every active grant and its tokens" do
+      {client, tokens1} = connected_client("Doomed app")
+      tokens2 = connect(client)
+
+      :telemetry_test.attach_event_handlers(self(), [[:newton, :oauth, :grant, :stop]])
+
+      assert OAuth.revoke_client_grants(client) == 2
+
+      assert {:error, :invalid_token} = OAuth.verify_access_token(tokens1.access_token)
+      assert {:error, :invalid_token} = OAuth.verify_access_token(tokens2.access_token)
+      assert {:error, :invalid_grant} = OAuth.refresh(client, tokens1.refresh_token)
+      assert {:error, :invalid_grant} = OAuth.refresh(client, tokens2.refresh_token)
+
+      assert_receive {[:newton, :oauth, :grant, :stop], _ref, _m,
+                      %{operation: :admin_revoke, result: :ok}}
+    end
+
+    test "revoking a grantless client returns 0" do
+      {:ok, {client, _}} =
+        OAuth.register_client(%{
+          "client_name" => "Never connected",
+          "redirect_uris" => ["https://claude.ai/api/mcp/auth_callback"],
+          "token_endpoint_auth_method" => "none"
+        })
+
+      assert OAuth.revoke_client_grants(client) == 0
+    end
+
+    defp bump_last_activity(client) do
+      import Ecto.Query
+
+      future = DateTime.add(DateTime.utc_now(), 60, :second) |> DateTime.truncate(:second)
+
+      {_, _} =
+        Newton.Repo.update_all(
+          from(g in Newton.OAuth.Grant, where: g.client_id == ^client.id),
+          set: [updated_at: future]
+        )
+    end
+
+    defp expire_all_tokens(client) do
+      import Ecto.Query
+
+      past = DateTime.add(DateTime.utc_now(), -60, :second) |> DateTime.truncate(:second)
+
+      {_, _} =
+        Newton.Repo.update_all(
+          from(g in Newton.OAuth.Grant, where: g.client_id == ^client.id),
+          set: [access_token_expires_at: past, refresh_token_expires_at: past]
+        )
+    end
+  end
 end

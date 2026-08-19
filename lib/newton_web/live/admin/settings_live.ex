@@ -2,6 +2,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
   use NewtonWeb, :live_view
 
   alias Newton.Accounts
+  alias Newton.OAuth
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
   alias NewtonWeb.UserAuth
@@ -20,7 +21,8 @@ defmodule NewtonWeb.Admin.SettingsLive do
      |> assign(:reg_challenge, nil)
      |> assign(:new_label, "")
      |> assign(:recovery_count, Accounts.count_unused_recovery_codes(user))
-     |> assign(:new_recovery_codes, nil)}
+     |> assign(:new_recovery_codes, nil)
+     |> assign(:authorized_clients, OAuth.list_authorized_clients())}
   end
 
   defp timezone_form(user), do: to_form(Accounts.User.timezone_changeset(user, %{}), as: :user)
@@ -144,6 +146,20 @@ defmodule NewtonWeb.Admin.SettingsLive do
     with_fresh_sudo(socket, fn socket ->
       Accounts.delete_credential(socket.assigns.user, String.to_integer(id))
       assign(socket, :credentials, Accounts.list_user_credentials(socket.assigns.user))
+    end)
+  end
+
+  def handle_event("revoke_client", %{"id" => id}, socket) do
+    with_fresh_sudo(socket, fn socket ->
+      entry =
+        Enum.find(socket.assigns.authorized_clients, &(&1.client.id == String.to_integer(id)))
+
+      socket =
+        if entry && OAuth.revoke_client_grants(entry.client) > 0,
+          do: put_flash(socket, :info, "#{entry.client.client_name} revoked."),
+          else: socket
+
+      assign(socket, :authorized_clients, OAuth.list_authorized_clients())
     end)
   end
 
@@ -287,6 +303,43 @@ defmodule NewtonWeb.Admin.SettingsLive do
         <Components.button phx-click="generate_recovery_codes">
           {if @recovery_count > 0, do: "Regenerate recovery codes", else: "Generate recovery codes"}
         </Components.button>
+      </section>
+
+      <section class="mt-8 max-w-md">
+        <h2 class="mb-3 text-[0.95rem] font-medium">Connected apps</h2>
+
+        <ul :if={@authorized_clients != []} id="connected-apps" class="flex flex-col gap-2">
+          <li
+            :for={entry <- @authorized_clients}
+            id={"connected-app-#{entry.client.id}"}
+            class="flex items-center justify-between rounded-md border border-(--admin-border) px-3 py-2"
+          >
+            <div>
+              <div class="text-[0.85rem] text-(--admin-text)">{entry.client.client_name}</div>
+              <div class="text-[0.72rem] text-(--admin-text-subtle)">
+                First connected {format_day(entry.first_connected_at)} · Last active {format_day(
+                  entry.last_active_at
+                )} · {entry.grant_count} {if(entry.grant_count == 1, do: "grant", else: "grants")}
+              </div>
+            </div>
+            <Components.button
+              variant="secondary"
+              phx-click="revoke_client"
+              phx-value-id={entry.client.id}
+              data-confirm={"Revoke #{entry.client.client_name}'s access?"}
+            >
+              Revoke
+            </Components.button>
+          </li>
+        </ul>
+
+        <p
+          :if={@authorized_clients == []}
+          id="connected-apps-empty"
+          class="text-[0.82rem] text-(--admin-text-subtle)"
+        >
+          No apps have access.
+        </p>
       </section>
     </Layouts.admin>
     """

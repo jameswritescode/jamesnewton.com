@@ -109,4 +109,72 @@ defmodule NewtonWeb.Admin.SettingsLiveTest do
     # the button now offers to regenerate
     assert has_element?(view, "button", "Regenerate recovery codes")
   end
+
+  defp connected_oauth_client(name) do
+    alias Newton.OAuth
+
+    {:ok, {client, _secret}} =
+      OAuth.register_client(%{
+        "client_name" => name,
+        "redirect_uris" => ["https://claude.ai/api/mcp/auth_callback"],
+        "token_endpoint_auth_method" => "none"
+      })
+
+    verifier = OAuth.generate_secret()
+    challenge = Base.url_encode64(:crypto.hash(:sha256, verifier), padding: false)
+
+    {:ok, code} =
+      OAuth.issue_code(
+        client,
+        "https://claude.ai/api/mcp/auth_callback",
+        challenge,
+        OAuth.canonical_resource()
+      )
+
+    {:ok, tokens} =
+      OAuth.exchange_code(client, code, "https://claude.ai/api/mcp/auth_callback", verifier)
+
+    {client, tokens}
+  end
+
+  test "lists connected apps", %{conn: conn} do
+    {client, _tokens} = connected_oauth_client("Claude Code (newton)")
+
+    {:ok, view, _html} = live(conn, ~p"/admin/settings")
+
+    assert has_element?(view, "#connected-app-#{client.id}", "Claude Code (newton)")
+  end
+
+  test "shows the empty state when nothing is connected", %{conn: conn} do
+    {:ok, _view, html} = live(conn, ~p"/admin/settings")
+
+    assert html =~ "No apps have access."
+  end
+
+  test "revoking a client removes it and kills its tokens", %{conn: conn} do
+    {client, tokens} = connected_oauth_client("Doomed app")
+    assert {:ok, _} = Newton.OAuth.verify_access_token(tokens.access_token)
+
+    {:ok, view, _html} = live(conn, ~p"/admin/settings")
+
+    view
+    |> element("#connected-app-#{client.id} button", "Revoke")
+    |> render_click()
+
+    refute has_element?(view, "#connected-app-#{client.id}")
+    assert has_element?(view, "#connected-apps-empty")
+    assert {:error, :invalid_token} = Newton.OAuth.verify_access_token(tokens.access_token)
+  end
+
+  test "a stale sudo window blocks revoking a client", %{conn: conn} do
+    {client, tokens} = connected_oauth_client("Protected app")
+
+    {:ok, view, _} = live(conn, ~p"/admin/settings")
+    expire_sudo_window(view)
+
+    render_click(view, "revoke_client", %{"id" => to_string(client.id)})
+
+    assert_redirect(view, ~p"/login/confirm-access")
+    assert {:ok, _} = Newton.OAuth.verify_access_token(tokens.access_token)
+  end
 end

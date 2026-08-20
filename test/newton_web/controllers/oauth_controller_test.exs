@@ -39,6 +39,18 @@ defmodule NewtonWeb.OAuthControllerTest do
       assert body["client_secret_expires_at"] == 0
     end
 
+    test "the registration response is not cacheable", %{conn: conn} do
+      conn =
+        post(conn, "/oauth/register", %{
+          "client_name" => "Claude",
+          "redirect_uris" => ["https://claude.ai/api/mcp/auth_callback"],
+          "token_endpoint_auth_method" => "client_secret_basic"
+        })
+
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      assert get_resp_header(conn, "pragma") == ["no-cache"]
+    end
+
     test "public clients get no client_secret key", %{conn: conn} do
       body =
         conn
@@ -193,8 +205,9 @@ defmodule NewtonWeb.OAuthControllerTest do
 
       params = Map.put(exchange_params(client, code, verifier), "client_secret", secret)
 
-      body = conn |> post(~p"/oauth/token", params) |> json_response(401)
-      assert body["error"] == "invalid_client"
+      conn = post(conn, ~p"/oauth/token", params)
+      assert json_response(conn, 401)["error"] == "invalid_client"
+      assert get_resp_header(conn, "www-authenticate") == []
     end
 
     test "a post-registered client sending Basic auth is rejected", %{conn: conn} do

@@ -58,6 +58,17 @@ defmodule NewtonWeb.OAuthAuthorizationControllerTest do
     assert conn.status in [200, 302, 400]
   end
 
+  test "an overlong state is dropped, not echoed", %{conn: conn, client: client} do
+    overlong = String.duplicate("s", 2000)
+    params = authorize_params(client, %{"state" => overlong})
+
+    conn = post(conn, ~p"/oauth/authorize", Map.put(params, "decision", "approve"))
+
+    query = conn |> redirected_to() |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
+    assert is_binary(query["code"])
+    refute Map.has_key?(query, "state")
+  end
+
   test "unauthenticated authorize redirects to login" do
     conn = build_conn()
     conn = get(conn, ~p"/oauth/authorize")

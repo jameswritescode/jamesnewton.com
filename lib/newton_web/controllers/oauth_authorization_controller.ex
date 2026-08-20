@@ -92,8 +92,15 @@ defmodule NewtonWeb.OAuthAuthorizationController do
 
   defp resource(params), do: params["resource"] || OAuth.canonical_resource()
 
-  defp normalize_state(%{"state" => state} = params) when not is_binary(state),
-    do: Map.delete(params, "state")
+  # State is echoed verbatim on every redirect but never stored. A non-binary
+  # (`state[]=`) or over-long value is dropped rather than reflected: a
+  # malformed request's own CSRF check fails on the client side, which is the
+  # correct outcome for a request we can't faithfully round-trip.
+  @max_state_length 1024
+
+  defp normalize_state(%{"state" => state} = params)
+       when not is_binary(state) or byte_size(state) > @max_state_length,
+       do: Map.delete(params, "state")
 
   defp normalize_state(params), do: params
 

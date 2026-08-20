@@ -35,10 +35,11 @@ defmodule NewtonWeb.OAuthController do
             do: Map.merge(response, %{client_secret: secret, client_secret_expires_at: 0}),
             else: response
 
-        conn |> put_status(201) |> json(response)
+        conn |> put_no_store() |> put_status(201) |> json(response)
 
       {:error, _changeset} ->
         conn
+        |> put_no_store()
         |> put_status(400)
         |> json(%{error: "invalid_client_metadata", error_description: "invalid registration"})
     end
@@ -95,11 +96,11 @@ defmodule NewtonWeb.OAuthController do
             {:ok, authenticated}
 
           {:error, :invalid_client} ->
-            {:error, :invalid_client, www_authenticate?(client, used_basic?)}
+            {:error, :invalid_client, used_basic?}
         end
 
       :error ->
-        {:error, :invalid_client, www_authenticate?(client, used_basic?)}
+        {:error, :invalid_client, used_basic?}
     end
   end
 
@@ -132,14 +133,6 @@ defmodule NewtonWeb.OAuthController do
 
   defp client_channel_secret(nil, _used_basic?, basic_secret, body_secret),
     do: {:ok, basic_secret || body_secret}
-
-  defp www_authenticate?(
-         %Client{token_endpoint_auth_method: "client_secret_basic"},
-         _used_basic?
-       ),
-       do: true
-
-  defp www_authenticate?(_client, used_basic?), do: used_basic?
 
   defp put_no_store(conn) do
     conn

@@ -25,6 +25,37 @@ defmodule Newton.ErrorFilterTest do
     assert sanitized["request.path"] == "/login"
   end
 
+  test "redacts OAuth token-endpoint credentials by keyword" do
+    context = %{
+      "request.params" => %{
+        "client_secret" => "cs-abc",
+        "refresh_token" => "rt-abc",
+        "access_token" => "at-abc",
+        "code_verifier" => "cv-abc",
+        "grant_type" => "authorization_code",
+        "redirect_uri" => "http://127.0.0.1:9000/cb"
+      }
+    }
+
+    params = ErrorFilter.sanitize(context)["request.params"]
+
+    assert params["client_secret"] == "[REDACTED]"
+    assert params["refresh_token"] == "[REDACTED]"
+    assert params["access_token"] == "[REDACTED]"
+    assert params["code_verifier"] == "[REDACTED]"
+    assert params["grant_type"] == "authorization_code"
+    assert params["redirect_uri"] == "http://127.0.0.1:9000/cb"
+  end
+
+  test "redacts keyword-matched credentials from the raw query string too" do
+    context = %{"request.query" => "refresh_token=rt-abc&grant_type=refresh_token"}
+
+    sanitized = ErrorFilter.sanitize(context)
+
+    refute sanitized["request.query"] =~ "rt-abc"
+    assert sanitized["request.query"] =~ "grant_type=refresh_token"
+  end
+
   test "redacts the draft preview token from params and the raw query string" do
     context = %{
       "request.params" => %{"p" => "s3cret-preview-token", "slug" => "a-draft"},

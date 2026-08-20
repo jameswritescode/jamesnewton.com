@@ -10,7 +10,12 @@ defmodule Newton.ErrorFilter do
   @behaviour ErrorTracker.Filter
 
   @redacted "[REDACTED]"
+  # Exact keys: short, high-value names ("p" preview token, "code") that a
+  # substring rule can't target without over-matching (`p` is in every word).
   @sensitive ~w(password current_password new_password code app_password token secret p)
+  # Substrings: credential families where any key containing them is a secret —
+  # client_secret, refresh_token, access_token, code_verifier, the *_password set.
+  @sensitive_substrings ~w(secret token password verifier)
   @param_keys ~w(request.params live_view.params)
 
   @impl true
@@ -43,7 +48,7 @@ defmodule Newton.ErrorFilter do
     |> Enum.map_join("&", fn pair ->
       case String.split(pair, "=", parts: 2) do
         [key, _value] ->
-          if String.downcase(key) in @sensitive, do: "#{key}=#{@redacted}", else: pair
+          if sensitive_key?(key), do: "#{key}=#{@redacted}", else: pair
 
         _ ->
           pair
@@ -53,7 +58,7 @@ defmodule Newton.ErrorFilter do
 
   defp scrub(map) when is_map(map) do
     Map.new(map, fn {key, value} ->
-      if is_binary(key) and String.downcase(key) in @sensitive do
+      if is_binary(key) and sensitive_key?(key) do
         {key, @redacted}
       else
         {key, scrub(value)}
@@ -63,4 +68,9 @@ defmodule Newton.ErrorFilter do
 
   defp scrub(list) when is_list(list), do: Enum.map(list, &scrub/1)
   defp scrub(value), do: value
+
+  defp sensitive_key?(key) do
+    key = String.downcase(key)
+    key in @sensitive or Enum.any?(@sensitive_substrings, &String.contains?(key, &1))
+  end
 end

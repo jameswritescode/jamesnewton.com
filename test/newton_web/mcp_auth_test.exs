@@ -20,4 +20,55 @@ defmodule NewtonWeb.MCPAuthTest do
     assert body["resource"] == Newton.OAuth.canonical_resource()
     assert body["authorization_servers"] == [NewtonWeb.Endpoint.url()]
   end
+
+  test "revoking a client 401s its token on the very next /mcp request" do
+    alias Newton.OAuth
+
+    {:ok, {client, _secret}} =
+      OAuth.register_client(%{
+        "client_name" => "Revoked mid-session",
+        "redirect_uris" => ["https://claude.ai/api/mcp/auth_callback"],
+        "token_endpoint_auth_method" => "none"
+      })
+
+    verifier = OAuth.generate_secret()
+    challenge = Base.url_encode64(:crypto.hash(:sha256, verifier), padding: false)
+
+    {:ok, code} =
+      OAuth.issue_code(
+        client,
+        "https://claude.ai/api/mcp/auth_callback",
+        challenge,
+        OAuth.canonical_resource()
+      )
+
+    {:ok, %{access_token: token}} =
+      OAuth.exchange_code(client, code, "https://claude.ai/api/mcp/auth_callback", verifier)
+
+    initialize = fn ->
+      build_conn()
+      |> put_req_header("authorization", "Bearer " <> token)
+      |> put_req_header("content-type", "application/json")
+      |> put_req_header("accept", "application/json, text/event-stream")
+      |> post(
+        "/mcp",
+        Jason.encode!(%{
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: %{
+            protocolVersion: "2025-03-26",
+            capabilities: %{},
+            clientInfo: %{name: "revoke-test", version: "1.0"}
+          }
+        })
+      )
+    end
+
+    assert initialize.().status == 200
+
+    assert OAuth.revoke_client_grants(client) == 1
+
+    assert initialize.().status == 401
+  end
 end

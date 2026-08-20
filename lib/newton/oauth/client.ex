@@ -4,6 +4,7 @@ defmodule Newton.OAuth.Client do
 
   @auth_methods ~w(none client_secret_post client_secret_basic)
   @loopback_hosts ~w(127.0.0.1 localhost ::1)
+  @max_redirect_uri_length 2048
 
   schema "oauth_clients" do
     field :client_id, :string
@@ -28,9 +29,16 @@ defmodule Newton.OAuth.Client do
   end
 
   defp validate_redirect_uris(:redirect_uris, uris) do
-    if Enum.all?(uris, &allowed_redirect_uri?/1),
-      do: [],
-      else: [redirect_uris: "must be absolute https URLs (or http loopback)"]
+    cond do
+      not Enum.all?(uris, &(String.length(&1) <= @max_redirect_uri_length)) ->
+        [redirect_uris: "must be at most #{@max_redirect_uri_length} characters"]
+
+      not Enum.all?(uris, &allowed_redirect_uri?/1) ->
+        [redirect_uris: "must be absolute https URLs (or http loopback)"]
+
+      true ->
+        []
+    end
   end
 
   defp allowed_redirect_uri?(uri) do

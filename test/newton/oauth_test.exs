@@ -79,6 +79,22 @@ defmodule Newton.OAuthTest do
       assert {:error, changeset} = OAuth.register_client(attrs)
       assert %{redirect_uris: _} = errors_on(changeset)
     end
+
+    test "rejects an overlong redirect uri with a changeset error, not a raise" do
+      overlong = "https://claude.ai/cb?x=" <> String.duplicate("a", 2100)
+      attrs = Map.put(@valid_registration, "redirect_uris", [overlong])
+
+      assert {:error, changeset} = OAuth.register_client(attrs)
+      assert %{redirect_uris: _} = errors_on(changeset)
+    end
+
+    test "accepts a long-but-bounded redirect uri" do
+      long = "https://claude.ai/cb?x=" <> String.duplicate("a", 400)
+      attrs = Map.put(@valid_registration, "redirect_uris", [long])
+
+      assert {:ok, {client, _}} = OAuth.register_client(attrs)
+      assert client.redirect_uris == [long]
+    end
   end
 
   describe "authenticate_client/2" do

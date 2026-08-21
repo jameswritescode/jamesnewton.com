@@ -5,17 +5,22 @@
     </div>
 
     <div class="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-6 shadow-sm">
-      <h1 class="text-[1.1rem] font-semibold text-(--admin-text)">Authorize access</h1>
+      <h1 class="text-[1.1rem] font-semibold text-(--admin-text)">Grant read access</h1>
       <p class="mt-1 text-[0.82rem] text-(--admin-text-subtle)">
-        <span class="font-medium text-(--admin-text)">{@client.client_name}</span>
-        wants read access to your posts, drafts included.
+        Approving sends an access code to
+      </p>
+      <p class="mt-1 text-[1rem] font-semibold break-all text-(--admin-text)">
+        {@redirect_host}
+      </p>
+      <p class="mt-1 text-[0.72rem] font-mono break-all text-(--admin-text-muted)">
+        {@redirect_uri}
       </p>
 
-      <p class="mt-3 mb-5 text-[0.78rem] text-(--admin-text-muted)">
-        Returns to
-        <code class="font-mono text-[0.72rem] break-all text-(--admin-text-subtle)">
-          {@redirect_uri}
-        </code>
+      <p class="mt-4 mb-5 text-[0.78rem] text-(--admin-text-subtle)">
+        It identifies itself as
+        <span class="font-medium text-(--admin-text)">{@client.client_name}</span>
+        and will be able to read your posts, drafts included. Only continue if you
+        recognize the destination above.
       </p>
 
       <form

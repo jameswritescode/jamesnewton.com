@@ -13,8 +13,9 @@ defmodule NewtonWeb.OAuthAuthorizationController do
       render(conn, :consent,
         client: client,
         redirect_uri: redirect_uri,
+        redirect_host: URI.parse(redirect_uri).host,
         params: consent_params(params),
-        page_title: "Authorize #{client.client_name}"
+        page_title: "Authorize access"
       )
     else
       {:render_error, message} ->

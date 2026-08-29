@@ -292,6 +292,11 @@ defmodule Newton.OAuth do
         {{:error, :invalid_grant}, :invalid_grant}
 
       true ->
+        # Reuse detection tracks one generation back. Any rotated-past token
+        # already fails the current-hash match above, so it grants no access;
+        # only the immediately-previous token additionally revokes the family
+        # (RFC 9700 theft signal). An older replay is a missed alarm, not an
+        # access leak — an accepted gap for this single-user deployment.
         grant_with_reuse = active_grant_by(client, previous_refresh_token_hash: hashed)
 
         if grant_with_reuse do

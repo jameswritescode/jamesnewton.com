@@ -152,3 +152,14 @@ Failures → 401 with `WWW-Authenticate` as above.
 
 Scopes/granular permissions, token revocation endpoint, registration rate
 limiting, write tools, multi-user token ownership.
+
+## Accepted risks
+
+**Refresh-token reuse detection is one generation deep.** Rotation keeps the
+current token hash plus the immediately-previous one; replaying that previous
+token revokes the grant family (RFC 9700 theft signal). A replay of an
+older-than-previous token is rejected for access — it no longer matches the
+current hash — but does not proactively revoke the family. Since no
+older token grants access, the residual is a missed alarm, not an access
+leak; accepted for a single-user deployment. Closing it fully would mean
+tracking every retired hash per grant.

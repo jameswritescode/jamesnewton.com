@@ -1,2 +1,6 @@
 allowBuilds:
   esbuild: true
+overrides:
+  # Force the transitive form-data (pulled by jsdom in tests) past the CRLF
+  # injection advisory range (< 4.0.6). Dev/test-only dependency.
+  form-data@>=4.0.0 <4.0.6: ">=4.0.6"

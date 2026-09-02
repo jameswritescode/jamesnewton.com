@@ -8,7 +8,7 @@
     "fontkit": "^2.0.4",
     "jsdom": "^30.0.1",
     "png-to-ico": "^3.0.2",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.4",
     "vitest": "^4.1.11"
   },
   "dependencies": {

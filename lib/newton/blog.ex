@@ -207,6 +207,6 @@ defmodule Newton.Blog do
   @doc "Whether the post's markdown still uses the image. Usage is derived, never stored."
   @spec image_referenced?(%Post{}, %PostImage{}) :: boolean()
   def image_referenced?(%Post{} = post, %PostImage{} = image) do
-    String.contains?(post.body_markdown || "", image.key)
+    Newton.Images.referenced?(post.body_markdown, image.key)
   end
 end

@@ -1,14 +1,12 @@
 defmodule NewtonWeb.Admin.PostLive.Editor do
   use NewtonWeb, :live_view
 
-  require Logger
-
   alias Newton.Blog
   alias Newton.Blog.Post
-  alias Newton.Storage
   alias Newton.SocialCard
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.FormHelpers
+  alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
   alias NewtonWeb.PublicationNotifier
 
@@ -16,10 +14,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   @autosave_fields ~w(title slug excerpt body_markdown)
   @autosave_keys @autosave_fields ++ Enum.map(@autosave_fields, &("_unused_" <> &1))
-
-  @upload_accept ~w(.jpg .jpeg .png .webp .gif)
-  @upload_max_entries 10
-  @upload_max_file_size 50_000_000
 
   @impl true
   def mount(_params, _session, socket) do
@@ -33,9 +27,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> assign(:editor_key, new_editor_key())
      |> assign(:editor_post_id, :unset)
      |> allow_upload(:inline_images,
-       accept: @upload_accept,
-       max_entries: @upload_max_entries,
-       max_file_size: @upload_max_file_size,
+       accept: InlineImageUpload.accept(),
+       max_entries: InlineImageUpload.max_entries(),
+       max_file_size: InlineImageUpload.max_file_size(),
        auto_upload: true,
        progress: &handle_inline_upload/3
      )}
@@ -45,41 +39,18 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   # volume, record it on the post's image ledger, and push the URL back to the
   # editor hook to replace that upload's placeholder.
   defp handle_inline_upload(:inline_images, entry, socket) do
+    result =
+      InlineImageUpload.handle_progress(entry, socket, %{
+        name: :inline_images,
+        ensure: &ensure_post/1,
+        attach: &attach_image/3
+      })
+
     if entry.done? do
-      socket = ensure_post(socket)
-      post = socket.assigns.post
-      {token, filename} = split_upload_token(entry.client_name)
-
-      url =
-        consume_uploaded_entry(socket, entry, fn %{path: path} ->
-          case Storage.store(path, filename) do
-            {:ok, key} ->
-              attach_image(post, key, filename)
-              {:ok, Newton.Storage.url(key)}
-
-            {:error, reason} ->
-              Logger.warning("inline image store failed for #{filename}: #{inspect(reason)}")
-              {:ok, nil}
-          end
-        end)
-
-      socket = assign(socket, :images, post_images(post))
-
-      if url do
-        {:noreply,
-         push_event(socket, "insert_image", %{url: url, alt: "", name: filename, token: token})}
-      else
-        {:noreply, put_flash(socket, :error, "Couldn't add #{filename} — not a supported image.")}
-      end
+      {:noreply, socket} = result
+      {:noreply, assign(socket, :images, post_images(socket.assigns.post))}
     else
-      {:noreply, socket}
-    end
-  end
-
-  defp split_upload_token(client_name) do
-    case Regex.run(~r/^([0-9a-f]{6})--(.+)$/, client_name) do
-      [_, token, filename] -> {token, filename}
-      _ -> {nil, client_name}
+      result
     end
   end
 
@@ -92,7 +63,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp rejection_reason("type"), do: "unsupported type"
 
   defp rejection_reason("size"),
-    do: "larger than #{div(@upload_max_file_size, 1_000_000)}MB"
+    do: "larger than #{div(upload_max_file_size(), 1_000_000)}MB"
 
   defp rejection_reason(_), do: "too many files at once"
 
@@ -101,27 +72,30 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp upload_error_message(:too_many_files), do: "too many files"
   defp upload_error_message(other), do: to_string(other)
 
-  defp upload_accept, do: @upload_accept
-  defp upload_max_entries, do: @upload_max_entries
-  defp upload_max_file_size, do: @upload_max_file_size
+  defp upload_accept, do: InlineImageUpload.accept()
+  defp upload_max_entries, do: InlineImageUpload.max_entries()
+  defp upload_max_file_size, do: InlineImageUpload.max_file_size()
 
   defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
     case Blog.create_post(backfill_new(%{})) do
       {:ok, post} ->
         PublicationNotifier.notify_change(nil, post)
 
-        socket
-        |> assign(:post, post)
-        |> assign(:published_at, post.published_at)
-        |> assign(:editor_post_id, post.id)
-        |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
+        socket =
+          socket
+          |> assign(:post, post)
+          |> assign(:published_at, post.published_at)
+          |> assign(:editor_post_id, post.id)
+          |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
+
+        {socket, post}
 
       {:error, _changeset} ->
-        socket
+        {socket, socket.assigns.post}
     end
   end
 
-  defp ensure_post(socket), do: socket
+  defp ensure_post(socket), do: {socket, socket.assigns.post}
 
   defp attach_image(%Post{id: nil}, _key, _original_filename), do: :ok
 

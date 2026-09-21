@@ -7,7 +7,7 @@ defmodule Newton.Blog.ImageAudit do
   import Ecto.Query
   alias Newton.Blog.{Post, PostImage}
   alias Newton.Gallery.Photo
-  alias Newton.Gallery.Storage
+  alias Newton.Storage
   alias Newton.Repo
 
   @media_url ~r{/media/([A-Za-z0-9_-]+\.[A-Za-z0-9]+)}

@@ -4,7 +4,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
   require Logger
 
   alias Newton.Gallery
-  alias Newton.Gallery.Storage
+  alias Newton.Storage
   alias NewtonWeb.Admin.{Components, FormHelpers, Layouts}
   alias NewtonWeb.Admin.GalleryLive.Components, as: GalleryComponents
 
@@ -324,7 +324,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
         />
 
         <.link
-          href={Gallery.image_url(@editing_photo.image_key)}
+          href={Newton.Storage.url(@editing_photo.image_key)}
           target="_blank"
           class="text-[0.78rem] text-(--admin-accent) no-underline hover:underline"
         >

@@ -35,7 +35,7 @@ defmodule NewtonWeb.ContentSecurityPolicy do
         "object-src 'none'",
         "form-action 'self'",
         # Photos may be uploaded (self/`/media`) or referenced by absolute URL
-        # (`Gallery.image_url/1` passes those through); `blob:` is the upload
+        # (`Newton.Storage.url/1` passes those through); `blob:` is the upload
         # dimension-reader.
         "img-src 'self' data: blob: https:",
         "font-src 'self' https://fonts.gstatic.com",

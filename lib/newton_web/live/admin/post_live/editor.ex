@@ -5,8 +5,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   alias Newton.Blog
   alias Newton.Blog.Post
-  alias Newton.Gallery
-  alias Newton.Gallery.Storage
+  alias Newton.Storage
   alias Newton.SocialCard
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.FormHelpers
@@ -56,7 +55,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           case Storage.store(path, filename) do
             {:ok, key} ->
               attach_image(post, key, filename)
-              {:ok, Gallery.image_url(key)}
+              {:ok, Newton.Storage.url(key)}
 
             {:error, reason} ->
               Logger.warning("inline image store failed for #{filename}: #{inspect(reason)}")
@@ -811,7 +810,11 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             id={"post-image-#{image.id}"}
             class="rounded-lg border border-(--admin-border) bg-(--admin-surface) p-2"
           >
-            <img src={Gallery.image_url(image.key)} alt="" class="h-24 w-full rounded object-cover" />
+            <img
+              src={Newton.Storage.url(image.key)}
+              alt=""
+              class="h-24 w-full rounded object-cover"
+            />
             <div class="mt-2 flex items-center justify-between gap-2 text-[0.72rem] text-(--admin-text-subtle)">
               <span class="truncate">{image.original_filename || image.key}</span>
               <%= if Blog.image_referenced?(@post, image) do %>

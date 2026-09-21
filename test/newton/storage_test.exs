@@ -1,6 +1,6 @@
-defmodule Newton.Gallery.StorageTest do
+defmodule Newton.StorageTest do
   use ExUnit.Case, async: true
-  alias Newton.Gallery.Storage
+  alias Newton.Storage
 
   @root Application.compile_env!(:newton, :media_root)
 

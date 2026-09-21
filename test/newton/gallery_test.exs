@@ -1,15 +1,15 @@
 defmodule Newton.GalleryTest do
   use Newton.DataCase
   alias Newton.Gallery
-  alias Newton.Gallery.Storage
+  alias Newton.Storage
   import Newton.GalleryFixtures
 
   test "image_url passes absolute URLs through" do
-    assert Gallery.image_url("https://example.com/a.jpg") == "https://example.com/a.jpg"
+    assert Newton.Storage.url("https://example.com/a.jpg") == "https://example.com/a.jpg"
   end
 
   test "image_url maps a stored key to /media" do
-    assert Gallery.image_url("eastern-sierra/01.jpg") == "/media/eastern-sierra/01.jpg"
+    assert Newton.Storage.url("eastern-sierra/01.jpg") == "/media/eastern-sierra/01.jpg"
   end
 
   test "list_groups returns groups newest-first with ordered photos preloaded" do

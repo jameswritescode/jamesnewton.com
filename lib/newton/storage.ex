@@ -1,4 +1,4 @@
-defmodule Newton.Gallery.Storage do
+defmodule Newton.Storage do
   @moduledoc "Owns image files on disk under the configured media_root."
 
   @spec store(String.t(), String.t()) ::
@@ -65,4 +65,10 @@ defmodule Newton.Gallery.Storage do
   end
 
   defp media_root, do: Application.fetch_env!(:newton, :media_root)
+
+  @doc "Resolve an image key to a URL. Absolute URLs pass through; keys map to /media."
+  @spec url(String.t()) :: String.t()
+  def url("http://" <> _ = value), do: value
+  def url("https://" <> _ = value), do: value
+  def url(key) when is_binary(key), do: "/media/" <> key
 end

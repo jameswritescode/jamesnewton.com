@@ -9,7 +9,7 @@ defmodule NewtonWeb.PageHTML do
   embed_templates "page_html/*"
 
   defdelegate verb(status), to: Newton.Reading
-  defdelegate image_url(key), to: Newton.Gallery
+  defdelegate image_url(key), to: Newton.Storage, as: :url
   defdelegate thumb_url(photo), to: Newton.Gallery
 
   attr :item, :map, required: true

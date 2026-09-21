@@ -1,8 +1,9 @@
 defmodule Newton.Gallery do
   @moduledoc "Photo groups and photos; resolves image keys to URLs."
   import Ecto.Query, warn: false
-  alias Newton.Gallery.{Photo, PhotoGroup, Storage, Thumbnail}
+  alias Newton.Gallery.{Photo, PhotoGroup, Thumbnail}
   alias Newton.Repo
+  alias Newton.Storage
 
   @spec create_group(map()) :: {:ok, %PhotoGroup{}} | {:error, Ecto.Changeset.t()}
   def create_group(attrs) do
@@ -147,14 +148,8 @@ defmodule Newton.Gallery do
     )
   end
 
-  @doc "Resolve an image_key to a URL. Absolute URLs pass through; keys map to /media."
-  @spec image_url(String.t()) :: String.t()
-  def image_url("http://" <> _ = url), do: url
-  def image_url("https://" <> _ = url), do: url
-  def image_url(key) when is_binary(key), do: "/media/" <> key
-
   @doc "The URL to display for a photo in the grid."
   @spec thumb_url(%Photo{}) :: String.t()
   def thumb_url(%Photo{thumb_key: thumb_key, image_key: image_key}),
-    do: image_url(thumb_key || image_key)
+    do: Storage.url(thumb_key || image_key)
 end

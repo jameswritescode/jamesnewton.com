@@ -4,7 +4,6 @@ defmodule NewtonWeb.Admin.MediaLive do
   import Ecto.Query
 
   alias Newton.Blog.ImageAudit
-  alias Newton.Gallery
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
 
@@ -69,7 +68,11 @@ defmodule NewtonWeb.Admin.MediaLive do
             id={stray.dom_id}
             class="rounded-lg border border-(--admin-border) bg-(--admin-surface) p-2"
           >
-            <img src={Gallery.image_url(stray.key)} alt="" class="h-24 w-full rounded object-cover" />
+            <img
+              src={Newton.Storage.url(stray.key)}
+              alt=""
+              class="h-24 w-full rounded object-cover"
+            />
             <div class="mt-2 flex items-center justify-between gap-2 text-[0.72rem] text-(--admin-text-subtle)">
               <span class="truncate">{stray.key} · {format_bytes(stray.size)}</span>
               <button

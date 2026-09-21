@@ -3,7 +3,7 @@ defmodule Newton.Blog do
   import Ecto.Query, warn: false
   alias Newton.Blog.Post
   alias Newton.Blog.PostImage
-  alias Newton.Gallery.Storage
+  alias Newton.Storage
   alias Newton.Repo
 
   # Fields needed to render post lists and the home feed — everything except the

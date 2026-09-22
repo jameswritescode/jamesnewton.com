@@ -53,4 +53,24 @@ defmodule Newton.Pages do
       from i in PageImage, where: i.page_id == ^page_id, order_by: [asc: i.inserted_at, asc: i.id]
     )
   end
+
+  @spec attach_image(%Page{}, String.t(), String.t() | nil) ::
+          {:ok, %PageImage{}} | {:error, %Ecto.Changeset{}}
+  def attach_image(%Page{} = page, key, original_filename \\ nil) do
+    %PageImage{page_id: page.id}
+    |> PageImage.create_changeset(%{key: key, original_filename: original_filename})
+    |> Repo.insert()
+  end
+
+  @spec delete_image(%PageImage{}) :: {:ok, %PageImage{}} | {:error, :referenced}
+  def delete_image(%PageImage{} = image) do
+    page = get_page!(image.page_id)
+
+    if Newton.Images.referenced?(page.body_markdown, image.key) do
+      {:error, :referenced}
+    else
+      Storage.delete(image.key)
+      Repo.delete(image)
+    end
+  end
 end

@@ -4,16 +4,20 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias Newton.Blog
   alias Newton.Blog.Post
   alias Newton.SocialCard
+  alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
   alias NewtonWeb.PublicationNotifier
 
-  @autosave_debounce_ms 1500
-
+  # Autosave writes whatever it buffered without the publish-state scrubbing the
+  # explicit "save" handler does, so only content fields are buffered. The
+  # `_unused_` markers ride along because reoffer_identity/3 reads them to tell
+  # an untouched blank from one the author cleared. `published_at` is set from
+  # socket assigns, never from the client.
   @autosave_fields ~w(title slug excerpt body_markdown)
-  @autosave_keys @autosave_fields ++ Enum.map(@autosave_fields, &("_unused_" <> &1))
+  @autosave_keys Autosave.keys(@autosave_fields)
 
   @impl true
   def mount(_params, _session, socket) do
@@ -479,40 +483,25 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, params, _published?) do
-    assign(socket, :autosave_params, content_params(params))
+    assign(socket, :autosave_params, Autosave.content_params(params, @autosave_keys))
   end
 
   defp track_save_state(socket, params, false), do: maybe_schedule_autosave(socket, params, true)
 
   defp track_save_state(socket, params, true) do
-    state = if dirty?(socket.assigns.post, params), do: :unsaved, else: :saved
-    assign(socket, :save_state, state)
-  end
-
-  defp dirty?(post, params) do
-    params["title"] != post.title or
-      params["slug"] != post.slug or
-      (params["body_markdown"] || "") != (post.body_markdown || "") or
-      (params["excerpt"] || "") != (post.excerpt || "")
+    dirty? = Autosave.dirty?(params, socket.assigns.post, @autosave_fields)
+    assign(socket, :save_state, if(dirty?, do: :unsaved, else: :saved))
   end
 
   defp maybe_schedule_autosave(socket, params, true) do
     socket
-    |> assign(:autosave_params, content_params(params))
+    |> assign(:autosave_params, Autosave.content_params(params, @autosave_keys))
     |> assign(:save_state, :unsaved)
     |> reschedule_autosave_timer()
   end
 
-  # Autosave writes whatever it buffered without the publish-state scrubbing the
-  # explicit "save" handler does, so only content fields are buffered. The
-  # `_unused_` markers ride along because reoffer_identity/3 reads them to tell
-  # an untouched blank from one the author cleared. `published_at` is set from
-  # socket assigns, never from the client.
-  defp content_params(params), do: Map.take(params, @autosave_keys)
-
   defp reschedule_autosave_timer(socket) do
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-    assign(socket, :autosave_timer, Process.send_after(self(), :autosave, @autosave_debounce_ms))
+    assign(socket, :autosave_timer, Autosave.schedule(socket.assigns.autosave_timer))
   end
 
   attr :id, :string, required: true

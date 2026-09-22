@@ -130,22 +130,139 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     refute Newton.Pages.get_page!(page.id).body_html =~ "changed"
   end
 
-  test "publishing a draft makes it reachable at its public slug", %{conn: conn} do
-    {view, _page} = open_draft(conn, %{slug: "colophon"})
-
-    view
-    |> form("#page-form",
-      page: %{
+  test "publishing from the drawer makes the page reachable at its public slug", %{conn: conn} do
+    {view, _page} =
+      open_draft(conn, %{
         title: "Colophon",
         slug: "colophon",
-        body_markdown: "How this site is built.",
-        published: true
-      }
-    )
-    |> render_submit()
+        body_markdown: "How this site is built."
+      })
+
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Publish") |> render_click()
 
     public = get(build_conn(), "/colophon")
     assert html_response(public, 200) =~ "Colophon"
+  end
+
+  test "moving a published page to draft takes it off the public site", %{conn: conn} do
+    {view, _page} = open_draft(conn, %{title: "Colophon", slug: "colophon", published: true})
+
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Move to draft") |> render_click()
+
+    assert_error_sent 404, fn -> get(build_conn(), "/colophon") end
+  end
+
+  test "publishing a brand-new page creates the draft and publishes it", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    render_change(view, "validate", %{
+      "page" => %{"title" => "Now", "slug" => "now", "body_markdown" => "Fresh."}
+    })
+
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Publish") |> render_click()
+
+    page = Newton.Pages.get_page_by_slug("now")
+    assert page.published
+    assert_patch(view, ~p"/admin/pages/#{page.id}/edit")
+  end
+
+  test "the slug follows the title until it is edited", %{conn: conn} do
+    {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
+
+    html =
+      view
+      |> form("#page-form", page: %{title: "My Colophon!", slug: "untitled-page"})
+      |> render_change()
+
+    assert html =~ ~s(value="my-colophon")
+
+    view
+    |> form("#page-form", page: %{title: "My Colophon!", slug: "custom"})
+    |> render_change()
+
+    html =
+      view
+      |> form("#page-form", page: %{title: "My Colophon Again", slug: "custom"})
+      |> render_change()
+
+    assert html =~ ~s(value="custom")
+  end
+
+  test "the slug stops following the title once the page is published", %{conn: conn} do
+    {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
+
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Publish") |> render_click()
+
+    html =
+      view
+      |> form("#page-form", page: %{title: "Renamed Page", slug: "untitled-page"})
+      |> render_change()
+
+    assert html =~ ~s(value="untitled-page")
+  end
+
+  test "the meta description follows the body until it is edited", %{conn: conn} do
+    {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
+
+    html =
+      view
+      |> form("#page-form", page: %{body_markdown: "The first paragraph of the body."})
+      |> render_change()
+
+    assert meta_value(html) == "The first paragraph of the body."
+
+    view
+    |> form("#page-form",
+      page: %{body_markdown: "Different body now.", meta_description: "My own summary"}
+    )
+    |> render_change()
+
+    html =
+      view
+      |> form("#page-form",
+        page: %{body_markdown: "Changed again.", meta_description: "My own summary"}
+      )
+      |> render_change()
+
+    assert meta_value(html) == "My own summary"
+  end
+
+  test "the meta description follows the body while the field stays untouched", %{conn: conn} do
+    {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
+    stale = "Seed body paragraph."
+
+    render_change(view, "validate", %{
+      "page" => %{
+        "body_markdown" => "Second body version.",
+        "meta_description" => stale,
+        "_unused_meta_description" => ""
+      }
+    })
+
+    html =
+      render_change(view, "validate", %{
+        "page" => %{
+          "body_markdown" => "Third body version now.",
+          "meta_description" => stale,
+          "_unused_meta_description" => ""
+        }
+      })
+
+    assert meta_value(html) == "Third body version now."
+  end
+
+  defp meta_value(html) do
+    case Regex.run(
+           ~r/<textarea[^>]*name="page\[meta_description\]"[^>]*>([^<]*)<\/textarea>/,
+           html
+         ) do
+      [_, content] -> String.trim(content)
+      _ -> :no_meta_textarea
+    end
   end
 
   test "a submit against a version another window already saved shows the conflict banner", %{
@@ -173,8 +290,10 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
   test "delete removes the page and navigates to the index", %{conn: conn} do
     {view, page} = open_draft(conn)
 
+    view |> element("button", "Settings") |> render_click()
+
     view
-    |> element("#page-delete")
+    |> element("#publish-drawer button", "Delete")
     |> render_click()
     |> follow_redirect(conn, ~p"/admin/pages")
 

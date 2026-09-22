@@ -5,15 +5,22 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   alias Newton.Pages.Page
   alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.Components
+  alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
 
+  # The `_unused_` markers ride along with the staged params because
+  # FormHelpers.field_edited?/3 reads them to tell an untouched field from one
+  # the author took over. `published` is never staged: it moves through the
+  # drawer alone.
   @autosave_fields ~w(title slug meta_description body_markdown)
+  @autosave_keys Autosave.keys(@autosave_fields)
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
      socket
+     |> assign(:drawer_open, false)
      |> assign(:save_state, :saved)
      |> assign(:autosave_params, nil)
      |> assign(:autosave_timer, nil)
@@ -61,6 +68,22 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     {:noreply, assign(socket, :autosave_timer, nil)}
   end
 
+  def handle_event("toggle_drawer", _params, socket) do
+    {:noreply, assign(socket, :drawer_open, !socket.assigns.drawer_open)}
+  end
+
+  def handle_event("close_drawer", _params, socket) do
+    {:noreply, assign(socket, :drawer_open, false)}
+  end
+
+  def handle_event("publish", _params, socket) do
+    {:noreply, publish(socket, socket.assigns.page)}
+  end
+
+  def handle_event("unpublish", _params, socket) do
+    {:noreply, set_published(socket, socket.assigns.page, false)}
+  end
+
   def handle_event("upload_rejected", %{"rejected" => rejected}, socket) when is_list(rejected) do
     summary = InlineImageUpload.rejected_summary(rejected)
     {:noreply, put_flash(socket, :error, "Not uploaded: #{summary}")}
@@ -103,9 +126,26 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     |> sync_editor_key(page.id)
     |> assign(:page_title, page_title)
     |> assign(:page, page)
+    |> assign(:slug_locked, slug_locked?(page))
+    |> assign(:slug_auto, page.slug || "")
+    |> assign(:meta_locked, meta_locked?(page))
+    |> assign(:meta_auto, page.meta_description || "")
     |> assign(:save_state, :saved)
     |> assign(:autosave_params, nil)
     |> assign(:form, to_form(Pages.change_page(page)))
+  end
+
+  # A published page locks its slug so existing links don't break.
+  defp slug_locked?(%Page{id: nil}), do: false
+
+  defp slug_locked?(%Page{} = page) do
+    page.published or page.slug != Newton.Slug.slugify(page.title || "")
+  end
+
+  defp meta_locked?(%Page{id: nil}), do: false
+
+  defp meta_locked?(%Page{} = page) do
+    (page.meta_description || "") != Newton.Markdown.excerpt(page.body_markdown || "")
   end
 
   # The body editor's DOM is phx-update="ignore", so patching to a DIFFERENT page
@@ -129,6 +169,30 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
   defp apply_validate(socket, params) do
+    published? = socket.assigns.page.published
+
+    slug_locked =
+      socket.assigns.slug_locked or published? or
+        FormHelpers.field_edited?(params, "slug", socket.assigns.slug_auto)
+
+    meta_locked =
+      socket.assigns.meta_locked or
+        FormHelpers.field_edited?(params, "meta_description", socket.assigns.meta_auto)
+
+    {params, slug_auto} =
+      FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
+        Newton.Slug.slugify(params["title"] || "")
+      end)
+
+    {params, meta_auto} =
+      FormHelpers.autofill(
+        params,
+        "meta_description",
+        meta_locked,
+        socket.assigns.meta_auto,
+        fn -> Newton.Markdown.excerpt(params["body_markdown"] || "") end
+      )
+
     form =
       socket.assigns.page
       |> Pages.change_page(params)
@@ -137,11 +201,15 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
     socket
     |> assign(:form, form)
+    |> assign(:slug_locked, slug_locked)
+    |> assign(:slug_auto, slug_auto)
+    |> assign(:meta_locked, meta_locked)
+    |> assign(:meta_auto, meta_auto)
     |> track_save_state(params)
   end
 
   defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, params) do
-    assign(socket, :autosave_params, Autosave.content_params(params, @autosave_fields))
+    assign(socket, :autosave_params, Autosave.content_params(params, @autosave_keys))
   end
 
   defp track_save_state(%{assigns: %{page: %Page{published: true}}} = socket, params) do
@@ -151,7 +219,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp track_save_state(socket, params) do
     socket
-    |> assign(:autosave_params, Autosave.content_params(params, @autosave_fields))
+    |> assign(:autosave_params, Autosave.content_params(params, @autosave_keys))
     |> assign(:save_state, :unsaved)
     |> assign(:autosave_timer, Autosave.schedule(socket.assigns.autosave_timer))
   end
@@ -192,6 +260,48 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
       {:error, _changeset} ->
         {:noreply, assign(socket, :save_state, :error)}
+    end
+  end
+
+  # Publishing an unsaved page has to create the row first: the drawer acts on
+  # the staged form params rather than waiting for a manual save.
+  defp publish(socket, %Page{id: nil}) do
+    attrs =
+      (socket.assigns.form.source.params || %{})
+      |> Map.take(@autosave_fields)
+      |> backfill_new()
+      |> Map.put("published", true)
+
+    case Pages.create_page(attrs) do
+      {:ok, page} ->
+        socket
+        |> assign(:page, page)
+        |> assign(:autosave_params, nil)
+        |> assign(:save_state, :saved)
+        |> assign(:editor_page_id, page.id)
+        |> put_flash(:info, "Page published")
+        |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
+
+      {:error, changeset} ->
+        assign(socket, :form, to_form(changeset))
+    end
+  end
+
+  defp publish(socket, %Page{} = page), do: set_published(socket, page, true)
+
+  defp set_published(socket, %Page{} = page, published) do
+    case Pages.update_page(page, %{"published" => published}) do
+      {:ok, updated} ->
+        socket
+        |> assign(:page, updated)
+        |> assign(:slug_locked, slug_locked?(updated))
+        |> put_flash(:info, if(published, do: "Page published", else: "Moved to draft"))
+
+      {:error, :stale} ->
+        enter_conflict(socket)
+
+      {:error, _changeset} ->
+        assign(socket, :save_state, :error)
     end
   end
 
@@ -297,46 +407,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   def render(assigns) do
     ~H"""
     <Layouts.admin flash={@flash} current={:pages}>
-      <Components.page_header title={@page_title}>
-        <div class="flex items-center gap-3">
-          <span
-            :if={@save_state != :saved}
-            class="text-[0.78rem] text-(--admin-text-subtle)"
-          >
-            {save_state_label(@save_state)}
-          </span>
-          <Layouts.status_badge status={if @page.published, do: :published, else: :draft} />
-          <Components.button
-            :if={@page.id}
-            id="page-delete"
-            variant="danger"
-            phx-click="delete"
-            data-confirm="Delete this page permanently?"
-          >
-            Delete
-          </Components.button>
-          <Components.button type="submit" form="page-form">Save</Components.button>
-        </div>
-      </Components.page_header>
-
-      <div
-        :if={@save_state == :conflict}
-        id="page-conflict-banner"
-        class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-amber-500/35 bg-amber-500/10 px-4 py-2.5 text-[0.8rem] text-amber-800 admin-dark:text-amber-200"
-      >
-        <.icon
-          name="hero-exclamation-triangle-mini"
-          class="size-4 shrink-0 text-amber-600 admin-dark:text-amber-300"
-        />
-        <span class="font-medium">This page was changed in another window</span>
-        <.link
-          navigate={~p"/admin/pages/#{@page.id}/edit"}
-          class="ml-auto font-medium text-amber-800 underline admin-dark:text-amber-200"
-        >
-          Load latest
-        </.link>
-      </div>
-
       <.form
         for={@form}
         id="page-form"
@@ -352,18 +422,56 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         >
         </div>
 
-        <div class="mb-4 grid gap-4 sm:grid-cols-2">
-          <Components.field field={@form[:title]} label="Title" phx-blur="autosave_now" />
-          <Components.field field={@form[:slug]} label="Slug" phx-blur="autosave_now" />
+        <div class="mb-4 flex flex-wrap items-center gap-3">
+          <.link
+            navigate={~p"/admin/pages"}
+            class="text-[0.8rem] text-(--admin-text-subtle) no-underline hover:text-(--admin-text)"
+          >
+            ← Pages
+          </.link>
+          <div class="flex-1"></div>
+          <span :if={@save_state != :saved} class="text-[0.78rem] text-(--admin-text-subtle)">
+            {save_state_label(@save_state)}
+          </span>
+          <Layouts.status_badge status={if @page.published, do: :published, else: :draft} />
+          <Components.button variant="secondary" phx-click="toggle_drawer">
+            Settings
+          </Components.button>
+          <Components.button type="submit">Save</Components.button>
         </div>
 
-        <div class="mb-4">
-          <Components.field
-            field={@form[:meta_description]}
-            type="textarea"
-            rows="2"
-            label="Meta description"
+        <.input
+          field={@form[:title]}
+          type="text"
+          placeholder="Title"
+          phx-blur="autosave_now"
+          class="mb-2 w-full border-none bg-transparent text-2xl font-semibold text-(--admin-text) focus:outline-none"
+        />
+
+        <.input
+          field={@form[:slug]}
+          type="text"
+          placeholder="slug"
+          phx-blur="autosave_now"
+          class="mb-4 w-full border-none bg-transparent font-mono text-[0.8rem] text-(--admin-text-subtle) focus:outline-none"
+        />
+
+        <div
+          :if={@save_state == :conflict}
+          id="page-conflict-banner"
+          class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-amber-500/35 bg-amber-500/10 px-4 py-2.5 text-[0.8rem] text-amber-800 admin-dark:text-amber-200"
+        >
+          <.icon
+            name="hero-exclamation-triangle-mini"
+            class="size-4 shrink-0 text-amber-600 admin-dark:text-amber-300"
           />
+          <span class="font-medium">This page was changed in another window</span>
+          <.link
+            navigate={~p"/admin/pages/#{@page.id}/edit"}
+            class="ml-auto font-medium text-amber-800 underline admin-dark:text-amber-200"
+          >
+            Load latest
+          </.link>
         </div>
 
         <Components.markdown_editor
@@ -372,15 +480,56 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
           upload={@uploads.inline_images}
         />
 
-        <div class="mt-4">
-          <.input
-            field={@form[:published]}
-            type="checkbox"
-            label="Published"
-            class="size-4 accent-(--admin-accent)"
-          />
-        </div>
+        <label
+          for={@form[:meta_description].id}
+          class="mt-8 mb-3 flex items-baseline gap-2 text-[0.78rem] uppercase tracking-wide text-(--admin-text-subtle)"
+        >
+          Meta description
+          <span class="normal-case tracking-normal text-(--admin-text-muted)">
+            auto-derived from the body until you edit it
+          </span>
+        </label>
+        <.input
+          field={@form[:meta_description]}
+          type="textarea"
+          rows="2"
+          class="w-full rounded-lg border border-(--admin-border) bg-(--admin-surface) p-3 text-[0.85rem] text-(--admin-text) focus:outline-none"
+        />
       </.form>
+
+      <Components.drawer :if={@drawer_open} id="publish-drawer" on_close="close_drawer">
+        <:title>Publish</:title>
+
+        <div class="text-[0.78rem] text-(--admin-text-muted)">
+          Status:
+          <span class="font-medium text-(--admin-text)">
+            {if @page.published, do: "published", else: "draft"}
+          </span>
+        </div>
+
+        <div :if={@page.id} class="text-[0.78rem] text-(--admin-text-subtle)">
+          <.link
+            href={~p"/#{@page.slug}"}
+            target="_blank"
+            class="text-(--admin-accent) no-underline hover:underline"
+          >
+            View on site ↗
+          </.link>
+        </div>
+
+        <Components.drawer_footer
+          deletable?={@page.id != nil}
+          delete_event="delete"
+          delete_confirm="Delete this page permanently?"
+        >
+          <Components.button :if={not @page.published} phx-click="publish">
+            Publish
+          </Components.button>
+          <Components.button :if={@page.published} variant="secondary" phx-click="unpublish">
+            Move to draft
+          </Components.button>
+        </Components.drawer_footer>
+      </Components.drawer>
     </Layouts.admin>
     """
   end

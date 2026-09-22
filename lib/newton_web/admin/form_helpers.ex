@@ -13,4 +13,15 @@ defmodule NewtonWeb.Admin.FormHelpers do
     value = derive.()
     {Map.put(params, field, value), value}
   end
+
+  @doc "Did LiveView mark `key` as untouched in this submission?"
+  def unused?(params, key), do: Map.has_key?(params, "_unused_" <> key)
+
+  @doc """
+  A derived field (slug, excerpt, meta description) locks only once the author
+  edits it. The author touched it when LiveView drops the field's `_unused_`
+  marker; the value a browser submits for an untouched field can lag the derived
+  value, so a bare value comparison would lock it spuriously.
+  """
+  def field_edited?(params, key, auto), do: not unused?(params, key) and params[key] != auto
 end

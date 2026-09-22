@@ -1,12 +1,13 @@
 defmodule Newton.Blog.ImageAudit do
   @moduledoc """
-  Read-only audit of the media volume against its owners (gallery photos,
-  the post-images ledger, and post bodies), plus guarded deletion of true
-  strays. Never touches owned or referenced files.
+  Read-only audit of the media volume against its owners (gallery photos, the
+  post- and page-image ledgers, and post and page bodies), plus guarded deletion
+  of true strays. Never touches owned or referenced files.
   """
   import Ecto.Query
   alias Newton.Blog.{Post, PostImage}
   alias Newton.Gallery.Photo
+  alias Newton.Pages.{Page, PageImage}
   alias Newton.Storage
   alias Newton.Repo
 
@@ -14,13 +15,13 @@ defmodule Newton.Blog.ImageAudit do
 
   @spec run() :: %{missing: [{String.t(), String.t()}], strays: [String.t()]}
   def run do
-    posts = Repo.all(from p in Post, order_by: p.id, select: {p.slug, p.body_markdown})
+    bodies = post_bodies() ++ page_bodies()
     volume = volume_keys()
-    referenced = MapSet.new(Enum.flat_map(posts, fn {_slug, body} -> extract_keys(body) end))
+    referenced = MapSet.new(Enum.flat_map(bodies, fn {_slug, body} -> extract_keys(body) end))
     owned = MapSet.union(ledger_keys(), photo_keys())
 
     missing =
-      for {slug, body} <- posts,
+      for {slug, body} <- bodies,
           key <- extract_keys(body),
           not MapSet.member?(volume, key),
           do: {slug, key}
@@ -58,7 +59,19 @@ defmodule Newton.Blog.ImageAudit do
 
   @spec ledger_keys() :: MapSet.t(String.t())
   def ledger_keys do
-    MapSet.new(Repo.all(from i in PostImage, select: i.key))
+    post_keys = Repo.all(from i in PostImage, select: i.key)
+    page_keys = Repo.all(from i in PageImage, select: i.key)
+    MapSet.new(post_keys ++ page_keys)
+  end
+
+  @spec post_bodies() :: [{String.t(), String.t() | nil}]
+  def post_bodies do
+    Repo.all(from p in Post, order_by: p.id, select: {p.slug, p.body_markdown})
+  end
+
+  @spec page_bodies() :: [{String.t(), String.t() | nil}]
+  def page_bodies do
+    Repo.all(from p in Page, order_by: p.id, select: {p.slug, p.body_markdown})
   end
 
   @spec photo_keys() :: MapSet.t(String.t())

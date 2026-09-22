@@ -2,6 +2,7 @@ defmodule Newton.Blog.ImageAuditTest do
   use Newton.DataCase
   alias Newton.Blog
   alias Newton.Blog.ImageAudit
+  alias Newton.Pages
 
   defp media_root, do: Application.fetch_env!(:newton, :media_root)
 
@@ -21,6 +22,17 @@ defmodule Newton.Blog.ImageAuditTest do
       })
 
     post
+  end
+
+  defp page_with_body(body) do
+    {:ok, page} =
+      Pages.create_page(%{
+        slug: "page-#{System.unique_integer([:positive])}",
+        title: "A Page",
+        body_markdown: body
+      })
+
+    page
   end
 
   setup do
@@ -79,5 +91,25 @@ defmodule Newton.Blog.ImageAuditTest do
     assert {:error, :not_stray} = ImageAudit.delete_stray("ledgered.png")
     assert File.exists?(referenced)
     assert File.exists?(ledgered)
+  end
+
+  test "delete_stray refuses a page's ledgered and body-referenced keys" do
+    page = page_with_body("![](/media/page-referenced.png)")
+    {:ok, _} = Pages.attach_image(page, "page-ledgered.png", nil)
+    referenced = stored_file("page-referenced.png")
+    ledgered = stored_file("page-ledgered.png")
+
+    assert %{strays: []} = ImageAudit.run()
+    assert {:error, :not_stray} = ImageAudit.delete_stray("page-referenced.png")
+    assert {:error, :not_stray} = ImageAudit.delete_stray("page-ledgered.png")
+    assert File.exists?(referenced)
+    assert File.exists?(ledgered)
+  end
+
+  test "run reports a key a page body references but the volume lacks as missing" do
+    page = page_with_body("![](/media/page-ghost.png)")
+
+    assert %{missing: [{slug, "page-ghost.png"}]} = ImageAudit.run()
+    assert slug == page.slug
   end
 end

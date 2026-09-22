@@ -18,4 +18,18 @@ defmodule NewtonWeb.Admin.DashboardLiveTest do
     assert has_element?(view, "#card-photos")
     assert has_element?(view, "#card-posts", "1")
   end
+
+  test "renders the pages count card", %{conn: conn} do
+    {:ok, _} =
+      Newton.Pages.create_page(%{
+        slug: "about",
+        title: "About",
+        body_markdown: "",
+        published: true
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    assert has_element?(view, "#card-pages", "1")
+  end
 end

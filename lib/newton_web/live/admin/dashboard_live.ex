@@ -14,6 +14,8 @@ defmodule NewtonWeb.Admin.DashboardLive do
      socket
      |> assign(:posts_total, Newton.Blog.count_posts())
      |> assign(:posts_drafts, Newton.Blog.count_drafts())
+     |> assign(:pages_total, Newton.Pages.count_pages())
+     |> assign(:pages_drafts, Newton.Pages.count_drafts())
      |> assign(:reading_total, Newton.Reading.count_entries())
      |> assign(:reading_active, Newton.Reading.count_in_progress())
      |> assign(:galleries_total, Newton.Gallery.count_groups())
@@ -32,9 +34,12 @@ defmodule NewtonWeb.Admin.DashboardLive do
     <Layouts.admin flash={@flash} current={:dashboard}>
       <Components.page_header title="Dashboard" />
 
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <.card id="card-posts" title="Posts" primary={@posts_total} path="/admin/posts">
           {@posts_drafts} draft{if @posts_drafts == 1, do: "", else: "s"}
+        </.card>
+        <.card id="card-pages" title="Pages" primary={@pages_total} path={~p"/admin/pages"}>
+          {@pages_drafts} draft{if @pages_drafts == 1, do: "", else: "s"}
         </.card>
         <.card id="card-reading" title="Reading" primary={@reading_total} path="/admin/reading">
           {@reading_active} in progress

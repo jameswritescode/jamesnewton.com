@@ -91,6 +91,7 @@ defmodule NewtonWeb do
       # excluded to avoid an import/definition clash there.
       import NewtonWeb.CoreComponents, except: [button: 1]
       import NewtonWeb.SiteComponents
+      import NewtonWeb.ContentComponents
 
       import NewtonWeb.Helpers
 

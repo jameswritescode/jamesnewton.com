@@ -9,7 +9,9 @@ defmodule NewtonWeb.ErrorHTMLTest do
   end
 
   test "an unknown route renders the styled 404 page", %{conn: conn} do
-    conn = get(conn, "/no-such-page")
+    # A single-segment path now matches the public-pages catch-all instead of
+    # going unrouted, so this exercises a genuinely unmatched multi-segment path.
+    conn = get(conn, "/no/such/page")
 
     assert conn.status == 404
     body = conn.resp_body

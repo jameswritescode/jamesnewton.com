@@ -1,0 +1,8 @@
+<Layouts.app flash={@flash}>
+  <div :if={@preview} class="preview-banner">
+    <strong>Draft — not public</strong>
+    <span>Only you can see this page until it is published.</span>
+  </div>
+
+  <.content_article title={@page.title} body_html={@page.body_html} />
+</Layouts.app>

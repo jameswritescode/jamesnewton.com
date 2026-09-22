@@ -191,4 +191,13 @@ defmodule NewtonWeb.Router do
       error_tracker_dashboard "/errors"
     end
   end
+
+  # Public standalone pages. MUST be the last :browser scope in the file so the
+  # catch-all cannot shadow /login, /logout, /resume, /reading, etc. The
+  # reserved-slug list on Page.changeset is the belt to this ordering's braces.
+  scope "/", NewtonWeb do
+    pipe_through :browser
+
+    get "/:slug", PageContentController, :show
+  end
 end

@@ -15,6 +15,17 @@ defmodule NewtonWeb.Admin.InlineImageUpload do
   def max_entries, do: @max_entries
   def max_file_size, do: @max_file_size
 
+  @doc "Describe the files the client-side hook refused, for a flash message."
+  def rejected_summary(rejected) do
+    Enum.map_join(rejected, ", ", fn item ->
+      "#{item["name"]} (#{rejection_reason(item["reason"])})"
+    end)
+  end
+
+  defp rejection_reason("type"), do: "unsupported type"
+  defp rejection_reason("size"), do: "larger than #{div(@max_file_size, 1_000_000)}MB"
+  defp rejection_reason(_), do: "too many files at once"
+
   @doc "Split a `token--filename` client name into `{token, filename}` (token may be nil)."
   def split_token(client_name) do
     case Regex.run(~r/^([0-9a-f]{6})--(.+)$/, client_name) do

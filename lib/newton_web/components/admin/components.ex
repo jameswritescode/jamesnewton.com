@@ -7,6 +7,8 @@ defmodule NewtonWeb.Admin.Components do
   """
   use NewtonWeb, :html
 
+  alias NewtonWeb.Admin.InlineImageUpload
+
   @doc """
   A right-hand slide-over drawer. The caller renders it conditionally
   (`:if={@open?}`) and passes `on_close` — a `Phoenix.LiveView.JS` command or an
@@ -217,6 +219,61 @@ defmodule NewtonWeb.Admin.Components do
     </h2>
     """
   end
+
+  @doc """
+  The CodeMirror body editor shared by the post and page editors: the hidden
+  textarea the `MarkdownEditor` hook mirrors into, the hook element carrying the
+  server's upload limits, and the inline-image file input with its errors.
+
+  `key` names the region. Its DOM is `phx-update="ignore"`, so the caller changes
+  the key when it swaps in a different record to force morphdom to rebuild it.
+  """
+  attr :key, :string, required: true
+  attr :field, Phoenix.HTML.FormField, required: true
+  attr :upload, Phoenix.LiveView.UploadConfig, required: true
+
+  def markdown_editor(assigns) do
+    ~H"""
+    <div id={"body-editor-#{@key}"} phx-update="ignore">
+      <textarea id={"markdown-source-#{@key}"} name={@field.name} class="hidden"><%= Phoenix.HTML.Form.normalize_value("textarea", @field.value) %></textarea>
+      <div
+        id={"markdown-editor-#{@key}"}
+        phx-hook="MarkdownEditor"
+        data-input-id={"markdown-source-#{@key}"}
+        data-upload-accept={Enum.join(InlineImageUpload.accept(), ",")}
+        data-upload-max-entries={InlineImageUpload.max_entries()}
+        data-upload-max-file-size={InlineImageUpload.max_file_size()}
+        class="overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-surface)"
+      >
+        <div
+          data-editor-skeleton
+          aria-hidden="true"
+          class="flex min-h-[24rem] flex-col gap-5 px-[1.75rem] py-[1.5rem] motion-safe:animate-pulse"
+        >
+          <div class="h-4 w-1/3 rounded bg-(--admin-border)"></div>
+          <div class="h-4 w-full rounded bg-(--admin-border)"></div>
+          <div class="h-4 w-5/6 rounded bg-(--admin-border)"></div>
+          <div class="h-4 w-2/3 rounded bg-(--admin-border)"></div>
+        </div>
+      </div>
+    </div>
+
+    <.live_file_input upload={@upload} class="sr-only" />
+    <p :for={err <- upload_errors(@upload)} class="mt-2 text-[0.78rem] text-red-400">
+      Upload failed: {upload_error_message(err)}
+    </p>
+    <%= for entry <- @upload.entries, err <- upload_errors(@upload, entry) do %>
+      <p class="mt-2 text-[0.78rem] text-red-400">
+        {entry.client_name}: {upload_error_message(err)}
+      </p>
+    <% end %>
+    """
+  end
+
+  defp upload_error_message(:too_large), do: "file too large"
+  defp upload_error_message(:not_accepted), do: "unsupported file type"
+  defp upload_error_message(:too_many_files), do: "too many files"
+  defp upload_error_message(other), do: to_string(other)
 
   attr :id, :string, required: true
   attr :empty, :string, required: true

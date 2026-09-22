@@ -58,28 +58,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     end
   end
 
-  defp rejected_summary(rejected) do
-    Enum.map_join(rejected, ", ", fn item ->
-      "#{item["name"]} (#{rejection_reason(item["reason"])})"
-    end)
-  end
-
-  defp rejection_reason("type"), do: "unsupported type"
-
-  defp rejection_reason("size"),
-    do: "larger than #{div(upload_max_file_size(), 1_000_000)}MB"
-
-  defp rejection_reason(_), do: "too many files at once"
-
-  defp upload_error_message(:too_large), do: "file too large"
-  defp upload_error_message(:not_accepted), do: "unsupported file type"
-  defp upload_error_message(:too_many_files), do: "too many files"
-  defp upload_error_message(other), do: to_string(other)
-
-  defp upload_accept, do: InlineImageUpload.accept()
-  defp upload_max_entries, do: InlineImageUpload.max_entries()
-  defp upload_max_file_size, do: InlineImageUpload.max_file_size()
-
   defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
     case Blog.create_post(backfill_new(%{})) do
       {:ok, post} ->
@@ -259,7 +237,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   def handle_event("upload_rejected", %{"rejected" => rejected}, socket) when is_list(rejected) do
-    {:noreply, put_flash(socket, :error, "Not uploaded: #{rejected_summary(rejected)}")}
+    {:noreply,
+     put_flash(socket, :error, "Not uploaded: #{InlineImageUpload.rejected_summary(rejected)}")}
   end
 
   def handle_event("conflict_load_latest", _params, socket) do
@@ -710,43 +689,11 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
           </div>
         </div>
 
-        <div id={"body-editor-#{@editor_key}"} phx-update="ignore">
-          <textarea id={"post-body-markdown-#{@editor_key}"} name="post[body_markdown]" class="hidden"><%= Phoenix.HTML.Form.normalize_value("textarea", @form[:body_markdown].value) %></textarea>
-          <div
-            id={"markdown-editor-#{@editor_key}"}
-            phx-hook="MarkdownEditor"
-            data-input-id={"post-body-markdown-#{@editor_key}"}
-            data-upload-accept={Enum.join(upload_accept(), ",")}
-            data-upload-max-entries={upload_max_entries()}
-            data-upload-max-file-size={upload_max_file_size()}
-            class="overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-surface)"
-          >
-            <div
-              data-editor-skeleton
-              aria-hidden="true"
-              class="flex min-h-[24rem] flex-col gap-5 px-[1.75rem] py-[1.5rem] motion-safe:animate-pulse"
-            >
-              <div class="h-4 w-1/3 rounded bg-(--admin-border)"></div>
-              <div class="h-4 w-full rounded bg-(--admin-border)"></div>
-              <div class="h-4 w-5/6 rounded bg-(--admin-border)"></div>
-              <div class="h-4 w-2/3 rounded bg-(--admin-border)"></div>
-            </div>
-          </div>
-        </div>
-
-        <.live_file_input upload={@uploads.inline_images} class="sr-only" />
-        <p
-          :for={err <- upload_errors(@uploads.inline_images)}
-          class="mt-2 text-[0.78rem] text-red-400"
-        >
-          Upload failed: {upload_error_message(err)}
-        </p>
-        <%= for entry <- @uploads.inline_images.entries,
-                err <- upload_errors(@uploads.inline_images, entry) do %>
-          <p class="mt-2 text-[0.78rem] text-red-400">
-            {entry.client_name}: {upload_error_message(err)}
-          </p>
-        <% end %>
+        <Components.markdown_editor
+          key={@editor_key}
+          field={@form[:body_markdown]}
+          upload={@uploads.inline_images}
+        />
 
         <label
           for={@form[:excerpt].id}

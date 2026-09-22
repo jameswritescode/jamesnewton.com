@@ -14,14 +14,14 @@ defmodule NewtonWeb.Admin.PageLive.Index do
     ~H"""
     <Layouts.admin flash={@flash} current={:pages}>
       <Components.page_header title="Pages">
-        <Components.button navigate="/admin/pages/new">New page</Components.button>
+        <Components.button navigate={~p"/admin/pages/new"}>New page</Components.button>
       </Components.page_header>
 
       <Components.list id="pages" empty="No pages yet.">
         <Components.list_item
           :for={{id, page} <- @streams.pages}
           id={id}
-          navigate={"/admin/pages/#{page.id}/edit"}
+          navigate={~p"/admin/pages/#{page.id}/edit"}
         >
           {page.title}
           <:inline>

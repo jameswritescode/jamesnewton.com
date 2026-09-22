@@ -10,6 +10,7 @@ defmodule NewtonWeb.Admin.Layouts do
   @sections [
     %{key: :dashboard, label: "Dashboard", path: "/admin"},
     %{key: :posts, label: "Posts", path: "/admin/posts"},
+    %{key: :pages, label: "Pages", path: "/admin/pages"},
     %{key: :reading, label: "Reading", path: "/admin/reading"},
     %{key: :photos, label: "Photos", path: "/admin/photos"},
     %{key: :media, label: "Media", path: "/admin/media"}

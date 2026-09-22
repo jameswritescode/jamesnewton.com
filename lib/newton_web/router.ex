@@ -105,6 +105,7 @@ defmodule NewtonWeb.Router do
       live "/photos/:id/edit", GalleryLive.Show, :settings
       live "/photos/:id/photo/:photo_id", GalleryLive.Show, :photo
       live "/media", MediaLive, :index
+      live "/pages", PageLive.Index, :index
     end
 
     # Managing credentials is sensitive: require a recent authentication (sudo

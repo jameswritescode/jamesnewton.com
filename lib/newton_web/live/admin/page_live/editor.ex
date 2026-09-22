@@ -306,7 +306,13 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
             {save_state_label(@save_state)}
           </span>
           <Layouts.status_badge status={if @page.published, do: :published, else: :draft} />
-          <Components.button :if={@page.id} id="page-delete" variant="danger" phx-click="delete">
+          <Components.button
+            :if={@page.id}
+            id="page-delete"
+            variant="danger"
+            phx-click="delete"
+            data-confirm="Delete this page permanently?"
+          >
             Delete
           </Components.button>
           <Components.button type="submit" form="page-form">Save</Components.button>

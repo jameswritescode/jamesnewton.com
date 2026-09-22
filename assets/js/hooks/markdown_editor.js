@@ -90,7 +90,7 @@ export function wrapLink(selected) {
   return {insert: "[](url)", anchor: 1, head: 1}
 }
 
-const PLACEHOLDER_TEXT = "Write your post in markdown…"
+const PLACEHOLDER_TEXT = "Write in markdown…"
 
 // Dynamic import keeps CodeMirror out of the test bundle.
 export const MarkdownEditor = {

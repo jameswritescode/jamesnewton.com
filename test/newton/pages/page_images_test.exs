@@ -50,8 +50,9 @@ defmodule Newton.Pages.PageImagesTest do
   test "deleting a page cascades its image rows" do
     page = page_fixture()
     {:ok, _} = Pages.attach_image(page, "sweep.png", nil)
-    _ = stored_file("sweep.png")
+    path = stored_file("sweep.png")
     {:ok, _} = Pages.delete_page(page)
     assert Pages.list_images(page) == []
+    refute File.exists?(path)
   end
 end

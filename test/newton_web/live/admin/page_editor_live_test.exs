@@ -130,6 +130,46 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     refute Newton.Pages.get_page!(page.id).body_html =~ "changed"
   end
 
+  test "publishing a draft makes it reachable at its public slug", %{conn: conn} do
+    {view, _page} = open_draft(conn, %{slug: "colophon"})
+
+    view
+    |> form("#page-form",
+      page: %{
+        title: "Colophon",
+        slug: "colophon",
+        body_markdown: "How this site is built.",
+        published: true
+      }
+    )
+    |> render_submit()
+
+    public = get(build_conn(), "/colophon")
+    assert html_response(public, 200) =~ "Colophon"
+  end
+
+  test "a submit against a version another window already saved shows the conflict banner", %{
+    conn: conn
+  } do
+    {view_a, page} = open_draft(conn)
+    {:ok, view_b, _html} = live(conn, ~p"/admin/pages/#{page.id}/edit")
+
+    view_a
+    |> form("#page-form",
+      page: %{title: "Untitled", slug: "untitled-page", body_markdown: "saved from A"}
+    )
+    |> render_change()
+
+    send(view_a.pid, :autosave)
+    _ = :sys.get_state(view_a.pid)
+
+    view_b
+    |> form("#page-form", page: %{title: "From B", slug: "untitled-page", body_markdown: ""})
+    |> render_submit()
+
+    assert has_element?(view_b, "#page-conflict-banner")
+  end
+
   test "delete removes the page and navigates to the index", %{conn: conn} do
     {view, page} = open_draft(conn)
 

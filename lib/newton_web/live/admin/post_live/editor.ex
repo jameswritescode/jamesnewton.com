@@ -39,9 +39,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      )}
   end
 
-  # Auto-upload progress callback: when an entry finishes, store it on the media
-  # volume, record it on the post's image ledger, and push the URL back to the
-  # editor hook to replace that upload's placeholder.
   defp handle_inline_upload(:inline_images, entry, socket) do
     result =
       InlineImageUpload.handle_progress(entry, socket, %{

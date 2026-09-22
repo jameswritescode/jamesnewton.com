@@ -8,12 +8,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
 
-  # Autosave writes whatever it buffered, so only content fields are buffered —
-  # `published` is never taken from an autosave payload. The `_unused_` markers
-  # ride along so a blank the author typed stays distinguishable from a field
-  # LiveView left untouched.
   @autosave_fields ~w(title slug meta_description body_markdown)
-  @autosave_keys Autosave.keys(@autosave_fields)
 
   @impl true
   def mount(_params, _session, socket) do
@@ -146,7 +141,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, params) do
-    assign(socket, :autosave_params, Autosave.content_params(params, @autosave_keys))
+    assign(socket, :autosave_params, Autosave.content_params(params, @autosave_fields))
   end
 
   defp track_save_state(%{assigns: %{page: %Page{published: true}}} = socket, params) do
@@ -156,7 +151,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp track_save_state(socket, params) do
     socket
-    |> assign(:autosave_params, Autosave.content_params(params, @autosave_keys))
+    |> assign(:autosave_params, Autosave.content_params(params, @autosave_fields))
     |> assign(:save_state, :unsaved)
     |> assign(:autosave_timer, Autosave.schedule(socket.assigns.autosave_timer))
   end
@@ -213,7 +208,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         {:noreply, saved(socket)}
 
       {:error, :stale} ->
-        {:noreply, socket |> assign(:autosave_params, params) |> enter_conflict()}
+        {:noreply, enter_conflict(socket)}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}

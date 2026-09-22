@@ -1,5 +1,6 @@
 defmodule NewtonWeb.PageContentController do
   use NewtonWeb, :controller
+  alias Newton.Markdown
   alias Newton.Pages
   alias Newton.Pages.Page
 
@@ -21,11 +22,14 @@ defmodule NewtonWeb.PageContentController do
     conn
     |> SEO.assign(%NewtonWeb.SEO.Page{
       title: page.title,
-      description: page.meta_description,
+      description: description(page),
       path: "/#{page.slug}"
     })
     |> render(:show, page_title: page.title, page: page, preview: preview?)
   end
+
+  defp description(%Page{meta_description: meta}) when is_binary(meta) and meta != "", do: meta
+  defp description(%Page{body_markdown: body}), do: Markdown.excerpt(body || "")
 
   defp admin?(conn), do: match?(%{user: %{}}, conn.assigns[:current_scope])
 end

@@ -42,6 +42,41 @@ defmodule NewtonWeb.PageContentControllerTest do
     assert html_response(conn, 200) =~ "Draft"
   end
 
+  test "a page without a meta description falls back to its body", %{conn: conn} do
+    {:ok, _} =
+      Newton.Pages.create_page(%{
+        slug: "colophon",
+        title: "Colophon",
+        body_markdown: "Built with Phoenix and a lot of coffee.",
+        published: true
+      })
+
+    html = conn |> get(~p"/colophon") |> html_response(200)
+
+    assert [_, description] =
+             Regex.run(~r/<meta[^>]*name="description"[^>]*content="([^"]*)"/, html)
+
+    assert description == "Built with Phoenix and a lot of coffee."
+  end
+
+  test "a page's own meta description wins over the body fallback", %{conn: conn} do
+    {:ok, _} =
+      Newton.Pages.create_page(%{
+        slug: "colophon",
+        title: "Colophon",
+        body_markdown: "Built with Phoenix and a lot of coffee.",
+        meta_description: "How this site is put together.",
+        published: true
+      })
+
+    html = conn |> get(~p"/colophon") |> html_response(200)
+
+    assert [_, description] =
+             Regex.run(~r/<meta[^>]*name="description"[^>]*content="([^"]*)"/, html)
+
+    assert description == "How this site is put together."
+  end
+
   test "an unknown slug 404s", %{conn: conn} do
     assert_error_sent 404, fn -> get(conn, ~p"/nope-nope") end
   end

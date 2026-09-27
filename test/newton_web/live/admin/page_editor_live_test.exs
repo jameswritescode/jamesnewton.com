@@ -33,6 +33,17 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     assert page.body_html =~ "Body copy."
   end
 
+  test "the settings drawer toggles sitemap inclusion immediately", %{conn: conn} do
+    {view, page} = open_draft(conn)
+
+    render_click(view, "toggle_drawer")
+    view |> element("#sitemap-toggle") |> render_click()
+    assert Newton.Pages.get_page!(page.id).in_sitemap
+
+    view |> element("#sitemap-toggle") |> render_click()
+    refute Newton.Pages.get_page!(page.id).in_sitemap
+  end
+
   test "a draft auto-saves without a manual save", %{conn: conn} do
     {view, page} = open_draft(conn)
 

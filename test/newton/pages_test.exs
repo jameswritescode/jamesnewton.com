@@ -52,6 +52,16 @@ defmodule Newton.PagesTest do
       assert Pages.get_page_by_slug("now").slug == "now"
     end
 
+    test "list_sitemap_pages returns only published pages that opted in" do
+      {:ok, listed} =
+        Pages.create_page(%{slug: "listed", title: "L", published: true, in_sitemap: true})
+
+      {:ok, _} = Pages.create_page(%{slug: "unlisted", title: "U", published: true})
+      {:ok, _} = Pages.create_page(%{slug: "draft", title: "D", in_sitemap: true})
+
+      assert Enum.map(Pages.list_sitemap_pages(), & &1.id) == [listed.id]
+    end
+
     test "update_page returns {:error, :stale} on a concurrent edit" do
       {:ok, page} = Pages.create_page(@valid)
       {:ok, _fresh} = Pages.update_page(page, %{title: "Won"})

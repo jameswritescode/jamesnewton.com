@@ -3,6 +3,7 @@ defmodule NewtonWeb.SitemapController do
   use NewtonWeb, :controller
 
   alias Newton.Blog
+  alias Newton.Pages
 
   @cache_control "public, max-age=3600"
 
@@ -11,7 +12,7 @@ defmodule NewtonWeb.SitemapController do
       :urlset
       |> XmlBuilder.document(
         %{xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"},
-        static_entries() ++ post_entries()
+        static_entries() ++ post_entries() ++ page_entries()
       )
       |> XmlBuilder.generate()
 
@@ -51,6 +52,16 @@ defmodule NewtonWeb.SitemapController do
        [
          {:loc, nil, url(~p"/posts/#{post.slug}")},
          {:lastmod, nil, post.updated_at |> DateTime.to_date() |> Date.to_iso8601()}
+       ]}
+    end
+  end
+
+  defp page_entries do
+    for page <- Pages.list_sitemap_pages() do
+      {:url, nil,
+       [
+         {:loc, nil, url(~p"/#{page.slug}")},
+         {:lastmod, nil, page.updated_at |> DateTime.to_date() |> Date.to_iso8601()}
        ]}
     end
   end

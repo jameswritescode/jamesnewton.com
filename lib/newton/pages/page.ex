@@ -13,6 +13,7 @@ defmodule Newton.Pages.Page do
     field :body_html, :string
     field :meta_description, :string
     field :published, :boolean, default: false
+    field :in_sitemap, :boolean, default: false
     field :lock_version, :integer, default: 1
     has_many :images, Newton.Pages.PageImage
     timestamps(type: :utc_datetime)
@@ -24,7 +25,7 @@ defmodule Newton.Pages.Page do
   @spec changeset(%__MODULE__{}, map()) :: Ecto.Changeset.t()
   def changeset(page, attrs) do
     page
-    |> cast(attrs, [:slug, :title, :body_markdown, :meta_description, :published])
+    |> cast(attrs, [:slug, :title, :body_markdown, :meta_description, :published, :in_sitemap])
     |> ensure_body()
     |> validate_required([:slug, :title])
     |> validate_exclusion(:slug, @reserved_slugs, message: "is reserved")

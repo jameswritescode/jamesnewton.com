@@ -36,6 +36,32 @@ defmodule NewtonWeb.SitemapControllerTest do
       refute body =~ "secret-draft"
       refute body =~ "<lastmod>"
     end
+
+    test "includes only published pages that opted in", %{conn: conn} do
+      {:ok, listed} =
+        Newton.Pages.create_page(%{
+          slug: "listed-page",
+          title: "Listed",
+          published: true,
+          in_sitemap: true
+        })
+
+      {:ok, _} =
+        Newton.Pages.create_page(%{slug: "unlisted-page", title: "Unlisted", published: true})
+
+      {:ok, _} =
+        Newton.Pages.create_page(%{slug: "draft-page", title: "Draft", in_sitemap: true})
+
+      body = conn |> get(~p"/sitemap.xml") |> response(200)
+
+      assert body =~ "<loc>#{url(~p"/listed-page")}</loc>"
+
+      assert body =~
+               "<lastmod>#{listed.updated_at |> DateTime.to_date() |> Date.to_iso8601()}</lastmod>"
+
+      refute body =~ "unlisted-page"
+      refute body =~ "draft-page"
+    end
   end
 
   describe "GET /robots.txt" do

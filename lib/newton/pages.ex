@@ -10,6 +10,11 @@ defmodule Newton.Pages do
     Repo.all(from p in Page, order_by: [desc: p.inserted_at, desc: p.id])
   end
 
+  @spec list_sitemap_pages() :: [%Page{}]
+  def list_sitemap_pages do
+    Repo.all(from p in Page, where: p.published and p.in_sitemap, order_by: [asc: p.slug])
+  end
+
   @spec get_page!(term()) :: %Page{}
   def get_page!(id), do: Repo.get!(Page, id)
 

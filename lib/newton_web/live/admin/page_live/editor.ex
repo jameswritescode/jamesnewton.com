@@ -84,6 +84,10 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     {:noreply, set_published(socket, socket.assigns.page, false)}
   end
 
+  def handle_event("toggle_sitemap", _params, socket) do
+    {:noreply, set_in_sitemap(socket, socket.assigns.page, not socket.assigns.page.in_sitemap)}
+  end
+
   def handle_event("upload_rejected", %{"rejected" => rejected}, socket) when is_list(rejected) do
     summary = InlineImageUpload.rejected_summary(rejected)
     {:noreply, put_flash(socket, :error, "Not uploaded: #{summary}")}
@@ -305,6 +309,19 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     end
   end
 
+  defp set_in_sitemap(socket, %Page{} = page, in_sitemap) do
+    case Pages.update_page(page, %{"in_sitemap" => in_sitemap}) do
+      {:ok, updated} ->
+        assign(socket, :page, updated)
+
+      {:error, :stale} ->
+        enter_conflict(socket)
+
+      {:error, _changeset} ->
+        assign(socket, :save_state, :error)
+    end
+  end
+
   defp save(socket, %Page{id: nil}, params) do
     case Pages.create_page(backfill_new(params)) do
       {:ok, _page} -> {:noreply, saved(socket)}
@@ -505,6 +522,39 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
           <span class="font-medium text-(--admin-text)">
             {if @page.published, do: "published", else: "draft"}
           </span>
+        </div>
+
+        <div :if={@page.id} class="flex flex-col gap-1.5">
+          <button
+            id="sitemap-toggle"
+            type="button"
+            role="switch"
+            aria-checked={to_string(@page.in_sitemap)}
+            phx-click="toggle_sitemap"
+            class="group flex w-full cursor-pointer items-center justify-between gap-3 text-left text-[0.8rem] text-(--admin-text)"
+          >
+            Include in sitemap
+            <span class={[
+              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors duration-150",
+              if(@page.in_sitemap,
+                do: "border-(--admin-accent) bg-(--admin-accent)",
+                else:
+                  "border-(--admin-border) bg-(--admin-surface) group-hover:border-(--admin-text-subtle)"
+              )
+            ]}>
+              <span class={[
+                "inline-block size-3.5 rounded-full shadow-sm transition-transform duration-150",
+                if(@page.in_sitemap,
+                  do: "translate-x-[1.1rem] bg-white",
+                  else: "translate-x-0.5 bg-(--admin-text-subtle)"
+                )
+              ]}>
+              </span>
+            </span>
+          </button>
+          <p :if={not @page.published} class="text-[0.75rem] text-(--admin-text-subtle)">
+            Only applies once the page is published.
+          </p>
         </div>
 
         <div :if={@page.id} class="text-[0.78rem] text-(--admin-text-subtle)">

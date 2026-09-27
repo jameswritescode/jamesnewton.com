@@ -256,41 +256,36 @@ html.gibson-takeover #main {
   padding: var(--container-pad-top) var(--container-pad-x) var(--container-pad-bottom);
 }
 
-/* Banner shown when viewing an unpublished draft via a private preview link.
-   A filled accent card (constrained to the post column) so it clearly outranks
-   the post itself without spanning the whole viewport. */
 .preview-banner {
   position: relative;
   z-index: 1;
-  max-width: var(--container-width);
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.9rem;
+  width: min(
+    calc(100% - 2 * var(--container-pad-x)),
+    calc(var(--container-width) - 2 * var(--container-pad-x))
+  );
   margin: 1.5rem auto 0;
-  padding: 0.75rem 1.25rem;
-  background: var(--link);
-  /* Near-black text in both themes — high contrast on the light accent fill
-     (in dark mode --bg already resolves to this, so it's unchanged there). */
-  color: var(--bg-dark);
+  padding: 0.7rem 1rem;
+  background: color-mix(in srgb, var(--link) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--link) 32%, transparent);
   border-radius: var(--radius-md);
-  text-align: center;
+  color: var(--text-subdued);
   font-size: 0.85rem;
+  text-align: center;
 }
 
 .preview-banner strong {
-  /* Override the global `strong` colour (a light cream) so the label keeps the
-     banner's high-contrast near-black. */
-  color: inherit;
+  /* The global `strong` colour is a light cream; the label takes the accent. */
+  color: var(--link);
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--label-tracking);
-}
-
-.preview-banner strong::after {
-  content: "·";
-  margin: 0 0.5rem;
-  opacity: 0.55;
-}
-
-.preview-banner span {
-  opacity: 0.9;
 }
 
 /* 404 page: centred under the frowning dot matrix. */

@@ -123,6 +123,28 @@ defmodule Newton.Analytics.CollectorTest do
     assert count_for("/posts/nope") == 0
   end
 
+  test "a published standalone page counts under its slug", %{conn: conn} do
+    {:ok, _} =
+      Newton.Pages.create_page(%{
+        slug: "about",
+        title: "About",
+        body_markdown: "Hi.",
+        published: true
+      })
+
+    browse(conn, "/about")
+    Collector.flush()
+
+    assert count_for("/about") == 1
+  end
+
+  test "an unknown standalone slug is not counted", %{conn: conn} do
+    assert_error_sent 404, fn -> browse(conn, "/no-such-page") end
+    Collector.flush()
+
+    assert count_for("/no-such-page") == 0
+  end
+
   test "flush emits the analytics telemetry span" do
     ref = :telemetry_test.attach_event_handlers(self(), [[:newton, :analytics, :flush, :stop]])
 

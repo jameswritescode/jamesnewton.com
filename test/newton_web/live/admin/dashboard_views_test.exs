@@ -45,22 +45,70 @@ defmodule NewtonWeb.Admin.DashboardViewsTest do
     assert has_element?(view, "#card-views", "20 all-time")
   end
 
-  test "top posts list shows titles with counts and falls back to the raw path", %{conn: conn} do
+  test "top content list shows titles with counts and falls back to the raw path", %{conn: conn} do
     seed_views()
 
     {:ok, view, _html} = live(conn, ~p"/admin")
 
-    assert has_element?(view, "#top-posts", "The Top Post")
-    assert has_element?(view, "#top-posts", "/posts/deleted-post")
-    refute has_element?(view, ~s(#top-posts a[href="/posts/deleted-post"]))
+    assert has_element?(view, "#top-content", "The Top Post")
+    assert has_element?(view, "#top-content", "/posts/deleted-post")
+    refute has_element?(view, ~s(#top-content a[href="/posts/deleted-post"]))
   end
 
-  test "no views yet renders the card with zeros and no top-posts list", %{conn: conn} do
+  test "top content ranks pages and posts together and skips section paths", %{conn: conn} do
+    today = Newton.Analytics.local_today("America/Los_Angeles")
+
+    {:ok, _} =
+      Newton.Blog.create_post(%{
+        slug: "ranked-post",
+        title: "Ranked Post",
+        body_markdown: "Body.",
+        published_at: DateTime.utc_now()
+      })
+
+    {:ok, _} =
+      Newton.Pages.create_page(%{
+        slug: "uses",
+        title: "Uses Page",
+        body_markdown: "Stuff.",
+        published: true
+      })
+
+    :ok =
+      Analytics.record_views(%{
+        {la_hour(today, 12), "/posts/ranked-post"} => 4,
+        {la_hour(today, 12), "/uses"} => 9,
+        {la_hour(today, 12), "/gone-page"} => 2,
+        {la_hour(today, 12), "/reading"} => 50,
+        {la_hour(today, 12), "/"} => 60
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    titles =
+      view
+      |> element("#top-content")
+      |> render()
+      |> LazyHTML.from_fragment()
+      |> LazyHTML.query("li")
+      |> Enum.map(&(&1 |> LazyHTML.text() |> String.split() |> Enum.join(" ")))
+
+    assert [
+             "Uses Page 9",
+             "Ranked Post 4",
+             "/gone-page 2"
+           ] = titles
+
+    assert has_element?(view, ~s(#top-content a[href="/uses"]), "Uses Page")
+    refute has_element?(view, ~s(#top-content a[href="/gone-page"]))
+  end
+
+  test "no views yet renders the card with zeros and no top-content list", %{conn: conn} do
     {:ok, view, html} = live(conn, ~p"/admin")
 
     assert has_element?(view, "#card-views")
     assert html =~ "0 all-time"
-    refute has_element?(view, "#top-posts")
+    refute has_element?(view, "#top-content")
     assert has_element?(view, "#views-week", "No views yet this week")
   end
 

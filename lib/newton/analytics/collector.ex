@@ -10,7 +10,7 @@ defmodule Newton.Analytics.Collector do
 
   @handler_id "newton-analytics-collector"
   @event [:phoenix, :router_dispatch, :stop]
-  @public_routes ~w(/ /posts /posts/:slug /reading /photos /links /resume)
+  @public_routes ~w(/ /posts /posts/:slug /reading /photos /links /resume /:slug)
   @bot_ua ~r/bot|crawl|spider|slurp|curl|wget|python|java|httpclient|http.client|scan|monitor|probe|fetch|preview/i
   @flush_ms 10_000
 

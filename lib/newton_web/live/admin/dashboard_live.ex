@@ -24,7 +24,7 @@ defmodule NewtonWeb.Admin.DashboardLive do
      |> assign(:local_today, today)
      |> assign(:views_week, Newton.Analytics.total_since(Date.add(today, -6), user_tz))
      |> assign(:views_total, Newton.Analytics.total_all_time())
-     |> assign(:top_posts, top_posts(today, user_tz))
+     |> assign(:top_content, top_content(today, user_tz))
      |> assign(:week_series, week_series(today, user_tz))}
   end
 
@@ -54,34 +54,34 @@ defmodule NewtonWeb.Admin.DashboardLive do
 
       <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div
-          :if={@top_posts != []}
-          id="top-posts"
+          :if={@top_content != []}
+          id="top-content"
           class="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-4"
         >
           <h2 class="mb-3 text-[0.78rem] uppercase tracking-wide text-(--admin-text-subtle)">
-            Top posts — last 7 days
+            Top content — last 7 days
           </h2>
           <ol class="flex flex-col gap-3">
-            <li :for={post <- @top_posts}>
+            <li :for={item <- @top_content} id={"top-content-#{item.path}"}>
               <div class="flex items-baseline justify-between gap-3">
                 <.link
-                  :if={post.exists?}
-                  href={~p"/posts/#{post.slug}"}
+                  :if={item.href}
+                  href={item.href}
                   class="truncate text-[0.85rem] text-(--admin-text) no-underline hover:text-(--admin-accent)"
                 >
-                  {post.title}
+                  {item.title}
                 </.link>
-                <span :if={!post.exists?} class="truncate text-[0.85rem] text-(--admin-text)">
-                  {post.title}
+                <span :if={!item.href} class="truncate text-[0.85rem] text-(--admin-text)">
+                  {item.title}
                 </span>
                 <span class="font-mono text-[0.8rem] tabular-nums text-(--admin-text-muted)">
-                  {post.count}
+                  {item.count}
                 </span>
               </div>
               <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-(--admin-accent-soft)">
                 <div
                   class="h-full rounded-full bg-(--admin-accent) opacity-60"
-                  style={"width: #{bar_pct(post.count, @top_posts)}%"}
+                  style={"width: #{bar_pct(item.count, @top_content)}%"}
                 >
                 </div>
               </div>
@@ -188,29 +188,43 @@ defmodule NewtonWeb.Admin.DashboardLive do
     end
   end
 
-  defp top_posts(today, tz) do
-    titles = Map.new(Newton.Blog.list_published_posts(), &{&1.slug, &1.title})
+  @section_paths ~w(/ /posts /reading /photos /links /resume)
+
+  defp top_content(today, tz) do
+    posts = Map.new(Newton.Blog.list_published_posts(), &{&1.slug, &1.title})
+    pages = Map.new(Newton.Pages.list_published_pages(), &{&1.slug, &1.title})
 
     today
     |> Date.add(-6)
     |> Newton.Analytics.top_paths(20, tz)
     |> Enum.flat_map(fn %{path: path, count: count} ->
-      case path do
-        "/posts/" <> slug ->
-          [
-            %{
-              slug: slug,
-              count: count,
-              title: Map.get(titles, slug, path),
-              exists?: Map.has_key?(titles, slug)
-            }
-          ]
-
-        _ ->
-          []
+      case content_title(path, posts, pages) do
+        :skip -> []
+        {title, href} -> [%{path: path, title: title, href: href, count: count}]
       end
     end)
     |> Enum.take(5)
+  end
+
+  defp content_title(path, _posts, _pages) when path in @section_paths, do: :skip
+
+  defp content_title("/posts/" <> slug = path, posts, _pages) do
+    published_title(posts, slug, path, ~p"/posts/#{slug}")
+  end
+
+  defp content_title("/" <> slug = path, _posts, pages) do
+    if String.contains?(slug, "/"),
+      do: :skip,
+      else: published_title(pages, slug, path, ~p"/#{slug}")
+  end
+
+  defp content_title(_path, _posts, _pages), do: :skip
+
+  defp published_title(titles, slug, path, href) do
+    case Map.fetch(titles, slug) do
+      {:ok, title} -> {title, href}
+      :error -> {path, nil}
+    end
   end
 
   defp week_series(today, tz) do
@@ -230,8 +244,8 @@ defmodule NewtonWeb.Admin.DashboardLive do
     max(count / max * 100, 4.0) |> Float.round(1)
   end
 
-  defp bar_pct(count, posts) do
-    max = posts |> Enum.map(& &1.count) |> Enum.max() |> max(1)
+  defp bar_pct(count, items) do
+    max = items |> Enum.map(& &1.count) |> Enum.max() |> max(1)
     Float.round(count / max * 100, 1)
   end
 

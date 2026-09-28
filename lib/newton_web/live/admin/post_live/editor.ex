@@ -4,6 +4,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias Newton.Blog
   alias Newton.Blog.Post
   alias Newton.SocialCard
+  alias Newton.Storage
   alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.FormHelpers
@@ -39,20 +40,16 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      )}
   end
 
+  defp handle_inline_upload(:inline_images, %{done?: false}, socket), do: {:noreply, socket}
+
   defp handle_inline_upload(:inline_images, entry, socket) do
-    result =
+    {:noreply, socket} =
       InlineImageUpload.handle_progress(entry, socket, %{
-        name: :inline_images,
         ensure: &ensure_post/1,
         attach: &attach_image/3
       })
 
-    if entry.done? do
-      {:noreply, socket} = result
-      {:noreply, assign(socket, :images, post_images(socket.assigns.post))}
-    else
-      result
-    end
+    {:noreply, assign(socket, :images, post_images(socket.assigns.post))}
   end
 
   defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
@@ -739,7 +736,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             class="rounded-lg border border-(--admin-border) bg-(--admin-surface) p-2"
           >
             <img
-              src={Newton.Storage.url(image.key)}
+              src={Storage.url(image.key)}
               alt=""
               class="h-24 w-full rounded object-cover"
             />

@@ -382,7 +382,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp handle_inline_upload(:inline_images, entry, socket) do
     InlineImageUpload.handle_progress(entry, socket, %{
-      name: :inline_images,
       ensure: &ensure_page/1,
       attach: &attach_image/3
     })

@@ -324,7 +324,7 @@ defmodule NewtonWeb.Admin.GalleryLive.Show do
         />
 
         <.link
-          href={Newton.Storage.url(@editing_photo.image_key)}
+          href={Storage.url(@editing_photo.image_key)}
           target="_blank"
           class="text-[0.78rem] text-(--admin-accent) no-underline hover:underline"
         >

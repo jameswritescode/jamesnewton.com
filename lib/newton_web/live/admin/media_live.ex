@@ -20,20 +20,40 @@ defmodule NewtonWeb.Admin.MediaLive do
 
   defp load_audit(socket) do
     audit = Audit.run()
-    slugs = audit.missing |> Enum.map(fn {slug, _key} -> slug end) |> Enum.uniq()
-
-    post_ids =
-      Map.new(
-        Newton.Repo.all(
-          from p in Newton.Blog.Post, where: p.slug in ^slugs, select: {p.slug, p.id}
-        )
-      )
+    ids = owner_ids(audit.missing)
 
     socket
     |> assign(:strays, Enum.map(audit.strays, &stray_entry/1))
-    |> assign(:missing, audit.missing)
-    |> assign(:post_ids, post_ids)
+    |> assign(:missing, Enum.map(audit.missing, &missing_entry(&1, ids)))
   end
+
+  defp owner_ids(missing) do
+    %{
+      post: ids_by_slug(Newton.Blog.Post, slugs_for(missing, :post)),
+      page: ids_by_slug(Newton.Pages.Page, slugs_for(missing, :page))
+    }
+  end
+
+  defp slugs_for(missing, owner) do
+    for {^owner, slug, _key} <- missing, uniq: true, do: slug
+  end
+
+  defp ids_by_slug(schema, slugs) do
+    Map.new(Newton.Repo.all(from r in schema, where: r.slug in ^slugs, select: {r.slug, r.id}))
+  end
+
+  defp missing_entry({owner, slug, key}, ids) do
+    %{
+      dom_id: "missing-#{owner}-#{slug}-#{Path.rootname(key)}",
+      key: key,
+      slug: slug,
+      path: editor_path(owner, ids[owner][slug])
+    }
+  end
+
+  defp editor_path(_owner, nil), do: nil
+  defp editor_path(:post, id), do: ~p"/admin/posts/#{id}/edit"
+  defp editor_path(:page, id), do: ~p"/admin/pages/#{id}/edit"
 
   defp stray_entry(key) do
     root = Application.fetch_env!(:newton, :media_root)
@@ -95,17 +115,17 @@ defmodule NewtonWeb.Admin.MediaLive do
           No missing files.
         </p>
         <ul :if={@missing != []} class="flex flex-col gap-1.5">
-          <li :for={{slug, key} <- @missing} class="text-[0.85rem] text-(--admin-text)">
-            <span class="font-mono text-[0.78rem]">{key}</span>
+          <li
+            :for={entry <- @missing}
+            id={entry.dom_id}
+            class="text-[0.85rem] text-(--admin-text)"
+          >
+            <span class="font-mono text-[0.78rem]">{entry.key}</span>
             referenced by
-            <.link
-              :if={@post_ids[slug]}
-              navigate={~p"/admin/posts/#{@post_ids[slug]}/edit"}
-              class="text-(--admin-accent)"
-            >
-              {slug}
+            <.link :if={entry.path} navigate={entry.path} class="text-(--admin-accent)">
+              {entry.slug}
             </.link>
-            <span :if={!@post_ids[slug]}>{slug}</span>
+            <span :if={!entry.path}>{entry.slug}</span>
           </li>
         </ul>
       </section>

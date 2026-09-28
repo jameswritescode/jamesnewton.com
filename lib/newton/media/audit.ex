@@ -13,18 +13,23 @@ defmodule Newton.Media.Audit do
 
   @media_url ~r{/media/([A-Za-z0-9_-]+\.[A-Za-z0-9]+)}
 
-  @spec run() :: %{missing: [{String.t(), String.t()}], strays: [String.t()]}
+  @type owner :: :post | :page
+
+  @spec run() :: %{missing: [{owner(), String.t(), String.t()}], strays: [String.t()]}
   def run do
     bodies = post_bodies() ++ page_bodies()
     volume = volume_keys()
-    referenced = MapSet.new(Enum.flat_map(bodies, fn {_slug, body} -> extract_keys(body) end))
+
+    referenced =
+      MapSet.new(Enum.flat_map(bodies, fn {_owner, _slug, body} -> extract_keys(body) end))
+
     owned = MapSet.union(ledger_keys(), photo_keys())
 
     missing =
-      for {slug, body} <- bodies,
+      for {owner, slug, body} <- bodies,
           key <- extract_keys(body),
           not MapSet.member?(volume, key),
-          do: {slug, key}
+          do: {owner, slug, key}
 
     strays =
       volume
@@ -64,14 +69,14 @@ defmodule Newton.Media.Audit do
     MapSet.new(post_keys ++ page_keys)
   end
 
-  @spec post_bodies() :: [{String.t(), String.t() | nil}]
+  @spec post_bodies() :: [{:post, String.t(), String.t() | nil}]
   def post_bodies do
-    Repo.all(from p in Post, order_by: p.id, select: {p.slug, p.body_markdown})
+    Repo.all(from p in Post, order_by: p.id, select: {:post, p.slug, p.body_markdown})
   end
 
-  @spec page_bodies() :: [{String.t(), String.t() | nil}]
+  @spec page_bodies() :: [{:page, String.t(), String.t() | nil}]
   def page_bodies do
-    Repo.all(from p in Page, order_by: p.id, select: {p.slug, p.body_markdown})
+    Repo.all(from p in Page, order_by: p.id, select: {:page, p.slug, p.body_markdown})
   end
 
   @spec photo_keys() :: MapSet.t(String.t())

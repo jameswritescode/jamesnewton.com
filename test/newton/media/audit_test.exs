@@ -51,7 +51,7 @@ defmodule Newton.Media.AuditTest do
     post = post_with_body("![](/media/ghost.png)")
     stored_file("stray.png")
 
-    assert %{missing: [{slug, "ghost.png"}], strays: ["stray.png"]} = Audit.run()
+    assert %{missing: [{:post, slug, "ghost.png"}], strays: ["stray.png"]} = Audit.run()
     assert slug == post.slug
   end
 
@@ -109,7 +109,7 @@ defmodule Newton.Media.AuditTest do
   test "run reports a key a page body references but the volume lacks as missing" do
     page = page_with_body("![](/media/page-ghost.png)")
 
-    assert %{missing: [{slug, "page-ghost.png"}]} = Audit.run()
+    assert %{missing: [{:page, slug, "page-ghost.png"}]} = Audit.run()
     assert slug == page.slug
   end
 end

@@ -79,6 +79,48 @@ defmodule NewtonWeb.Admin.MediaLiveTest do
     assert_redirect(view, "/admin/posts/#{post.id}/edit")
   end
 
+  test "a missing file in a page body links to the page editor", %{conn: conn} do
+    {:ok, page} =
+      Newton.Pages.create_page(%{
+        slug: "broken-page",
+        title: "Broken Page",
+        body_markdown: "![](/media/page-gone.png)"
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/media")
+
+    view
+    |> element("#media-missing a", "broken-page")
+    |> render_click()
+
+    assert_redirect(view, "/admin/pages/#{page.id}/edit")
+  end
+
+  test "a post and a page sharing a slug each link to their own editor", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        slug: "shared",
+        title: "Shared Post",
+        body_markdown: "![](/media/post-gone.png)"
+      })
+
+    {:ok, page} =
+      Newton.Pages.create_page(%{
+        slug: "shared",
+        title: "Shared Page",
+        body_markdown: "![](/media/page-gone.png)"
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/admin/media")
+
+    view |> element("#missing-post-shared-post-gone a") |> render_click()
+    assert_redirect(view, "/admin/posts/#{post.id}/edit")
+
+    {:ok, view, _html} = live(conn, ~p"/admin/media")
+    view |> element("#missing-page-shared-page-gone a") |> render_click()
+    assert_redirect(view, "/admin/pages/#{page.id}/edit")
+  end
+
   test "clean volume renders both empty states", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/media")
 

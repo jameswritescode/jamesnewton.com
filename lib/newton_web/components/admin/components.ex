@@ -1,9 +1,9 @@
 defmodule NewtonWeb.Admin.Components do
   @moduledoc """
-  Reusable admin UI building blocks shared across the admin LiveViews:
-  a right-hand slide-over `drawer/1`, an admin-themed form `field/1`, a
-  token-styled `button/1` (with `save_button/1` and `delete_button/1` as named
-  variants), and a `drawer_footer/1` action row.
+  The shared visual skeleton of the admin: the chrome that recurs across admin
+  LiveViews (page and section headers, lists and rows, drawers, buttons, form
+  fields, the markdown editor) lives here as slot-based function components, so
+  each page composes it instead of copying markup.
   """
   use NewtonWeb, :html
 

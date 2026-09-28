@@ -34,6 +34,8 @@ defmodule Newton.Pages.Page do
     |> render_body_html()
   end
 
+  # body_markdown and body_html are NOT NULL and `cast` nils out empty strings,
+  # so a bodyless page would violate them. Coerce a missing body to "".
   defp ensure_body(changeset) do
     if is_nil(get_field(changeset, :body_markdown)) do
       put_change(changeset, :body_markdown, "")

@@ -6,23 +6,35 @@ defmodule NewtonWeb.Admin.Autosave do
   """
   @debounce_ms 1500
 
+  @spec debounce_ms() :: pos_integer()
   def debounce_ms, do: @debounce_ms
 
   @doc "Autosave field names plus their `_unused_` twins (LiveView drops unchanged params)."
+  @spec keys([String.t()]) :: [String.t()]
   def keys(fields) when is_list(fields) do
     fields ++ Enum.map(fields, &("_unused_" <> &1))
   end
 
   @doc "The subset of `params` that participates in autosave."
+  @spec content_params(map(), [String.t()]) :: map()
   def content_params(params, keys), do: Map.take(params, keys)
 
-  @doc "Cancel any pending timer and arm a fresh one; returns the new ref."
+  @doc """
+  Cancel any pending timer and arm a fresh one; returns the new ref. The timer
+  sends `:autosave` to the calling process, so call it from the LiveView that
+  handles that message.
+  """
+  @spec schedule(reference() | nil) :: reference()
   def schedule(timer) do
     if is_reference(timer), do: Process.cancel_timer(timer)
     Process.send_after(self(), :autosave, @debounce_ms)
   end
 
-  @doc "Do the submitted `params` diverge from `record` on any of `fields`?"
+  @doc """
+  Do the submitted `params` diverge from `record` on any of `fields`? `fields`
+  are string names of atom keys already present on `record`.
+  """
+  @spec dirty?(map(), struct() | map(), [String.t()]) :: boolean()
   def dirty?(params, record, fields) do
     Enum.any?(fields, fn field ->
       comparable(params[field]) != comparable(Map.get(record, String.to_existing_atom(field)))

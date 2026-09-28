@@ -1,7 +1,7 @@
-defmodule Newton.Blog.ImageAuditTest do
+defmodule Newton.Media.AuditTest do
   use Newton.DataCase
   alias Newton.Blog
-  alias Newton.Blog.ImageAudit
+  alias Newton.Media.Audit
   alias Newton.Pages
 
   defp media_root, do: Application.fetch_env!(:newton, :media_root)
@@ -43,21 +43,21 @@ defmodule Newton.Blog.ImageAuditTest do
 
   test "extract_keys pulls unique /media/ keys from a body, nil-safe" do
     body = "![](/media/a.png) text ![](/media/b.jpg) again ![](/media/a.png)"
-    assert ImageAudit.extract_keys(body) == ["a.png", "b.jpg"]
-    assert ImageAudit.extract_keys(nil) == []
+    assert Audit.extract_keys(body) == ["a.png", "b.jpg"]
+    assert Audit.extract_keys(nil) == []
   end
 
   test "run reports missing keys and unowned strays" do
     post = post_with_body("![](/media/ghost.png)")
     stored_file("stray.png")
 
-    assert %{missing: [{slug, "ghost.png"}], strays: ["stray.png"]} = ImageAudit.run()
+    assert %{missing: [{slug, "ghost.png"}], strays: ["stray.png"]} = Audit.run()
     assert slug == post.slug
   end
 
   test "run ignores dotfiles on the volume" do
     stored_file(".keep")
-    assert %{strays: []} = ImageAudit.run()
+    assert %{strays: []} = Audit.run()
   end
 
   test "run does not list ledgered, gallery-owned, or body-referenced files as strays" do
@@ -71,13 +71,13 @@ defmodule Newton.Blog.ImageAuditTest do
     stored_file("referenced.png")
     stored_file(photo.image_key)
 
-    assert %{strays: []} = ImageAudit.run()
+    assert %{strays: []} = Audit.run()
   end
 
   test "delete_stray removes a true stray's file" do
     path = stored_file("stray.png")
 
-    assert :ok = ImageAudit.delete_stray("stray.png")
+    assert :ok = Audit.delete_stray("stray.png")
     refute File.exists?(path)
   end
 
@@ -87,8 +87,8 @@ defmodule Newton.Blog.ImageAuditTest do
     referenced = stored_file("referenced.png")
     ledgered = stored_file("ledgered.png")
 
-    assert {:error, :not_stray} = ImageAudit.delete_stray("referenced.png")
-    assert {:error, :not_stray} = ImageAudit.delete_stray("ledgered.png")
+    assert {:error, :not_stray} = Audit.delete_stray("referenced.png")
+    assert {:error, :not_stray} = Audit.delete_stray("ledgered.png")
     assert File.exists?(referenced)
     assert File.exists?(ledgered)
   end
@@ -99,9 +99,9 @@ defmodule Newton.Blog.ImageAuditTest do
     referenced = stored_file("page-referenced.png")
     ledgered = stored_file("page-ledgered.png")
 
-    assert %{strays: []} = ImageAudit.run()
-    assert {:error, :not_stray} = ImageAudit.delete_stray("page-referenced.png")
-    assert {:error, :not_stray} = ImageAudit.delete_stray("page-ledgered.png")
+    assert %{strays: []} = Audit.run()
+    assert {:error, :not_stray} = Audit.delete_stray("page-referenced.png")
+    assert {:error, :not_stray} = Audit.delete_stray("page-ledgered.png")
     assert File.exists?(referenced)
     assert File.exists?(ledgered)
   end
@@ -109,7 +109,7 @@ defmodule Newton.Blog.ImageAuditTest do
   test "run reports a key a page body references but the volume lacks as missing" do
     page = page_with_body("![](/media/page-ghost.png)")
 
-    assert %{missing: [{slug, "page-ghost.png"}]} = ImageAudit.run()
+    assert %{missing: [{slug, "page-ghost.png"}]} = Audit.run()
     assert slug == page.slug
   end
 end

@@ -3,7 +3,7 @@ defmodule NewtonWeb.Admin.MediaLive do
 
   import Ecto.Query
 
-  alias Newton.Blog.ImageAudit
+  alias Newton.Media.Audit
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
 
@@ -14,12 +14,12 @@ defmodule NewtonWeb.Admin.MediaLive do
 
   @impl true
   def handle_event("delete_stray", %{"key" => key}, socket) do
-    ImageAudit.delete_stray(key)
+    Audit.delete_stray(key)
     {:noreply, load_audit(socket)}
   end
 
   defp load_audit(socket) do
-    audit = ImageAudit.run()
+    audit = Audit.run()
     slugs = audit.missing |> Enum.map(fn {slug, _key} -> slug end) |> Enum.uniq()
 
     post_ids =

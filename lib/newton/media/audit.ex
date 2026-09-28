@@ -1,4 +1,4 @@
-defmodule Newton.Blog.ImageAudit do
+defmodule Newton.Media.Audit do
   @moduledoc """
   Read-only audit of the media volume against its owners (gallery photos, the
   post- and page-image ledgers, and post and page bodies), plus guarded deletion

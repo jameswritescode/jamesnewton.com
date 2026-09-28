@@ -1,9 +1,9 @@
 defmodule NewtonWeb.Admin.DashboardLive do
   use NewtonWeb, :live_view
 
+  alias Newton.Media.Audit
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.Layouts
-  alias Newton.Blog.ImageAudit
 
   @impl true
   def mount(_params, _session, socket) do
@@ -182,7 +182,7 @@ defmodule NewtonWeb.Admin.DashboardLive do
   end
 
   defp media_drift do
-    case ImageAudit.run() do
+    case Audit.run() do
       %{missing: [], strays: []} -> nil
       audit -> audit
     end

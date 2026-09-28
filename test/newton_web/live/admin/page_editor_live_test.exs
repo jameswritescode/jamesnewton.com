@@ -22,6 +22,20 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     {view, page}
   end
 
+  test "client-rejected files surface as a flash", %{conn: conn} do
+    {view, _page} = open_draft(conn)
+
+    render_hook(view, "upload_rejected", %{
+      "rejected" => [
+        %{"name" => "big.png", "reason" => "size"},
+        %{"name" => "vector.svg", "reason" => "type"}
+      ]
+    })
+
+    assert has_element?(view, "#admin-flash-error", "big.png (larger than 50MB)")
+    assert has_element?(view, "#admin-flash-error", "vector.svg (unsupported type)")
+  end
+
   test "editing a draft persists on submit", %{conn: conn} do
     {view, _page} = open_draft(conn)
 

@@ -35,5 +35,5 @@ defmodule NewtonWeb.PageContentController do
     end
   end
 
-  defp admin?(conn), do: match?(%{user: %{}}, conn.assigns[:current_scope])
+  defp admin?(conn), do: match?(%{user: %{}}, conn.assigns.current_scope)
 end

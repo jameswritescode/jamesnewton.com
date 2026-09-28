@@ -35,16 +35,16 @@ defmodule NewtonWeb.Admin.DashboardLive do
       <Components.page_header title="Dashboard" />
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <.card id="card-posts" title="Posts" primary={@posts_total} path="/admin/posts">
+        <.card id="card-posts" title="Posts" primary={@posts_total} path={~p"/admin/posts"}>
           {@posts_drafts} draft{if @posts_drafts == 1, do: "", else: "s"}
         </.card>
         <.card id="card-pages" title="Pages" primary={@pages_total} path={~p"/admin/pages"}>
           {@pages_drafts} draft{if @pages_drafts == 1, do: "", else: "s"}
         </.card>
-        <.card id="card-reading" title="Reading" primary={@reading_total} path="/admin/reading">
+        <.card id="card-reading" title="Reading" primary={@reading_total} path={~p"/admin/reading"}>
           {@reading_active} in progress
         </.card>
-        <.card id="card-photos" title="Photos" primary={@galleries_total} path="/admin/photos">
+        <.card id="card-photos" title="Photos" primary={@galleries_total} path={~p"/admin/photos"}>
           {@photos_total} photo{if @photos_total == 1, do: "", else: "s"}
         </.card>
         <.card id="card-views" title="Views" primary={@views_week}>

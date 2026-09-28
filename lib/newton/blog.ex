@@ -66,7 +66,7 @@ defmodule Newton.Blog do
   defp filter_posts(query, _all), do: query
 
   @doc "Fetch any post by id (admin), regardless of publish status."
-  @spec get_post!(integer()) :: %Post{}
+  @spec get_post!(integer() | String.t()) :: %Post{}
   def get_post!(id), do: Repo.get!(Post, id)
 
   @doc "Fetch any post by id (admin), returning nil if it doesn't exist."

@@ -20,7 +20,7 @@ defmodule Newton.Pages do
     Repo.all(from p in Page, where: p.published and p.in_sitemap, order_by: [asc: p.slug])
   end
 
-  @spec get_page!(term()) :: %Page{}
+  @spec get_page!(integer() | String.t()) :: %Page{}
   def get_page!(id), do: Repo.get!(Page, id)
 
   @spec get_page_by_slug(String.t()) :: %Page{} | nil

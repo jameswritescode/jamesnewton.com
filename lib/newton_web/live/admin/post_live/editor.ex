@@ -206,7 +206,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   def handle_event("publish_now", _params, socket) do
-    {:noreply, set_published(socket, DateTime.truncate(DateTime.utc_now(), :second))}
+    {:noreply, publish_now(socket, socket.assigns.post)}
   end
 
   def handle_event("unpublish", _params, socket) do
@@ -530,6 +530,35 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     (not is_nil(published_at) and save_state != :saved) or
       (is_nil(published_at) and save_state == :error)
   end
+
+  defp publish_now(socket, %Post{id: nil}) do
+    attrs =
+      (socket.assigns.form.source.params || %{})
+      |> Map.take(@autosave_fields)
+      |> backfill_new()
+      |> Map.put("published_at", DateTime.truncate(DateTime.utc_now(), :second))
+
+    case Blog.create_post(attrs) do
+      {:ok, post} ->
+        PublicationNotifier.notify_change(nil, post)
+
+        socket
+        |> assign(:post, post)
+        |> assign(:published_at, post.published_at)
+        |> assign(:slug_locked, slug_locked?(post))
+        |> assign(:autosave_params, nil)
+        |> assign(:save_state, :saved)
+        |> assign(:editor_post_id, post.id)
+        |> put_flash(:info, "Post published")
+        |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
+
+      {:error, changeset} ->
+        assign(socket, :form, to_form(changeset))
+    end
+  end
+
+  defp publish_now(socket, %Post{}),
+    do: set_published(socket, DateTime.truncate(DateTime.utc_now(), :second))
 
   # Publishing toggles publication state on the saved post; content edits in the
   # form are left untouched.

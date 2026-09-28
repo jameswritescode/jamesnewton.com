@@ -476,6 +476,24 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert status == :published
   end
 
+  test "publishing a brand-new post creates it published and serves it publicly", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "Straight Out", "slug" => "", "body_markdown" => "Fresh"}
+    })
+
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Publish now") |> render_click()
+
+    post = Newton.Blog.get_post_by_slug!("straight-out")
+    assert post.title == "Straight Out"
+    assert Newton.Blog.publish_status(post.published_at) == :published
+    assert_patch(view, ~p"/admin/posts/#{post.id}/edit")
+
+    assert build_conn() |> get(~p"/posts/#{post.slug}") |> html_response(200)
+  end
+
   test "moving an existing published post to draft persists immediately", %{conn: conn} do
     {:ok, post} =
       Newton.Blog.create_post(%{

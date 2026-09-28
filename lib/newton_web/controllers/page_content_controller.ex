@@ -28,8 +28,12 @@ defmodule NewtonWeb.PageContentController do
     |> render(:show, page_title: page.title, page: page, preview: preview?)
   end
 
-  defp description(%Page{meta_description: meta}) when is_binary(meta) and meta != "", do: meta
-  defp description(%Page{body_markdown: body}), do: Markdown.excerpt(body || "")
+  defp description(%Page{meta_description: meta, body_markdown: body}) do
+    case String.trim(meta || "") do
+      "" -> Markdown.excerpt(body || "")
+      _ -> meta
+    end
+  end
 
   defp admin?(conn), do: match?(%{user: %{}}, conn.assigns[:current_scope])
 end

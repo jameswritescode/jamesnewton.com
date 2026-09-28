@@ -77,6 +77,25 @@ defmodule NewtonWeb.PageContentControllerTest do
     assert description == "How this site is put together."
   end
 
+  test "a whitespace-only meta description falls back to the body", %{conn: conn} do
+    {:ok, page} =
+      Newton.Pages.create_page(%{
+        slug: "colophon",
+        title: "Colophon",
+        body_markdown: "Built with Phoenix and a lot of coffee.",
+        published: true
+      })
+
+    {:ok, _} = page |> Ecto.Changeset.change(meta_description: "   ") |> Newton.Repo.update()
+
+    html = conn |> get(~p"/colophon") |> html_response(200)
+
+    assert [_, description] =
+             Regex.run(~r/<meta[^>]*name="description"[^>]*content="([^"]*)"/, html)
+
+    assert description == "Built with Phoenix and a lot of coffee."
+  end
+
   test "an unknown slug 404s", %{conn: conn} do
     assert_error_sent 404, fn -> get(conn, ~p"/nope-nope") end
   end

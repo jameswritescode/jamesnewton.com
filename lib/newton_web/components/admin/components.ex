@@ -7,8 +7,6 @@ defmodule NewtonWeb.Admin.Components do
   """
   use NewtonWeb, :html
 
-  alias NewtonWeb.Admin.InlineImageUpload
-
   @doc """
   A right-hand slide-over drawer. The caller renders it conditionally
   (`:if={@open?}`) and passes `on_close` — a `Phoenix.LiveView.JS` command or an
@@ -240,9 +238,9 @@ defmodule NewtonWeb.Admin.Components do
         id={"markdown-editor-#{@key}"}
         phx-hook="MarkdownEditor"
         data-input-id={"markdown-source-#{@key}"}
-        data-upload-accept={Enum.join(InlineImageUpload.accept(), ",")}
-        data-upload-max-entries={InlineImageUpload.max_entries()}
-        data-upload-max-file-size={InlineImageUpload.max_file_size()}
+        data-upload-accept={@upload.accept}
+        data-upload-max-entries={@upload.max_entries}
+        data-upload-max-file-size={@upload.max_file_size}
         class="overflow-hidden rounded-lg border border-(--admin-border) bg-(--admin-surface)"
       >
         <div

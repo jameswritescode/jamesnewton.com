@@ -31,13 +31,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      |> assign(:autosave_timer, nil)
      |> assign(:editor_key, new_editor_key())
      |> assign(:editor_post_id, :unset)
-     |> allow_upload(:inline_images,
-       accept: InlineImageUpload.accept(),
-       max_entries: InlineImageUpload.max_entries(),
-       max_file_size: InlineImageUpload.max_file_size(),
-       auto_upload: true,
-       progress: &handle_inline_upload/3
-     )}
+     |> InlineImageUpload.allow(progress: &handle_inline_upload/3)}
   end
 
   defp handle_inline_upload(:inline_images, %{done?: false}, socket), do: {:noreply, socket}

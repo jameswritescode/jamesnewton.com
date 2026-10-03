@@ -26,13 +26,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
      |> assign(:autosave_timer, nil)
      |> assign(:editor_key, new_editor_key())
      |> assign(:editor_page_id, :unset)
-     |> allow_upload(:inline_images,
-       accept: InlineImageUpload.accept(),
-       max_entries: InlineImageUpload.max_entries(),
-       max_file_size: InlineImageUpload.max_file_size(),
-       auto_upload: true,
-       progress: &handle_inline_upload/3
-     )}
+     |> InlineImageUpload.allow(progress: &handle_inline_upload/3)}
   end
 
   @impl true

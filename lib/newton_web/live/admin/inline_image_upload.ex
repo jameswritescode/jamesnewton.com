@@ -4,16 +4,26 @@ defmodule NewtonWeb.Admin.InlineImageUpload do
   file, record it on the owner's image ledger, and push `insert_image` back to
   the CodeMirror hook. The owner (post vs page) is supplied via `opts`.
   """
-  import Phoenix.LiveView, only: [consume_uploaded_entry: 3, push_event: 3, put_flash: 3]
+  import Phoenix.LiveView,
+    only: [allow_upload: 3, consume_uploaded_entry: 3, push_event: 3, put_flash: 3]
+
   require Logger
 
   @accept ~w(.jpg .jpeg .png .webp .gif)
   @max_entries 10
   @max_file_size 50_000_000
 
-  def accept, do: @accept
-  def max_entries, do: @max_entries
-  def max_file_size, do: @max_file_size
+  @doc "Register the shared `:inline_images` upload on a post or page editor socket."
+  @spec allow(Phoenix.LiveView.Socket.t(), keyword()) :: Phoenix.LiveView.Socket.t()
+  def allow(socket, opts) do
+    allow_upload(socket, :inline_images,
+      accept: @accept,
+      max_entries: @max_entries,
+      max_file_size: @max_file_size,
+      auto_upload: true,
+      progress: Keyword.fetch!(opts, :progress)
+    )
+  end
 
   @doc "Describe the files the client-side hook refused, for a flash message."
   def rejected_summary(rejected) do

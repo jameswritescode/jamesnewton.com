@@ -109,13 +109,17 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert html =~ "vector.svg"
   end
 
-  test "the hook element publishes the server's upload limits", %{conn: conn} do
+  test "the hook element publishes limits matching the server's upload config", %{conn: conn} do
     {view, _post} = open_draft(conn)
+    html = render(view)
 
-    assert has_element?(
-             view,
-             "[id^='markdown-editor'][data-upload-accept][data-upload-max-entries][data-upload-max-file-size]"
-           )
+    assert [_, accept] = Regex.run(~r/data-upload-accept="([^"]*)"/, html)
+    assert [_, max_entries] = Regex.run(~r/data-upload-max-entries="([^"]*)"/, html)
+    assert [_, max_file_size] = Regex.run(~r/data-upload-max-file-size="([^"]*)"/, html)
+
+    assert accept == ".jpg,.jpeg,.png,.webp,.gif"
+    assert max_entries == "10"
+    assert max_file_size == "50000000"
   end
 
   defp editor_key(view) do

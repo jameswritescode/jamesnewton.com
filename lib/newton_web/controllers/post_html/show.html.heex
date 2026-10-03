@@ -1,5 +1,10 @@
 <Layouts.app flash={@flash}>
-  <div :if={@preview} class="preview-banner">
+  <div :if={@preview == :admin} class="preview-banner">
+    <strong>Draft — not public</strong>
+    <span>Only you can see this post until it is published.</span>
+  </div>
+
+  <div :if={@preview == :link} class="preview-banner">
     <strong>Draft preview</strong>
     <span>Not published — please keep this link private.</span>
   </div>

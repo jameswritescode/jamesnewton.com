@@ -68,6 +68,45 @@ defmodule NewtonWeb.PostControllerTest do
       assert html_response(conn, 200) =~ "Secret Draft"
     end
 
+    test "a signed-in admin sees the draft banner and noindex on an unpublished post", %{
+      conn: conn,
+      draft: draft
+    } do
+      {:ok, user} = Newton.Release.create_admin("preview-admin@example.com", "supersecret123")
+
+      html =
+        conn
+        |> log_in_user(user)
+        |> get(~p"/posts/#{draft.slug}")
+        |> html_response(200)
+
+      assert html =~ "Draft — not public"
+      assert html =~ "Only you can see this post until it is published."
+      assert html =~ ~s(name="robots")
+      assert html =~ "noindex"
+    end
+
+    test "a signed-in admin sees no banner on a published post", %{conn: conn} do
+      {:ok, user} = Newton.Release.create_admin("preview-admin2@example.com", "supersecret123")
+
+      {:ok, _} =
+        Blog.create_post(%{
+          slug: "already-live",
+          title: "Already Live",
+          body_markdown: "Body.",
+          published_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      html =
+        conn
+        |> log_in_user(user)
+        |> get(~p"/posts/already-live")
+        |> html_response(200)
+
+      refute html =~ "preview-banner"
+      refute html =~ "noindex"
+    end
+
     test "a draft is visible with a valid ?p token and carries noindex", %{
       conn: conn,
       draft: draft

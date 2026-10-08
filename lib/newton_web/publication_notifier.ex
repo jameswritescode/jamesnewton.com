@@ -4,12 +4,16 @@ defmodule NewtonWeb.PublicationNotifier do
   URLs) and standard.site (document records). Draft-only mutations notify
   nothing. Each target runs in its own supervised task so one failing
   integration cannot starve another.
+
+  Standalone pages reach IndexNow only, and only while they are published and
+  opted into the sitemap.
   """
   use NewtonWeb, :verified_routes
   require Logger
 
   alias Newton.Blog.Post
   alias Newton.IndexNow
+  alias Newton.Pages.Page
   alias Newton.Standard
 
   @spec notify_change(%Post{} | nil, %Post{} | nil) :: :ok
@@ -34,6 +38,19 @@ defmodule NewtonWeb.PublicationNotifier do
     end
   end
 
+  @spec notify_page_change(%Page{} | nil, %Page{} | nil) :: :ok
+  def notify_page_change(before_page, after_page) do
+    case changed_page_urls(before_page, after_page) do
+      [] -> :ok
+      urls -> start_task(IndexNow, :submit, [urls], "IndexNow")
+    end
+  end
+
+  @spec changed_page_urls(%Page{} | nil, %Page{} | nil) :: [String.t()]
+  def changed_page_urls(before_page, after_page) do
+    Enum.uniq(page_urls(before_page) ++ page_urls(after_page))
+  end
+
   @spec standard_ops(%Post{} | nil, %Post{} | nil) ::
           [{:put_document, %Post{}} | {:delete_document, String.t()}]
   def standard_ops(before_post, after_post) do
@@ -51,6 +68,9 @@ defmodule NewtonWeb.PublicationNotifier do
 
   defp post_urls(%Post{published_at: %DateTime{}, slug: slug}), do: [url(~p"/posts/#{slug}")]
   defp post_urls(_), do: []
+
+  defp page_urls(%Page{published: true, in_sitemap: true, slug: slug}), do: [url(~p"/#{slug}")]
+  defp page_urls(_), do: []
 
   defp start_task(mod, fun, args, label) do
     case Task.Supervisor.start_child(Newton.TaskSupervisor, mod, fun, args) do

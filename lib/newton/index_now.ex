@@ -17,7 +17,7 @@ defmodule Newton.IndexNow do
     if config[:enabled] do
       do_submit(urls, config)
     else
-      :ok
+      Logger.debug("IndexNow disabled; would have submitted: #{inspect(urls)}")
     end
   end
 

@@ -8,6 +8,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
+  alias NewtonWeb.PublicationNotifier
 
   # The `_unused_` markers ride along with the staged params because
   # FormHelpers.field_edited?/3 reads them to tell an untouched field from one
@@ -98,6 +99,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   def handle_event("delete", _params, socket) do
     {:ok, _} = Pages.delete_page(socket.assigns.page)
+    PublicationNotifier.notify_page_change(socket.assigns.page, nil)
 
     {:noreply,
      socket
@@ -226,6 +228,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     if content?(params) do
       case Pages.create_page(backfill_new(params)) do
         {:ok, page} ->
+          PublicationNotifier.notify_page_change(nil, page)
+
           {:noreply,
            socket
            |> assign(:page, page)
@@ -246,6 +250,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp persist_autosave(socket, %Page{} = page, params) do
     case Pages.update_page(page, never_blank_identity(params, page)) do
       {:ok, updated} ->
+        PublicationNotifier.notify_page_change(page, updated)
+
         {:noreply,
          socket
          |> assign(:page, updated)
@@ -272,6 +278,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
     case Pages.create_page(attrs) do
       {:ok, page} ->
+        PublicationNotifier.notify_page_change(nil, page)
+
         socket
         |> assign(:page, page)
         |> assign(:autosave_params, nil)
@@ -290,6 +298,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp set_published(socket, %Page{} = page, published) do
     case Pages.update_page(page, %{"published" => published}) do
       {:ok, updated} ->
+        PublicationNotifier.notify_page_change(page, updated)
+
         socket
         |> assign(:page, updated)
         |> assign(:slug_locked, slug_locked?(updated))
@@ -306,6 +316,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp set_in_sitemap(socket, %Page{} = page, in_sitemap) do
     case Pages.update_page(page, %{"in_sitemap" => in_sitemap}) do
       {:ok, updated} ->
+        PublicationNotifier.notify_page_change(page, updated)
         assign(socket, :page, updated)
 
       {:error, :stale} ->
@@ -318,14 +329,19 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp save(socket, %Page{id: nil}, params) do
     case Pages.create_page(backfill_new(params)) do
-      {:ok, _page} -> {:noreply, saved(socket)}
-      {:error, changeset} -> {:noreply, assign(socket, :form, to_form(changeset))}
+      {:ok, page} ->
+        PublicationNotifier.notify_page_change(nil, page)
+        {:noreply, saved(socket)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end
 
   defp save(socket, %Page{} = page, params) do
     case Pages.update_page(page, params) do
-      {:ok, _updated} ->
+      {:ok, updated} ->
+        PublicationNotifier.notify_page_change(page, updated)
         {:noreply, saved(socket)}
 
       {:error, :stale} ->
@@ -386,6 +402,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp ensure_page(%{assigns: %{page: %Page{id: nil}}} = socket) do
     case Pages.create_page(backfill_new(staged_content(socket))) do
       {:ok, page} ->
+        PublicationNotifier.notify_page_change(nil, page)
+
         socket =
           socket
           |> cancel_autosave()

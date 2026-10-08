@@ -74,6 +74,17 @@ defmodule Newton.IndexNowTest do
     refute_received {[:newton, :indexnow, :submit, :stop], ^ref, _, _}
   end
 
+  test "logs the URLs it would have submitted when disabled" do
+    level = Logger.level()
+    Logger.configure(level: :debug)
+    on_exit(fn -> Logger.configure(level: level) end)
+
+    log = capture_log([level: :debug], fn -> assert IndexNow.submit(@urls) == :ok end)
+
+    assert log =~ "IndexNow disabled"
+    assert log =~ "http://localhost:4002/posts/hello"
+  end
+
   test "an empty url list is a no-op", %{ref: ref} do
     enable()
     assert IndexNow.submit([]) == :ok

@@ -334,6 +334,100 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert [%{title: "Untitled" <> _}] = Newton.Blog.list_posts(:drafts)
   end
 
+  describe "a blank slug on a new post" do
+    test "is derived from the title when the first image creates the draft", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      render_change(view, "validate", %{
+        "post" => %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""}
+      })
+
+      render_change(view, "validate", %{
+        "post" => %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => ""}
+      })
+
+      upload_inline_image(view, "cleared.png")
+      assert_patch(view)
+
+      assert [post] = Newton.Blog.list_posts(:drafts)
+      assert post.slug == "cleared-slug"
+      assert [%{original_filename: "cleared.png"}] = Newton.Blog.list_images(post)
+    end
+
+    test "is derived from the title on manual save", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      view
+      |> form("#post-form", post: %{title: "Saved Blank", slug: "", body_markdown: ""})
+      |> render_submit()
+
+      assert [%{slug: "saved-blank"}] = Newton.Blog.list_posts(:drafts)
+    end
+  end
+
+  test "an Untitled draft from a first image takes its slug from the title typed later",
+       %{conn: conn} do
+    {:ok, _} = Newton.Blog.create_post(%{title: "Older", slug: "untitled-post"})
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    upload_inline_image(view, "placeholder.png")
+    assert_patch(view)
+
+    post = Newton.Blog.get_post_by_slug!("untitled-post-2")
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "Real Title", "slug" => post.slug, "_unused_slug" => ""}
+    })
+
+    assert has_element?(view, "#post-form input[name='post[slug]'][value='real-title']")
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    assert Newton.Blog.get_post!(post.id).slug == "real-title"
+  end
+
+  test "a slug collision on the first image shows the error and creates nothing",
+       %{conn: conn} do
+    {:ok, _} = Newton.Blog.create_post(%{title: "Elsewhere", slug: "taken"})
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "Taken", "slug" => "", "_unused_slug" => "", "body_markdown" => ""}
+    })
+
+    upload_inline_image(view, "collide.png")
+
+    assert [%{title: "Elsewhere"}] = Newton.Blog.list_posts(:drafts)
+    assert has_element?(view, slug_error_selector(), "has already been taken")
+    assert has_element?(view, "#post-form input[name='post[title]'][value='Taken']")
+  end
+
+  test "a slug collision on a new post's autosave shows the error", %{conn: conn} do
+    {:ok, _} = Newton.Blog.create_post(%{title: "Elsewhere", slug: "taken"})
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "Taken", "slug" => "", "_unused_slug" => "", "body_markdown" => ""}
+    })
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    assert [%{title: "Elsewhere"}] = Newton.Blog.list_posts(:drafts)
+    assert has_element?(view, slug_error_selector(), "has already been taken")
+  end
+
+  defp slug_error_selector, do: "#post-form .fieldset:has(input[name='post[slug]']) p"
+
+  defp upload_inline_image(view, name) do
+    view
+    |> file_input("#post-form", :inline_images, [
+      %{name: name, content: @png_1x1, type: "image/png"}
+    ])
+    |> render_upload(name)
+  end
+
   test "editing a draft persists on submit", %{conn: conn} do
     {view, _post} = open_draft(conn)
 

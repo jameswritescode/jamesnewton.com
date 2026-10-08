@@ -19,6 +19,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   # socket assigns, never from the client.
   @autosave_fields ~w(title slug excerpt body_markdown)
   @autosave_keys Autosave.keys(@autosave_fields)
+  @untitled_title "Untitled post"
+  @untitled_slug_prefix "untitled-post"
 
   @impl true
   def mount(_params, _session, socket) do
@@ -61,8 +63,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
         {socket, post}
 
-      {:error, _changeset} ->
-        {socket, socket.assigns.post}
+      {:error, changeset} ->
+        {creation_failed(socket, changeset), socket.assigns.post}
     end
   end
 
@@ -154,7 +156,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   # Published posts lock the slug so existing links/SEO don't break.
   defp slug_locked?(post) do
-    not is_nil(post.published_at) or post.slug != Newton.Slug.slugify(post.title)
+    not is_nil(post.published_at) or
+      (post.slug != Newton.Slug.slugify(post.title) and
+         not FormHelpers.placeholder_identity?(post, @untitled_title, @untitled_slug_prefix))
   end
 
   defp excerpt_locked?(post) do
@@ -356,8 +360,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
            |> assign(:editor_post_id, post.id)
            |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
 
-        {:error, _changeset} ->
-          {:noreply, assign(socket, :save_state, :error)}
+        {:error, changeset} ->
+          {:noreply, creation_failed(socket, changeset)}
       end
     else
       {:noreply, assign(socket, :save_state, :saved)}
@@ -412,11 +416,17 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp backfill_new(params) do
     if blank?(params["title"]) do
       params
-      |> Map.put("title", "Untitled post")
+      |> Map.put("title", @untitled_title)
       |> Map.put("slug", Blog.next_untitled_slug())
     else
-      params
+      keep_existing(params, "slug", Newton.Slug.slugify(params["title"]))
     end
+  end
+
+  defp creation_failed(socket, changeset) do
+    socket
+    |> assign(:form, FormHelpers.failed_create_form(changeset))
+    |> assign(:save_state, :error)
   end
 
   defp apply_validate(socket, params) do
@@ -509,7 +519,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     title = Ecto.Changeset.get_field(changeset, :title)
 
     attrs = %{
-      title: if(title in [nil, ""], do: "Untitled post", else: title),
+      title: if(title in [nil, ""], do: @untitled_title, else: title),
       published_on: socket.assigns.published_at && DateTime.to_date(socket.assigns.published_at),
       reading_time: socket.assigns.post.reading_time || 1
     }
@@ -558,7 +568,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
 
       {:error, changeset} ->
-        assign(socket, :form, to_form(changeset))
+        assign(socket, :form, FormHelpers.failed_create_form(changeset))
     end
   end
 
@@ -600,7 +610,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
          |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+        {:noreply, assign(socket, :form, FormHelpers.failed_create_form(changeset))}
     end
   end
 

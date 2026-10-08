@@ -16,6 +16,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   # drawer alone.
   @autosave_fields ~w(title slug meta_description body_markdown)
   @autosave_keys Autosave.keys(@autosave_fields)
+  @untitled_title "Untitled"
+  @untitled_slug_prefix "untitled-page"
 
   @impl true
   def mount(_params, _session, socket) do
@@ -139,7 +141,9 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp slug_locked?(%Page{id: nil}), do: false
 
   defp slug_locked?(%Page{} = page) do
-    page.published or page.slug != Newton.Slug.slugify(page.title || "")
+    page.published or
+      (page.slug != Newton.Slug.slugify(page.title || "") and
+         not FormHelpers.placeholder_identity?(page, @untitled_title, @untitled_slug_prefix))
   end
 
   defp meta_locked?(%Page{id: nil}), do: false
@@ -239,8 +243,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
            |> assign(:editor_page_id, page.id)
            |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")}
 
-        {:error, _changeset} ->
-          {:noreply, assign(socket, :save_state, :error)}
+        {:error, changeset} ->
+          {:noreply, creation_failed(socket, changeset)}
       end
     else
       {:noreply, assign(socket, :save_state, :saved)}
@@ -289,7 +293,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
 
       {:error, changeset} ->
-        assign(socket, :form, to_form(changeset))
+        assign(socket, :form, FormHelpers.failed_create_form(changeset))
     end
   end
 
@@ -334,7 +338,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         {:noreply, saved(socket)}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+        {:noreply, assign(socket, :form, FormHelpers.failed_create_form(changeset))}
     end
   end
 
@@ -373,9 +377,19 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp backfill_new(params) do
-    params
-    |> keep_existing("title", "Untitled")
-    |> keep_existing("slug", next_untitled_slug())
+    if blank?(params["title"]) do
+      params
+      |> Map.put("title", @untitled_title)
+      |> keep_existing("slug", next_untitled_slug())
+    else
+      keep_existing(params, "slug", Newton.Slug.slugify(params["title"]))
+    end
+  end
+
+  defp creation_failed(socket, changeset) do
+    socket
+    |> assign(:form, FormHelpers.failed_create_form(changeset))
+    |> assign(:save_state, :error)
   end
 
   defp never_blank_identity(params, %Page{} = page) do
@@ -388,7 +402,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     if blank?(params[key]), do: Map.put(params, key, existing), else: params
   end
 
-  defp next_untitled_slug, do: "untitled-page-#{System.unique_integer([:positive])}"
+  defp next_untitled_slug, do: "#{@untitled_slug_prefix}-#{System.unique_integer([:positive])}"
 
   defp handle_inline_upload(:inline_images, entry, socket) do
     InlineImageUpload.handle_progress(entry, socket, %{
@@ -413,8 +427,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
         {socket, page}
 
-      {:error, _changeset} ->
-        {socket, socket.assigns.page}
+      {:error, changeset} ->
+        {creation_failed(socket, changeset), socket.assigns.page}
     end
   end
 

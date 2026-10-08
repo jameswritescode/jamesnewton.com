@@ -180,6 +180,100 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     assert [%{title: "Untitled" <> _}] = Newton.Pages.list_pages()
   end
 
+  describe "a blank slug on a new page" do
+    test "is derived from the title when the first image creates the draft", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      render_change(view, "validate", %{
+        "page" => %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""}
+      })
+
+      render_change(view, "validate", %{
+        "page" => %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => ""}
+      })
+
+      upload_inline_image(view, "cleared.png")
+      assert_patch(view)
+
+      assert [page] = Newton.Pages.list_pages()
+      assert page.slug == "cleared-slug"
+      assert [%{original_filename: "cleared.png"}] = Newton.Pages.list_images(page)
+    end
+
+    test "is derived from the title on manual save", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      view
+      |> form("#page-form", page: %{title: "Saved Blank", slug: "", body_markdown: ""})
+      |> render_submit()
+
+      assert [%{slug: "saved-blank"}] = Newton.Pages.list_pages()
+    end
+  end
+
+  test "an Untitled draft from a first image takes its slug from the title typed later",
+       %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    upload_inline_image(view, "placeholder.png")
+    assert_patch(view)
+
+    [page] = Newton.Pages.list_pages()
+    assert "untitled-page-" <> _ = page.slug
+
+    render_change(view, "validate", %{
+      "page" => %{"title" => "Real Title", "slug" => page.slug, "_unused_slug" => ""}
+    })
+
+    assert has_element?(view, "#page-form input[name='page[slug]'][value='real-title']")
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    assert Newton.Pages.get_page!(page.id).slug == "real-title"
+  end
+
+  test "a slug collision on the first image shows the error and creates nothing",
+       %{conn: conn} do
+    {:ok, _} = Newton.Pages.create_page(%{title: "Elsewhere", slug: "taken"})
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    render_change(view, "validate", %{
+      "page" => %{"title" => "Taken", "slug" => "", "_unused_slug" => "", "body_markdown" => ""}
+    })
+
+    upload_inline_image(view, "collide.png")
+
+    assert [%{title: "Elsewhere"}] = Newton.Pages.list_pages()
+    assert has_element?(view, slug_error_selector(), "has already been taken")
+    assert has_element?(view, "#page-form input[name='page[title]'][value='Taken']")
+  end
+
+  test "a slug collision on a new page's autosave shows the error", %{conn: conn} do
+    {:ok, _} = Newton.Pages.create_page(%{title: "Elsewhere", slug: "taken"})
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    render_change(view, "validate", %{
+      "page" => %{"title" => "Taken", "slug" => "", "_unused_slug" => "", "body_markdown" => ""}
+    })
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    assert [%{title: "Elsewhere"}] = Newton.Pages.list_pages()
+    assert has_element?(view, slug_error_selector(), "has already been taken")
+  end
+
+  defp slug_error_selector, do: "#page-form .fieldset:has(input[name='page[slug]']) p"
+
+  defp upload_inline_image(view, name) do
+    view
+    |> file_input("#page-form", :inline_images, [
+      %{name: name, content: @png_1x1, type: "image/png"}
+    ])
+    |> render_upload(name)
+  end
+
   test "a published page is not auto-saved", %{conn: conn} do
     {view, page} = open_draft(conn, %{slug: "live-page", published: true})
 

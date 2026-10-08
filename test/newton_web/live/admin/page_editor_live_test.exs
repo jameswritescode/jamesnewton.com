@@ -140,6 +140,46 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     assert_push_event(view, "insert_image", %{url: "/media/" <> _})
   end
 
+  test "the first upload keeps a title typed on a brand-new page", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    render_change(view, "validate", %{
+      "page" => %{
+        "title" => "Kept Title",
+        "slug" => "",
+        "_unused_slug" => "",
+        "body_markdown" => ""
+      }
+    })
+
+    image =
+      file_input(view, "#page-form", :inline_images, [
+        %{name: "kept.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "kept.png")
+    assert_patch(view)
+
+    assert [page] = Newton.Pages.list_pages()
+    assert page.title == "Kept Title"
+    assert page.slug == "kept-title"
+    assert has_element?(view, "#page-form input[name='page[title]'][value='Kept Title']")
+  end
+
+  test "the first upload on an untitled page creates an Untitled draft", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    image =
+      file_input(view, "#page-form", :inline_images, [
+        %{name: "untitled.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "untitled.png")
+    assert_patch(view)
+
+    assert [%{title: "Untitled" <> _}] = Newton.Pages.list_pages()
+  end
+
   test "a published page is not auto-saved", %{conn: conn} do
     {view, page} = open_draft(conn, %{slug: "live-page", published: true})
 

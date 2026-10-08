@@ -294,6 +294,46 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert_push_event(view, "insert_image", %{url: "/media/" <> _})
   end
 
+  test "the first upload keeps a title typed on a brand-new post", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    render_change(view, "validate", %{
+      "post" => %{
+        "title" => "Kept Title",
+        "slug" => "",
+        "_unused_slug" => "",
+        "body_markdown" => ""
+      }
+    })
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "kept.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "kept.png")
+    assert_patch(view)
+
+    assert [post] = Newton.Blog.list_posts(:drafts)
+    assert post.title == "Kept Title"
+    assert post.slug == "kept-title"
+    assert has_element?(view, "#post-form input[name='post[title]'][value='Kept Title']")
+  end
+
+  test "the first upload on an untitled post creates an Untitled draft", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    image =
+      file_input(view, "#post-form", :inline_images, [
+        %{name: "untitled.png", content: @png_1x1, type: "image/png"}
+      ])
+
+    render_upload(image, "untitled.png")
+    assert_patch(view)
+
+    assert [%{title: "Untitled" <> _}] = Newton.Blog.list_posts(:drafts)
+  end
+
   test "editing a draft persists on submit", %{conn: conn} do
     {view, _post} = open_draft(conn)
 

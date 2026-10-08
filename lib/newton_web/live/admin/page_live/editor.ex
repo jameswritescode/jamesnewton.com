@@ -384,10 +384,11 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   # The first image dropped into an unsaved page needs a row to hang the ledger
   # entry on, so it creates the draft and moves to its edit URL.
   defp ensure_page(%{assigns: %{page: %Page{id: nil}}} = socket) do
-    case Pages.create_page(%{"title" => "Untitled", "slug" => next_untitled_slug()}) do
+    case Pages.create_page(backfill_new(staged_content(socket))) do
       {:ok, page} ->
         socket =
           socket
+          |> cancel_autosave()
           |> assign(:page, page)
           |> assign(:editor_page_id, page.id)
           |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
@@ -400,6 +401,19 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp ensure_page(socket), do: {socket, socket.assigns.page}
+
+  defp staged_content(socket) do
+    (socket.assigns.autosave_params || socket.assigns.form.source.params || %{})
+    |> Map.take(@autosave_fields)
+  end
+
+  defp cancel_autosave(socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+
+    socket
+    |> assign(:autosave_timer, nil)
+    |> assign(:autosave_params, nil)
+  end
 
   defp attach_image(%Page{id: nil}, _key, _original_filename), do: :ok
 

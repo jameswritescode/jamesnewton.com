@@ -47,12 +47,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
-    case Blog.create_post(backfill_new(%{})) do
+    case Blog.create_post(backfill_new(staged_content(socket))) do
       {:ok, post} ->
         PublicationNotifier.notify_change(nil, post)
 
         socket =
           socket
+          |> cancel_autosave()
           |> assign(:post, post)
           |> assign(:published_at, post.published_at)
           |> assign(:editor_post_id, post.id)
@@ -66,6 +67,19 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp ensure_post(socket), do: {socket, socket.assigns.post}
+
+  defp staged_content(socket) do
+    (socket.assigns.autosave_params || socket.assigns.form.source.params || %{})
+    |> Map.take(@autosave_fields)
+  end
+
+  defp cancel_autosave(socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+
+    socket
+    |> assign(:autosave_timer, nil)
+    |> assign(:autosave_params, nil)
+  end
 
   defp attach_image(%Post{id: nil}, _key, _original_filename), do: :ok
 

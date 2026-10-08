@@ -26,6 +26,21 @@ defmodule NewtonWeb.Admin.FormHelpers do
   def field_edited?(params, key, auto), do: not unused?(params, key) and params[key] != auto
 
   @doc """
+  Does the slug stay the author's own rather than following the title? A
+  published record keeps its slug so links don't break. On a draft a slug the
+  author edited stays locked, but a blank one reverts to following the title:
+  a blank also arrives as a stale browser value after the form was reset, and
+  locking it would leave the draft with an empty slug.
+  """
+  def slug_locked?(params, previously_locked?, auto, published?) do
+    published? or
+      ((previously_locked? or field_edited?(params, "slug", auto)) and
+         not blank?(params["slug"]))
+  end
+
+  defp blank?(value), do: value |> to_string() |> String.trim() == ""
+
+  @doc """
   Does `record` still carry the identity a create backfills for a draft that had
   no title: the placeholder title plus a `slug_prefix` or `slug_prefix-N` slug?
   Such a slug was never chosen by the author, so it keeps following the title.

@@ -209,6 +209,52 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
 
       assert [%{slug: "saved-blank"}] = Newton.Pages.list_pages()
     end
+
+    test "keeps following the title when a stale blank slug arrives after the first image",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      render_change(view, "validate", %{
+        "page" => %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""}
+      })
+
+      upload_inline_image(view, "stale.png")
+      assert_patch(view)
+
+      render_change(view, "validate", %{
+        "page" => %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => "![](x)"}
+      })
+
+      assert has_element?(view, "#page-form input[name='page[slug]'][value='cleared-slug']")
+
+      render_change(view, "validate", %{
+        "page" => %{"title" => "Renamed", "slug" => "cleared-slug", "body_markdown" => "![](x)"}
+      })
+
+      assert has_element?(view, "#page-form input[name='page[slug]'][value='renamed']")
+    end
+
+    test "refills from the title when cleared on a draft", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{title: "Custom Draft", slug: "my-own-slug"})
+
+      render_change(view, "validate", %{"page" => %{"title" => "Custom Draft", "slug" => ""}})
+
+      assert has_element?(view, "#page-form input[name='page[slug]'][value='custom-draft']")
+
+      render_change(view, "validate", %{
+        "page" => %{"title" => "Retitled Draft", "slug" => "custom-draft"}
+      })
+
+      assert has_element?(view, "#page-form input[name='page[slug]'][value='retitled-draft']")
+    end
+
+    test "is not derived from the title once published", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{title: "Live Title", slug: "live-slug", published: true})
+
+      render_change(view, "validate", %{"page" => %{"title" => "Live Title", "slug" => ""}})
+
+      refute has_element?(view, "#page-form input[name='page[slug]'][value='live-title']")
+    end
   end
 
   test "an Untitled draft from a first image takes its slug from the title typed later",

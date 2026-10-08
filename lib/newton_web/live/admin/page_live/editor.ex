@@ -176,8 +176,12 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     published? = socket.assigns.page.published
 
     slug_locked =
-      socket.assigns.slug_locked or published? or
-        FormHelpers.field_edited?(params, "slug", socket.assigns.slug_auto)
+      FormHelpers.slug_locked?(
+        params,
+        socket.assigns.slug_locked,
+        socket.assigns.slug_auto,
+        published?
+      )
 
     meta_locked =
       socket.assigns.meta_locked or

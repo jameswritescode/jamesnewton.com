@@ -363,6 +363,57 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
       assert [%{slug: "saved-blank"}] = Newton.Blog.list_posts(:drafts)
     end
+
+    test "keeps following the title when a stale blank slug arrives after the first image",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      render_change(view, "validate", %{
+        "post" => %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""}
+      })
+
+      upload_inline_image(view, "stale.png")
+      assert_patch(view)
+
+      render_change(view, "validate", %{
+        "post" => %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => "![](x)"}
+      })
+
+      assert has_element?(view, "#post-form input[name='post[slug]'][value='cleared-slug']")
+
+      render_change(view, "validate", %{
+        "post" => %{"title" => "Renamed", "slug" => "cleared-slug", "body_markdown" => "![](x)"}
+      })
+
+      assert has_element?(view, "#post-form input[name='post[slug]'][value='renamed']")
+    end
+
+    test "refills from the title when cleared on a draft", %{conn: conn} do
+      {view, _post} = open_draft(conn, %{title: "Custom Draft", slug: "my-own-slug"})
+
+      render_change(view, "validate", %{"post" => %{"title" => "Custom Draft", "slug" => ""}})
+
+      assert has_element?(view, "#post-form input[name='post[slug]'][value='custom-draft']")
+
+      render_change(view, "validate", %{
+        "post" => %{"title" => "Retitled Draft", "slug" => "custom-draft"}
+      })
+
+      assert has_element?(view, "#post-form input[name='post[slug]'][value='retitled-draft']")
+    end
+
+    test "is not derived from the title once published", %{conn: conn} do
+      {view, _post} =
+        open_draft(conn, %{
+          title: "Live Title",
+          slug: "live-slug",
+          published_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      render_change(view, "validate", %{"post" => %{"title" => "Live Title", "slug" => ""}})
+
+      refute has_element?(view, "#post-form input[name='post[slug]'][value='live-title']")
+    end
   end
 
   test "an Untitled draft from a first image takes its slug from the title typed later",

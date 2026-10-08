@@ -433,8 +433,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     published? = not is_nil(socket.assigns.published_at)
 
     slug_locked =
-      socket.assigns.slug_locked or published? or
-        FormHelpers.field_edited?(params, "slug", socket.assigns.slug_auto)
+      FormHelpers.slug_locked?(
+        params,
+        socket.assigns.slug_locked,
+        socket.assigns.slug_auto,
+        published?
+      )
 
     excerpt_locked =
       socket.assigns.excerpt_locked or

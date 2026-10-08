@@ -24,7 +24,8 @@ The collector attaches to Phoenix's own `[:phoenix, :router_dispatch, :stop]`
 event — controllers are never touched. A request counts only when ALL hold:
 
 1. Route is one of the public pages: `/`, `/posts`, `/posts/:slug`,
-   `/reading`, `/photos`, `/links`, `/resume`
+   `/reading`, `/photos`, `/links`, `/resume`, `/:slug` (standalone pages —
+   drafts and unknown slugs 404 for anonymous visitors, so they never count)
 2. `GET` with status `200`
 3. No `?p=` preview token (shared draft links never count)
 4. No authenticated session (the author's own browsing never counts)
@@ -38,8 +39,12 @@ detaches a raising handler, which would silently stop all collection. Every
 unexpected shape falls through to "don't count."
 
 Path cardinality is bounded by construction: only allowlisted routes with 200s
-are stored, and the stored value is `request_path` (query strings stripped), so
-junk URLs and tokens can never mint rows.
+are stored, and the stored value is a canonical path rebuilt from the matched
+route and its decoded params — not the raw `request_path`. The router matches
+on a decoded copy of the path, so `/posts/%68ello`, `/posts/hello`, and `//`
+all reach the same 200; storing `request_path` would mint a row for each
+spelling. Query strings never enter the key, so junk URLs and tokens can't
+either.
 
 ## Why hourly UTC buckets
 
@@ -110,5 +115,9 @@ disclose, export, or consent-banner.
   run in production.
 - **Growth:** ≈24 rows per path per day — years of data is a small table. No
   pruning needed; no index on the conversion expression needed at this scale.
+- **Top content:** the dashboard's "Top content — last 7 days" list ranks posts
+  and standalone pages together, joining stored paths back to currently
+  published titles; section pages (`/`, `/posts`, …) and paths whose post or
+  page is no longer published drop out.
 - **Metrics:** flush duration/result is a `Newton.Metrics` distribution,
   visible in LiveDashboard (dev) and Grafana (prod).

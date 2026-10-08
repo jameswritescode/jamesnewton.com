@@ -229,3 +229,31 @@ Tests assert on outcomes and interactions, not static markup.
   (mirror tables + shared behavior chosen instead; revisit if a third
   image-owning content type appears).
 - Consolidating `Blog.ImageAudit`'s direct `media_root` access (unrelated).
+
+## Changes since this spec
+
+*Recorded 2026-10-07 against the `admin-pages` branch as shipped.*
+
+- **Settings drawer, not an inline toggle.** The page editor adopted the post
+  editor's settings drawer: Publish / Move to draft / Delete live in the drawer
+  (an unsaved page can be published straight from it), and there is no inline
+  `published` checkbox.
+- **Autofill.** The slug autofills from the title and the meta description from
+  the body excerpt, each locking once the author edits it; a blank meta
+  description falls back to the excerpt when rendered.
+- **Sitemap opt-in and IndexNow.** Pages gained `in_sitemap` (default off),
+  flipped by an "Include in sitemap" switch in the drawer. Published, opted-in
+  pages appear in `sitemap.xml`, and their changes are submitted to IndexNow
+  via `PublicationNotifier.notify_page_change/2` (see `docs/indexnow.md`) — so
+  the editor no longer omits the publication notifier entirely.
+- **Analytics.** `/:slug` page views are counted (drafts and unknown slugs 404,
+  so never count), and the dashboard's "Top content — last 7 days" ranks posts
+  and pages together.
+- **Image audit.** `Blog.ImageAudit` was renamed `Newton.Media.Audit` and now
+  treats pages as media owners alongside posts.
+- **Draft banners.** The draft banner was restyled as a quiet accent-tinted
+  notice shared by posts and pages, and admins viewing an unpublished post now
+  see a draft banner, mirroring pages.
+- **First image keeps the typed title.** The draft created by the first inline
+  image is built from the staged form fields, so a title typed beforehand is
+  kept rather than reset to "Untitled".

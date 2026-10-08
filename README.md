@@ -4,9 +4,10 @@
 
 Personal site and blog, built with Phoenix LiveView. Posts are written in
 markdown in a custom CodeMirror editor with autosave, inline image uploads,
-and optimistic-locking conflict protection; the public site adds photo
-galleries, a reading log, server-rendered social cards, and privacy-preserving
-first-party analytics.
+and optimistic-locking conflict protection; standalone markdown pages are
+edited in the same editor and served at top-level slugs. The public site adds
+photo galleries, a reading log, server-rendered social cards, and
+privacy-preserving first-party analytics.
 
 ## Stack
 

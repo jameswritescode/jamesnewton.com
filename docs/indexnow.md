@@ -1,19 +1,21 @@
 # Search indexing: sitemap, IndexNow, and the post lifecycle
 
-How jamesnewton.com tells search engines about its content, and how a post's
-lifecycle drives those notifications.
+How jamesnewton.com tells search engines about its content, and how the
+lifecycles of posts and standalone pages drive those notifications.
 
 ## The two mechanisms
 
-**Sitemap (passive).** `GET /sitemap.xml` lists the public pages and every
-published post with a `lastmod` date. Crawlers fetch it on their own schedule;
-`lastmod` tells them what changed since last time. `GET /robots.txt` points at
+**Sitemap (passive).** `GET /sitemap.xml` lists the public pages, every
+published post, and the published standalone pages that opted in via the
+editor's "Include in sitemap" switch, each with a `lastmod` date. Crawlers
+fetch it on their own schedule; `lastmod` tells them what changed since last
+time. `GET /robots.txt` points at
 it. This is the discovery path for **Google**, which does not participate in
 IndexNow.
 
-**IndexNow (active).** When a published post's public URLs change, we POST those
-URLs to `api.indexnow.org` so participating engines (**Bing, Yandex, Seznam,
-Naver**) recrawl promptly instead of waiting for their next sitemap poll.
+**IndexNow (active).** When a published post's public URLs change — or an
+opted-in page's — we POST those URLs to `api.indexnow.org` so participating
+engines (**Bing, Yandex, Seznam, Naver**) recrawl promptly instead of waiting for their next sitemap poll.
 
 Why both: the old "ping the engines with your sitemap URL" endpoints were
 removed by Google (Jan 2024) and Bing, so active notification now means
@@ -27,14 +29,14 @@ layer decides *which* URLs changed; the domain layer *submits* them.**
 
 | Module | Layer | Responsibility |
 |---|---|---|
-| `Newton.IndexNow` | domain | Transport. POSTs a list of URLs to the IndexNow API via Req. URL-agnostic. |
-| `NewtonWeb.IndexNowNotifier` | web | Diffs a post's before/after state into the changed public URL set, then spawns the submission. |
+| `Newton.IndexNow` | domain | Transport. POSTs a list of URLs to the IndexNow API via Req. URL-agnostic. Logs the would-be URLs at debug level when disabled. |
+| `NewtonWeb.PublicationNotifier` | web | Diffs a post's or page's before/after state into the changed public URL set, then spawns the submission (posts also fan out to standard.site). |
 | `NewtonWeb.SitemapController` | web | Renders `sitemap.xml` and `robots.txt`. |
 | `Newton.Telemetry` | domain | Facade owning the `[:newton, …]` telemetry event prefix. |
 
-`IndexNowNotifier` lives in the web layer because building a post's canonical
-URL (`url(~p"/posts/#{slug}")`) requires the router and endpoint — domain
-contexts must not reach up into web routing. `Newton.IndexNow` stays in the
+`PublicationNotifier` lives in the web layer because building a canonical URL
+(`url(~p"/posts/#{slug}")`, `url(~p"/#{slug}")`) requires the router and
+endpoint — domain contexts must not reach up into web routing. `Newton.IndexNow` stays in the
 domain layer precisely because it never touches routes; it takes URLs as data.
 
 **Fire-and-forget.** Submissions run in a `Task.Supervisor` child
@@ -65,10 +67,18 @@ config :newton, Newton.IndexNow,
 ### What `enabled` gates
 
 `enabled: true` turns on the outbound POST. When false, `submit/1` returns `:ok`
-without an HTTP call, so `IndexNowNotifier` still computes the changed URL set
-and runs end to end — nothing leaves the machine. That is the dev and test
+without an HTTP call, so `PublicationNotifier` still computes the changed URL
+set and runs end to end — nothing leaves the machine. That is the dev and test
 posture, and it means the notifier's behaviour is exercised by tests without
 network access.
+
+Instead of posting, a disabled `submit/1` logs the URLs it would have sent at
+debug level. To tophat the flow in dev, publish, rename, or toggle a page (or
+post) and watch the server log for:
+
+```
+[debug] IndexNow disabled; would have submitted: ["http://localhost:4000/about"]
+```
 
 The key file at `priv/static/<key>.txt` is served regardless of the flag, since
 it is static content.
@@ -111,7 +121,7 @@ stateDiagram-v2
     Draft --> [*]: delete
 ```
 
-`IndexNowNotifier.changed_urls(before, after)` computes the set. It collects the
+`PublicationNotifier.changed_urls(before, after)` computes the set. It collects the
 public URL of the `before` post and the `after` post (each contributes its
 `/posts/<slug>` URL only if published, nothing if draft), dedups them, and — if
 any were collected — appends `/` and `/posts` because both render the published
@@ -129,7 +139,7 @@ feed.
 | **unpublish** (`published → draft`) | old URL, `/`, `/posts` |
 | **delete published** | old URL, `/`, `/posts` |
 
-`notify_change/2` is called at all seven post-mutation points in
+`notify_change/2` is called at all nine post-mutation points in
 `PostLive.Editor`, always with the pre-mutation post as `before` and the result
 (or `nil` for delete) as `after`.
 
@@ -150,6 +160,34 @@ token-gated URL. Preview posts are still drafts (`published_at` is `nil`), so
 they contribute no URLs and are never submitted to IndexNow — correct, since
 preview URLs should not be indexed.
 
+## Page lifecycle → what gets submitted
+
+A standalone page is served at `/<slug>` when `published` is true. It reaches
+IndexNow only while it is **published and opted into the sitemap**
+(`in_sitemap`, default off) — the same gate that puts it in `sitemap.xml`.
+`PublicationNotifier.changed_page_urls(before, after)` collects each side's
+`/<slug>` URL when that side is published and opted in, dedups, and submits
+whatever is left. Pages are not listed on `/` or `/posts`, so neither is
+appended.
+
+| Transition | Submitted |
+|---|---|
+| any change to a draft page | *nothing* |
+| any change to a published, opted-out page | *nothing* |
+| **publish** an opted-in page | page URL |
+| **edit published + opted-in, same slug** | page URL |
+| **rename published + opted-in** (slug change) | old URL, new URL |
+| **toggle "Include in sitemap" on** (published) | page URL |
+| **toggle "Include in sitemap" off** (published) | page URL (so engines recrawl and drop it) |
+| **move to draft** (opted-in) | old URL |
+| **delete published + opted-in** | old URL |
+
+`notify_page_change/2` is called at every persisting mutation in
+`PageLive.Editor` — save, autosave, publish, move to draft, the sitemap toggle,
+delete, and the draft created by the first inline image — with the
+pre-mutation page as `before` and the result (or `nil` for delete) as `after`.
+Autosave is drafts-only for pages too, so its calls always submit nothing.
+
 ## Operations
 
 - **Google:** submit `https://jamesnewton.com/sitemap.xml` once in Google Search
@@ -157,7 +195,7 @@ preview URLs should not be indexed.
   programmatically buys nothing, which is why there is no Search Console API
   integration here.
 - **Verify the sitemap:** `curl https://jamesnewton.com/sitemap.xml` — published
-  posts appear with a `lastmod`; drafts never do.
+  posts and opted-in published pages appear with a `lastmod`; drafts never do.
 - **Verify IndexNow is live:** the key file must be reachable at
   `https://jamesnewton.com/<key>.txt`. Submissions show up in LiveDashboard as
   the `newton.indexnow.submit` metric, tagged by result.

@@ -481,6 +481,28 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert Newton.Blog.get_post!(post.id).slug == "real-title"
   end
 
+  test "an Untitled draft keeps its generated slug until a real title is typed",
+       %{conn: conn} do
+    {:ok, _} = Newton.Blog.create_post(%{title: "Older", slug: "untitled-post"})
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    upload_inline_image(view, "placeholder.png")
+    assert_patch(view)
+
+    post = Newton.Blog.get_post_by_slug!("untitled-post-2")
+
+    render_change(view, "validate", %{
+      "post" => %{"title" => "Untitled post", "slug" => post.slug, "body_markdown" => "Words."}
+    })
+
+    assert has_element?(view, "#post-form input[name='post[slug]'][value='untitled-post-2']")
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    assert Newton.Blog.get_post!(post.id).slug == "untitled-post-2"
+  end
+
   test "a slug collision on the first image shows the error and creates nothing",
        %{conn: conn} do
     {:ok, _} = Newton.Blog.create_post(%{title: "Elsewhere", slug: "taken"})

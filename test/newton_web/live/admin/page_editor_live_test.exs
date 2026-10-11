@@ -322,6 +322,27 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     assert Newton.Pages.get_page!(page.id).slug == "real-title"
   end
 
+  test "an Untitled draft keeps its generated slug until a real title is typed",
+       %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    upload_inline_image(view, "placeholder.png")
+    assert_patch(view)
+
+    [page] = Newton.Pages.list_pages()
+
+    render_change(view, "validate", %{
+      "page" => %{"title" => "Untitled", "slug" => page.slug, "body_markdown" => "Some words."}
+    })
+
+    assert has_element?(view, "#page-form input[name='page[slug]'][value='#{page.slug}']")
+
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+
+    assert Newton.Pages.get_page!(page.id).slug == page.slug
+  end
+
   test "a slug collision on the first image shows the error and creates nothing",
        %{conn: conn} do
     {:ok, _} = Newton.Pages.create_page(%{title: "Elsewhere", slug: "taken"})

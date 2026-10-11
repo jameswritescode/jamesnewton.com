@@ -195,7 +195,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
     {params, slug_auto} =
       FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
-        Newton.Slug.slugify(params["title"] || "")
+        FormHelpers.title_slug(params["title"], @untitled_title, socket.assigns.slug_auto)
       end)
 
     {params, meta_auto} =

@@ -48,6 +48,18 @@ defmodule NewtonWeb.Admin.FormHelpers do
     published? or derived_locked?(params, "slug", previously_locked?, auto)
   end
 
+  @doc """
+  The slug a title derives. A blank or placeholder title yields `current`
+  instead: slugifying the placeholder would collapse every untitled draft onto
+  one slug, so a draft keeps its generated slug until it has a real title.
+  """
+  @spec title_slug(String.t() | nil, String.t(), String.t()) :: String.t()
+  def title_slug(title, placeholder_title, current) do
+    if blank?(title) or title == placeholder_title,
+      do: current,
+      else: Newton.Slug.slugify(title)
+  end
+
   defp blank?(value), do: value |> to_string() |> String.trim() == ""
 
   @doc """

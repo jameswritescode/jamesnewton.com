@@ -27,7 +27,7 @@ defmodule Newton.Markdown do
     )
   end
 
-  @doc "Plain-text excerpt from the first paragraph, truncated at a word boundary."
+  @doc "Plain-text excerpt from the first paragraph with text (images ignored), truncated at a word boundary."
   @spec excerpt(String.t()) :: String.t()
   def excerpt(markdown) when is_binary(markdown) do
     markdown
@@ -48,12 +48,13 @@ defmodule Newton.Markdown do
   end
 
   defp first_paragraph_text(%MDEx.Document{nodes: nodes}) do
-    case Enum.find(nodes, &match?(%MDEx.Paragraph{}, &1)) do
-      nil -> ""
-      paragraph -> paragraph |> node_text() |> normalize_ws()
-    end
+    nodes
+    |> Stream.filter(&match?(%MDEx.Paragraph{}, &1))
+    |> Stream.map(&(&1 |> node_text() |> normalize_ws()))
+    |> Enum.find("", &(&1 != ""))
   end
 
+  defp node_text(%MDEx.Image{}), do: ""
   defp node_text(%MDEx.Text{literal: literal}), do: literal
   defp node_text(%MDEx.Code{literal: literal}), do: literal
   defp node_text(%MDEx.SoftBreak{}), do: " "

@@ -60,6 +60,21 @@ defmodule Newton.MarkdownTest do
     assert Markdown.excerpt(md) == "A code bit and a link."
   end
 
+  test "excerpt skips a leading image-only paragraph and uses the first text" do
+    md = "![Photo of the harbour](/media/a.png)\n\nThe boats came in early."
+    assert Markdown.excerpt(md) == "The boats came in early."
+  end
+
+  test "excerpt never includes an in-flight upload placeholder" do
+    md = "![Uploading a.png (dafcf5)…]()"
+    assert Markdown.excerpt(md) == ""
+  end
+
+  test "excerpt drops images inline with text" do
+    md = "Before ![alt text](/media/a.png) after."
+    assert Markdown.excerpt(md) == "Before after."
+  end
+
   test "excerpt truncates very long first paragraphs with an ellipsis" do
     long = String.duplicate("word ", 80)
     excerpt = Markdown.excerpt(long)

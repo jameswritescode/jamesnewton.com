@@ -180,6 +180,49 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     assert [%{title: "Untitled" <> _}] = Newton.Pages.list_pages()
   end
 
+  describe "the first image on an empty new page" do
+    test "shows the created draft's identity in the same reply", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      html = upload_inline_image(view, "identity.png")
+
+      [page] = Newton.Pages.list_pages()
+      assert input_value(html, "page[title]") == "Untitled"
+      assert input_value(html, "page[slug]") == page.slug
+    end
+
+    test "keeps the identity when a stale blank change follows", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      upload_inline_image(view, "stale-identity.png")
+      assert_patch(view)
+
+      html =
+        render_change(view, "validate", %{
+          "page" => %{
+            "title" => "",
+            "_unused_title" => "",
+            "slug" => "",
+            "_unused_slug" => "",
+            "meta_description" => "",
+            "_unused_meta_description" => "",
+            "body_markdown" => "![](/media/x.png)"
+          }
+        })
+
+      assert input_value(html, "page[title]") == "Untitled"
+      assert input_value(html, "page[slug]") =~ ~r/\Auntitled/
+    end
+  end
+
+  defp input_value(html, name) do
+    html
+    |> LazyHTML.from_fragment()
+    |> LazyHTML.query("input[name='#{name}']")
+    |> LazyHTML.attribute("value")
+    |> List.first()
+  end
+
   describe "a blank slug on a new page" do
     test "is derived from the title when the first image creates the draft", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin/pages/new")

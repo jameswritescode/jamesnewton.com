@@ -174,6 +174,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
   defp apply_validate(socket, params) do
+    params = FormHelpers.keep_persisted_identity(params, socket.assigns.page)
     published? = socket.assigns.page.published
 
     slug_locked =
@@ -245,11 +246,9 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
           {:noreply,
            socket
-           |> assign(:page, page)
-           |> assign(:autosave_params, nil)
            |> assign(:autosave_timer, nil)
-           |> assign(:save_state, :saved)
            |> assign(:editor_page_id, page.id)
+           |> assign_page(page, "Edit page")
            |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")}
 
         {:error, changeset} ->
@@ -430,8 +429,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         socket =
           socket
           |> cancel_autosave()
-          |> assign(:page, page)
           |> assign(:editor_page_id, page.id)
+          |> assign_page(page, "Edit page")
           |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
 
         {socket, page}

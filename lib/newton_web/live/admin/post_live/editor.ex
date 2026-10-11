@@ -56,9 +56,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         socket =
           socket
           |> cancel_autosave()
-          |> assign(:post, post)
-          |> assign(:published_at, post.published_at)
           |> assign(:editor_post_id, post.id)
+          |> assign_post(post, "Edit post")
           |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
 
         {socket, post}
@@ -98,35 +97,20 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :new, _params) do
-    post = %Post{}
+  defp apply_action(socket, :new, _params), do: assign_post(socket, %Post{}, "New post")
 
-    socket
-    |> sync_editor_key(nil)
-    |> assign(:page_title, "New post")
-    |> assign(:post, post)
-    |> assign(:images, post_images(post))
-    |> assign(:published_at, nil)
-    |> assign(:slug_locked, false)
-    |> assign(:slug_auto, "")
-    |> assign(:excerpt_locked, false)
-    |> assign(:excerpt_auto, "")
-    |> assign(:save_state, :saved)
-    |> assign(:autosave_params, nil)
-    |> assign(:form, to_form(Blog.change_post(post)))
-  end
+  defp apply_action(socket, :edit, %{"id" => id}),
+    do: assign_post(socket, Blog.get_post!(id), "Edit post")
 
-  defp apply_action(socket, :edit, %{"id" => id}) do
-    post = Blog.get_post!(id)
-
+  defp assign_post(socket, %Post{} = post, page_title) do
     socket
     |> sync_editor_key(post.id)
-    |> assign(:page_title, "Edit post")
+    |> assign(:page_title, page_title)
     |> assign(:post, post)
     |> assign(:images, post_images(post))
     |> assign(:published_at, post.published_at)
     |> assign(:slug_locked, slug_locked?(post))
-    |> assign(:slug_auto, post.slug)
+    |> assign(:slug_auto, post.slug || "")
     |> assign(:excerpt_locked, excerpt_locked?(post))
     |> assign(:excerpt_auto, post.excerpt || "")
     |> assign(:save_state, :saved)
@@ -155,6 +139,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
   # Published posts lock the slug so existing links/SEO don't break.
+  defp slug_locked?(%Post{id: nil}), do: false
+
   defp slug_locked?(post) do
     not is_nil(post.published_at) or
       (post.slug != Newton.Slug.slugify(post.title) and
@@ -353,12 +339,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
           {:noreply,
            socket
-           |> assign(:post, post)
-           |> assign(:published_at, post.published_at)
-           |> assign(:autosave_params, nil)
            |> assign(:autosave_timer, nil)
-           |> assign(:save_state, :saved)
            |> assign(:editor_post_id, post.id)
+           |> assign_post(post, "Edit post")
            |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
 
         {:error, changeset} ->
@@ -431,6 +414,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp apply_validate(socket, params) do
+    params = FormHelpers.keep_persisted_identity(params, socket.assigns.post)
     published? = not is_nil(socket.assigns.published_at)
 
     slug_locked =

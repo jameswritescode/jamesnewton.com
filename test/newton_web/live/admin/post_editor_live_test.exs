@@ -334,6 +334,49 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert [%{title: "Untitled" <> _}] = Newton.Blog.list_posts(:drafts)
   end
 
+  describe "the first image on an empty new post" do
+    test "shows the created draft's identity in the same reply", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      html = upload_inline_image(view, "identity.png")
+
+      [post] = Newton.Blog.list_posts(:drafts)
+      assert input_value(html, "post[title]") == "Untitled post"
+      assert input_value(html, "post[slug]") == post.slug
+    end
+
+    test "keeps the identity when a stale blank change follows", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      upload_inline_image(view, "stale-identity.png")
+      assert_patch(view)
+
+      html =
+        render_change(view, "validate", %{
+          "post" => %{
+            "title" => "",
+            "_unused_title" => "",
+            "slug" => "",
+            "_unused_slug" => "",
+            "excerpt" => "",
+            "_unused_excerpt" => "",
+            "body_markdown" => "![](/media/x.png)"
+          }
+        })
+
+      assert input_value(html, "post[title]") == "Untitled post"
+      assert input_value(html, "post[slug]") =~ ~r/\Auntitled/
+    end
+  end
+
+  defp input_value(html, name) do
+    html
+    |> LazyHTML.from_fragment()
+    |> LazyHTML.query("input[name='#{name}']")
+    |> LazyHTML.attribute("value")
+    |> List.first()
+  end
+
   describe "a blank slug on a new post" do
     test "is derived from the title when the first image creates the draft", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin/posts/new")

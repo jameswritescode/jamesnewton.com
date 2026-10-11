@@ -51,6 +51,26 @@ defmodule NewtonWeb.Admin.FormHelpers do
   defp blank?(value), do: value |> to_string() |> String.trim() == ""
 
   @doc """
+  Put the persisted record's title and slug back where a submission carries them
+  blank and untouched. An untouched field can't have been cleared by the author,
+  so its blank is a stale browser value, such as one sent just after a create
+  gave the draft its identity.
+  """
+  @spec keep_persisted_identity(map(), map()) :: map()
+  def keep_persisted_identity(params, record) do
+    Enum.reduce(~w(title slug)a, params, fn field, params ->
+      key = Atom.to_string(field)
+      persisted = Map.get(record, field)
+
+      if unused?(params, key) and blank?(params[key]) and not blank?(persisted) do
+        Map.put(params, key, persisted)
+      else
+        params
+      end
+    end)
+  end
+
+  @doc """
   Does `record` still carry the identity a create backfills for a draft that had
   no title: the placeholder title plus a `slug_prefix` or `slug_prefix-N` slug?
   Such a slug was never chosen by the author, so it keeps following the title.

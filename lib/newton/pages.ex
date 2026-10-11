@@ -57,6 +57,20 @@ defmodule Newton.Pages do
   @spec count_drafts() :: non_neg_integer()
   def count_drafts, do: Repo.aggregate(from(p in Page, where: p.published == false), :count, :id)
 
+  @doc "The first free slug in the untitled-page, untitled-page-2, … sequence."
+  @spec next_untitled_slug() :: String.t()
+  def next_untitled_slug do
+    taken =
+      Repo.all(from p in Page, where: like(p.slug, "untitled-page%"), select: p.slug)
+      |> MapSet.new()
+
+    Stream.iterate(1, &(&1 + 1))
+    |> Enum.find_value(fn n ->
+      slug = if n == 1, do: "untitled-page", else: "untitled-page-#{n}"
+      if slug not in taken, do: slug
+    end)
+  end
+
   @spec list_images(%Page{}) :: [%PageImage{}]
   def list_images(%Page{id: page_id}) do
     Repo.all(

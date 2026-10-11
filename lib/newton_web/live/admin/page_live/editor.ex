@@ -388,7 +388,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     if blank?(params["title"]) do
       params
       |> Map.put("title", @untitled_title)
-      |> keep_existing("slug", next_untitled_slug())
+      |> keep_existing("slug", Pages.next_untitled_slug())
     else
       keep_existing(params, "slug", Newton.Slug.slugify(params["title"]))
     end
@@ -409,8 +409,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp keep_existing(params, key, existing) do
     if blank?(params[key]), do: Map.put(params, key, existing), else: params
   end
-
-  defp next_untitled_slug, do: "#{@untitled_slug_prefix}-#{System.unique_integer([:positive])}"
 
   defp handle_inline_upload(:inline_images, entry, socket) do
     InlineImageUpload.handle_progress(entry, socket, %{

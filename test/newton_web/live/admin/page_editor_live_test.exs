@@ -308,7 +308,7 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     assert_patch(view)
 
     [page] = Newton.Pages.list_pages()
-    assert "untitled-page-" <> _ = page.slug
+    assert page.slug == "untitled-page"
 
     render_change(view, "validate", %{
       "page" => %{"title" => "Real Title", "slug" => page.slug, "_unused_slug" => ""}

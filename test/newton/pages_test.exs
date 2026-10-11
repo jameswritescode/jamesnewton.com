@@ -27,6 +27,20 @@ defmodule Newton.PagesTest do
     assert %{title: [_ | _]} = errors_on(cs)
   end
 
+  test "next_untitled_slug returns the first free untitled slug" do
+    assert Pages.next_untitled_slug() == "untitled-page"
+
+    {:ok, _} = Pages.create_page(%{title: "Untitled", slug: "untitled-page"})
+    assert Pages.next_untitled_slug() == "untitled-page-2"
+
+    {:ok, page_two} = Pages.create_page(%{title: "Untitled", slug: "untitled-page-2"})
+    {:ok, _} = Pages.create_page(%{title: "Untitled", slug: "untitled-page-3"})
+    assert Pages.next_untitled_slug() == "untitled-page-4"
+
+    {:ok, _} = Pages.delete_page(page_two)
+    assert Pages.next_untitled_slug() == "untitled-page-2"
+  end
+
   describe "context CRUD" do
     @valid %{slug: "about", title: "About", body_markdown: "Hello."}
 

@@ -612,6 +612,81 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     refute html =~ "Changed again."
   end
 
+  describe "a cleared excerpt" do
+    test "re-derives from the body and keeps following it", %{conn: conn} do
+      {view, _post} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
+
+      render_change(view, "validate", %{
+        "post" => %{"body_markdown" => "Seed body paragraph.", "excerpt" => "Custom words"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "post" => %{"body_markdown" => "Seed body paragraph.", "excerpt" => ""}
+        })
+
+      assert excerpt_value(html) == "Seed body paragraph."
+
+      html =
+        render_change(view, "validate", %{
+          "post" => %{
+            "body_markdown" => "A newer body.",
+            "excerpt" => "Seed body paragraph.",
+            "_unused_excerpt" => ""
+          }
+        })
+
+      assert excerpt_value(html) == "A newer body."
+    end
+
+    test "locks again once the author types a custom value", %{conn: conn} do
+      {view, _post} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
+
+      render_change(view, "validate", %{
+        "post" => %{"body_markdown" => "Seed body paragraph.", "excerpt" => ""}
+      })
+
+      render_change(view, "validate", %{
+        "post" => %{"body_markdown" => "Seed body paragraph.", "excerpt" => "Mine now"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "post" => %{
+            "body_markdown" => "A newer body.",
+            "excerpt" => "Mine now",
+            "_unused_excerpt" => ""
+          }
+        })
+
+      assert excerpt_value(html) == "Mine now"
+    end
+  end
+
+  test "a post loaded with a blank excerpt autofills it from the body", %{conn: conn} do
+    {:ok, post} =
+      Newton.Blog.create_post(%{
+        title: "Blank Excerpt",
+        slug: "blank-excerpt",
+        body_markdown: "Stored body."
+      })
+
+    post |> Ecto.Changeset.change(excerpt: "") |> Newton.Repo.update!()
+
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
+
+    html =
+      render_change(view, "validate", %{
+        "post" => %{
+          "body_markdown" => "Edited body.",
+          "excerpt" => "",
+          "_unused_excerpt" => ""
+        }
+      })
+
+    assert excerpt_value(html) == "Edited body."
+  end
+
   test "shows validation errors on invalid submit", %{conn: conn} do
     {view, _post} = open_draft(conn)
 

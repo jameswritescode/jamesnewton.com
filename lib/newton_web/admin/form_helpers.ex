@@ -26,16 +26,26 @@ defmodule NewtonWeb.Admin.FormHelpers do
   def field_edited?(params, key, auto), do: not unused?(params, key) and params[key] != auto
 
   @doc """
-  Does the slug stay the author's own rather than following the title? A
-  published record keeps its slug so links don't break. On a draft a slug the
-  author edited stays locked, but a blank one reverts to following the title:
-  a blank also arrives as a stale browser value after the form was reset, and
-  locking it would leave the draft with an empty slug.
+  Does a derived field (slug, excerpt, meta description) stay the author's own
+  rather than following its source? A value the author edited stays locked, but
+  a blank one means "auto" and reverts to following the source: clearing the
+  field is how the author hands it back, and a blank also arrives as a stale
+  browser value after the form was reset, where locking it would leave the
+  record with an empty field.
   """
+  @spec derived_locked?(map(), String.t(), boolean(), String.t()) :: boolean()
+  def derived_locked?(params, field, previously_locked?, auto) do
+    (previously_locked? or field_edited?(params, field, auto)) and not blank?(params[field])
+  end
+
+  @doc """
+  Does the slug stay the author's own rather than following the title? A
+  published record keeps its slug so links don't break; a draft's slug follows
+  `derived_locked?/4`.
+  """
+  @spec slug_locked?(map(), boolean(), String.t(), boolean()) :: boolean()
   def slug_locked?(params, previously_locked?, auto, published?) do
-    published? or
-      ((previously_locked? or field_edited?(params, "slug", auto)) and
-         not blank?(params["slug"]))
+    published? or derived_locked?(params, "slug", previously_locked?, auto)
   end
 
   defp blank?(value), do: value |> to_string() |> String.trim() == ""

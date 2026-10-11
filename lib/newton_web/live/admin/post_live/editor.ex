@@ -162,7 +162,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp excerpt_locked?(post) do
-    (post.excerpt || "") != Newton.Markdown.excerpt(post.body_markdown || "")
+    not blank?(post.excerpt) and
+      post.excerpt != Newton.Markdown.excerpt(post.body_markdown || "")
   end
 
   @impl true
@@ -441,8 +442,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       )
 
     excerpt_locked =
-      socket.assigns.excerpt_locked or
-        FormHelpers.field_edited?(params, "excerpt", socket.assigns.excerpt_auto)
+      FormHelpers.derived_locked?(
+        params,
+        "excerpt",
+        socket.assigns.excerpt_locked,
+        socket.assigns.excerpt_auto
+      )
 
     {params, slug_auto} =
       FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->

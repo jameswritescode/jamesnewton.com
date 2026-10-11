@@ -149,7 +149,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp meta_locked?(%Page{id: nil}), do: false
 
   defp meta_locked?(%Page{} = page) do
-    (page.meta_description || "") != Newton.Markdown.excerpt(page.body_markdown || "")
+    not blank?(page.meta_description) and
+      page.meta_description != Newton.Markdown.excerpt(page.body_markdown || "")
   end
 
   # The body editor's DOM is phx-update="ignore", so patching to a DIFFERENT page
@@ -184,8 +185,12 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
       )
 
     meta_locked =
-      socket.assigns.meta_locked or
-        FormHelpers.field_edited?(params, "meta_description", socket.assigns.meta_auto)
+      FormHelpers.derived_locked?(
+        params,
+        "meta_description",
+        socket.assigns.meta_locked,
+        socket.assigns.meta_auto
+      )
 
     {params, slug_auto} =
       FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->

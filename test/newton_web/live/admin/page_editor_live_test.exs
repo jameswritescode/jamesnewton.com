@@ -460,6 +460,72 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     assert meta_value(html) == "Third body version now."
   end
 
+  describe "a cleared meta description" do
+    test "re-derives from the body and keeps following it", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
+
+      render_change(view, "validate", %{
+        "page" => %{"body_markdown" => "Seed body paragraph.", "meta_description" => "Custom"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "page" => %{"body_markdown" => "Seed body paragraph.", "meta_description" => ""}
+        })
+
+      assert meta_value(html) == "Seed body paragraph."
+
+      html =
+        render_change(view, "validate", %{
+          "page" => %{
+            "body_markdown" => "A newer body.",
+            "meta_description" => "Seed body paragraph.",
+            "_unused_meta_description" => ""
+          }
+        })
+
+      assert meta_value(html) == "A newer body."
+    end
+
+    test "locks again once the author types a custom value", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
+
+      render_change(view, "validate", %{
+        "page" => %{"body_markdown" => "Seed body paragraph.", "meta_description" => ""}
+      })
+
+      render_change(view, "validate", %{
+        "page" => %{"body_markdown" => "Seed body paragraph.", "meta_description" => "Mine now"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "page" => %{
+            "body_markdown" => "A newer body.",
+            "meta_description" => "Mine now",
+            "_unused_meta_description" => ""
+          }
+        })
+
+      assert meta_value(html) == "Mine now"
+    end
+  end
+
+  test "a page loaded with a blank meta description autofills it from the body", %{conn: conn} do
+    {view, _page} = open_draft(conn, %{body_markdown: "Stored body.", meta_description: ""})
+
+    html =
+      render_change(view, "validate", %{
+        "page" => %{
+          "body_markdown" => "Edited body.",
+          "meta_description" => "",
+          "_unused_meta_description" => ""
+        }
+      })
+
+    assert meta_value(html) == "Edited body."
+  end
+
   defp meta_value(html) do
     case Regex.run(
            ~r/<textarea[^>]*name="page\[meta_description\]"[^>]*>([^<]*)<\/textarea>/,

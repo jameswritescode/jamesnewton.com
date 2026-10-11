@@ -232,15 +232,23 @@ Tests assert on outcomes and interactions, not static markup.
 
 ## Changes since this spec
 
-*Recorded 2026-10-07 against the `admin-pages` branch as shipped.*
+*Recorded 2026-10-07 and updated 2026-10-11 against the `admin-pages` branch
+as shipped. The editor rules below apply to the post editor too, since both
+share the autofill and draft-creation helpers.*
 
 - **Settings drawer, not an inline toggle.** The page editor adopted the post
   editor's settings drawer: Publish / Move to draft / Delete live in the drawer
   (an unsaved page can be published straight from it), and there is no inline
   `published` checkbox.
-- **Autofill.** The slug autofills from the title and the meta description from
-  the body excerpt, each locking once the author edits it; a blank meta
-  description falls back to the excerpt when rendered.
+- **Autofill.** The slug autofills from the title and the meta description (the
+  excerpt, on posts) from the body. Each locks once the author types a
+  non-blank value; a blank one means "auto" and goes back to following its
+  source, so clearing a field hands it back. On a published record the slug
+  stays locked so links don't break. A blank meta description also falls back
+  to the excerpt when rendered.
+- **Excerpts skip images.** The excerpt behind autofill uses the first paragraph
+  that has text, ignoring images, so a body that opens with an image no longer
+  yields its alt text, and an in-flight upload placeholder never leaks in.
 - **Sitemap opt-in and IndexNow.** Pages gained `in_sitemap` (default off),
   flipped by an "Include in sitemap" switch in the drawer. Published, opted-in
   pages appear in `sitemap.xml`, and their changes are submitted to IndexNow
@@ -254,6 +262,15 @@ Tests assert on outcomes and interactions, not static markup.
 - **Draft banners.** The draft banner was restyled as a quiet accent-tinted
   notice shared by posts and pages, and admins viewing an unpublished post now
   see a draft banner, mirroring pages.
-- **First image keeps the typed title.** The draft created by the first inline
-  image is built from the staged form fields, so a title typed beforehand is
-  kept rather than reset to "Untitled".
+- **Draft creation keeps what was typed.** The draft created by the first
+  inline image, autosave or Save is built from the staged form fields, and the
+  form shows the created record straight away. A blank slug is derived from the
+  title; with no title either, the draft is "Untitled" with the first free slug
+  in a sequence (`untitled-page`, `untitled-page-2`, …, matching posts'
+  `untitled-post` series). That generated slug is kept until a real title is
+  typed, then follows it.
+- **Slug collisions are shown, not resolved.** If a create fails because the slug
+  is taken, the editor shows the error on the slug field and keeps the typed
+  values; nothing appends a suffix automatically. An image dropped while the
+  slug collides is stored and inserted into the body but not recorded on the
+  draft's image ledger.

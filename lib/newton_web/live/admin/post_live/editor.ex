@@ -153,8 +153,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   @impl true
-  def handle_event("validate", %{"post" => params}, socket) do
-    {:noreply, apply_validate(socket, params)}
+  def handle_event("validate", %{"post" => params} = payload, socket) do
+    {:noreply, apply_validate(socket, params, payload["_target"])}
   end
 
   def handle_event("save", %{"post" => params}, socket) do
@@ -298,7 +298,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     if params["lock_version"] == to_string(socket.assigns.post.lock_version) do
       {:noreply,
        socket
-       |> apply_validate(params)
+       |> apply_validate(params, nil)
        |> assign(:editor_key, new_editor_key())}
     else
       {:noreply,
@@ -413,7 +413,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:save_state, :error)
   end
 
-  defp apply_validate(socket, params) do
+  defp apply_validate(socket, params, target) do
     params = FormHelpers.keep_persisted_identity(params, socket.assigns.post)
     incoming = params
     published? = not is_nil(socket.assigns.published_at)
@@ -423,7 +423,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         params,
         socket.assigns.slug_locked,
         socket.assigns.slug_auto,
-        published?
+        published?,
+        target
       )
 
     excerpt_locked =
@@ -431,7 +432,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         params,
         "excerpt",
         socket.assigns.excerpt_locked,
-        socket.assigns.excerpt_auto
+        socket.assigns.excerpt_auto,
+        target
       )
 
     {params, slug_auto} =

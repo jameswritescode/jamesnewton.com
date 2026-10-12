@@ -677,6 +677,88 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     refute html =~ "Changed again."
   end
 
+  describe "typing faster than the server replies" do
+    @harbour "The harbour was quiet this morning."
+
+    test "a stale excerpt on a body keystroke keeps following the body", %{conn: conn} do
+      {view, _post} = open_draft(conn, %{body_markdown: @harbour, excerpt: @harbour})
+
+      render_change(view, "validate", %{
+        "_target" => ["post", "excerpt"],
+        "post" => %{"body_markdown" => @harbour, "excerpt" => ""}
+      })
+
+      render_change(view, "validate", %{
+        "_target" => ["post", "body_markdown"],
+        "post" => %{"body_markdown" => @harbour <> " B", "excerpt" => @harbour}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "_target" => ["post", "body_markdown"],
+          "post" => %{"body_markdown" => @harbour <> " Boats", "excerpt" => @harbour}
+        })
+
+      assert excerpt_value(html) == @harbour <> " Boats"
+    end
+
+    test "a stale slug on a title keystroke keeps following the title", %{conn: conn} do
+      {view, _post} = open_draft(conn)
+
+      render_change(view, "validate", %{
+        "_target" => ["post", "title"],
+        "post" => %{"title" => "A", "slug" => "untitled-post"}
+      })
+
+      render_change(view, "validate", %{
+        "_target" => ["post", "title"],
+        "post" => %{"title" => "Ab", "slug" => "a"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "_target" => ["post", "title"],
+          "post" => %{"title" => "Abc", "slug" => "a"}
+        })
+
+      assert input_value(html, "post[slug]") == "abc"
+    end
+
+    test "an edit to the excerpt itself still locks it", %{conn: conn} do
+      {view, _post} = open_draft(conn, %{body_markdown: @harbour, excerpt: @harbour})
+
+      render_change(view, "validate", %{
+        "_target" => ["post", "excerpt"],
+        "post" => %{"body_markdown" => @harbour, "excerpt" => "My custom excerpt"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "_target" => ["post", "body_markdown"],
+          "post" => %{"body_markdown" => "A newer body.", "excerpt" => "My custom excerpt"}
+        })
+
+      assert excerpt_value(html) == "My custom excerpt"
+    end
+
+    test "an edit to the slug itself still locks it", %{conn: conn} do
+      {view, _post} = open_draft(conn)
+
+      render_change(view, "validate", %{
+        "_target" => ["post", "slug"],
+        "post" => %{"title" => "Untitled post", "slug" => "custom"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "_target" => ["post", "title"],
+          "post" => %{"title" => "A Real Title", "slug" => "custom"}
+        })
+
+      assert input_value(html, "post[slug]") == "custom"
+    end
+  end
+
   describe "a cleared excerpt" do
     test "re-derives from the body and keeps following it", %{conn: conn} do
       {view, _post} = open_draft(conn, %{body_markdown: "Seed body paragraph."})

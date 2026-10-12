@@ -575,6 +575,88 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     end
   end
 
+  describe "typing faster than the server replies" do
+    @harbour "The harbour was quiet this morning."
+
+    test "a stale meta description on a body keystroke keeps following the body", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{body_markdown: @harbour, meta_description: @harbour})
+
+      render_change(view, "validate", %{
+        "_target" => ["page", "meta_description"],
+        "page" => %{"body_markdown" => @harbour, "meta_description" => ""}
+      })
+
+      render_change(view, "validate", %{
+        "_target" => ["page", "body_markdown"],
+        "page" => %{"body_markdown" => @harbour <> " B", "meta_description" => @harbour}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "_target" => ["page", "body_markdown"],
+          "page" => %{"body_markdown" => @harbour <> " Boats", "meta_description" => @harbour}
+        })
+
+      assert meta_value(html) == @harbour <> " Boats"
+    end
+
+    test "a stale slug on a title keystroke keeps following the title", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
+
+      render_change(view, "validate", %{
+        "_target" => ["page", "title"],
+        "page" => %{"title" => "A", "slug" => "untitled-page"}
+      })
+
+      render_change(view, "validate", %{
+        "_target" => ["page", "title"],
+        "page" => %{"title" => "Ab", "slug" => "a"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "_target" => ["page", "title"],
+          "page" => %{"title" => "Abc", "slug" => "a"}
+        })
+
+      assert input_value(html, "page[slug]") == "abc"
+    end
+
+    test "an edit to the meta description itself still locks it", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{body_markdown: @harbour, meta_description: @harbour})
+
+      render_change(view, "validate", %{
+        "_target" => ["page", "meta_description"],
+        "page" => %{"body_markdown" => @harbour, "meta_description" => "My own summary"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "_target" => ["page", "body_markdown"],
+          "page" => %{"body_markdown" => "A newer body.", "meta_description" => "My own summary"}
+        })
+
+      assert meta_value(html) == "My own summary"
+    end
+
+    test "an edit to the slug itself still locks it", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
+
+      render_change(view, "validate", %{
+        "_target" => ["page", "slug"],
+        "page" => %{"title" => "Untitled page", "slug" => "custom"}
+      })
+
+      html =
+        render_change(view, "validate", %{
+          "_target" => ["page", "title"],
+          "page" => %{"title" => "A Real Title", "slug" => "custom"}
+        })
+
+      assert input_value(html, "page[slug]") == "custom"
+    end
+  end
+
   describe "refilling a cleared derived field in the browser" do
     test "pushes the body's excerpt when the meta description is cleared", %{conn: conn} do
       {view, _page} =

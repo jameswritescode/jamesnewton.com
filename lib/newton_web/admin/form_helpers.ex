@@ -18,34 +18,43 @@ defmodule NewtonWeb.Admin.FormHelpers do
   def unused?(params, key), do: Map.has_key?(params, "_unused_" <> key)
 
   @doc """
-  A derived field (slug, excerpt, meta description) locks only once the author
-  edits it. The author touched it when LiveView drops the field's `_unused_`
-  marker; the value a browser submits for an untouched field can lag the derived
-  value, so a bare value comparison would lock it spuriously.
+  Did the author edit a derived field (slug, excerpt, meta description) in this
+  submission? Every change submits the whole form, carrying each field's current
+  browser value, and a value can lag the derived one while the reply that
+  updates it is still in flight. Only the input that triggered the change is
+  news from the author, so when LiveView names that input (`target`, from
+  `"_target"`) the field counts as edited only on its own events. Without a
+  target, the field counts as edited once LiveView drops its `_unused_` marker.
   """
-  def field_edited?(params, key, auto), do: not unused?(params, key) and params[key] != auto
+  @spec field_edited?(map(), String.t(), String.t(), [String.t()] | nil) :: boolean()
+  def field_edited?(params, key, auto, nil), do: not unused?(params, key) and params[key] != auto
+
+  def field_edited?(params, key, auto, target) when is_list(target),
+    do: List.last(target) == key and params[key] != auto
 
   @doc """
   Does a derived field (slug, excerpt, meta description) stay the author's own
-  rather than following its source? A value the author edited stays locked, but
-  a blank one means "auto" and reverts to following the source: clearing the
-  field is how the author hands it back, and a blank also arrives as a stale
-  browser value after the form was reset, where locking it would leave the
-  record with an empty field.
+  rather than following its source? A value the author edited (see
+  `field_edited?/4`) stays locked, but a blank one means "auto" and reverts to
+  following the source: clearing the field is how the author hands it back, and
+  a blank also arrives as a stale browser value after the form was reset, where
+  locking it would leave the record with an empty field.
   """
-  @spec derived_locked?(map(), String.t(), boolean(), String.t()) :: boolean()
-  def derived_locked?(params, field, previously_locked?, auto) do
-    (previously_locked? or field_edited?(params, field, auto)) and not blank?(params[field])
+  @spec derived_locked?(map(), String.t(), boolean(), String.t(), [String.t()] | nil) ::
+          boolean()
+  def derived_locked?(params, field, previously_locked?, auto, target) do
+    (previously_locked? or field_edited?(params, field, auto, target)) and
+      not blank?(params[field])
   end
 
   @doc """
   Does the slug stay the author's own rather than following the title? A
   published record keeps its slug so links don't break; a draft's slug follows
-  `derived_locked?/4`.
+  `derived_locked?/5`.
   """
-  @spec slug_locked?(map(), boolean(), String.t(), boolean()) :: boolean()
-  def slug_locked?(params, previously_locked?, auto, published?) do
-    published? or derived_locked?(params, "slug", previously_locked?, auto)
+  @spec slug_locked?(map(), boolean(), String.t(), boolean(), [String.t()] | nil) :: boolean()
+  def slug_locked?(params, previously_locked?, auto, published?, target) do
+    published? or derived_locked?(params, "slug", previously_locked?, auto, target)
   end
 
   @doc """

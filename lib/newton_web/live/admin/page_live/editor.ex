@@ -11,7 +11,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   alias NewtonWeb.PublicationNotifier
 
   # The `_unused_` markers ride along with the staged params because
-  # FormHelpers.field_edited?/3 reads them to tell an untouched field from one
+  # FormHelpers.field_edited?/4 reads them to tell an untouched field from one
   # the author took over. `published` is never staged: it moves through the
   # drawer alone.
   @autosave_fields ~w(title slug meta_description body_markdown)
@@ -38,8 +38,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   @impl true
-  def handle_event("validate", %{"page" => params}, socket) do
-    {:noreply, apply_validate(socket, params)}
+  def handle_event("validate", %{"page" => params} = payload, socket) do
+    {:noreply, apply_validate(socket, params, payload["_target"])}
   end
 
   def handle_event("save", %{"page" => params}, socket) do
@@ -92,7 +92,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   def handle_event("recover", %{"page" => params}, socket) do
     if params["lock_version"] == to_string(socket.assigns.page.lock_version) do
-      {:noreply, socket |> apply_validate(params) |> assign(:editor_key, new_editor_key())}
+      {:noreply, socket |> apply_validate(params, nil) |> assign(:editor_key, new_editor_key())}
     else
       {:noreply,
        put_flash(socket, :info, "Updated in another window — showing the latest version.")}
@@ -173,7 +173,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
-  defp apply_validate(socket, params) do
+  defp apply_validate(socket, params, target) do
     params = FormHelpers.keep_persisted_identity(params, socket.assigns.page)
     incoming = params
     published? = socket.assigns.page.published
@@ -183,7 +183,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         params,
         socket.assigns.slug_locked,
         socket.assigns.slug_auto,
-        published?
+        published?,
+        target
       )
 
     meta_locked =
@@ -191,7 +192,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         params,
         "meta_description",
         socket.assigns.meta_locked,
-        socket.assigns.meta_auto
+        socket.assigns.meta_auto,
+        target
       )
 
     {params, slug_auto} =

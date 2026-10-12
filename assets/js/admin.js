@@ -17,6 +17,7 @@ import {CopyText} from "./hooks/copy_text"
 import {PasskeyRegister} from "./hooks/passkey_register"
 import {PasskeyAuthenticate} from "./hooks/passkey_authenticate"
 import {PasskeySudo} from "./hooks/passkey_sudo"
+import {installFillDerived} from "./fill_derived"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
@@ -37,6 +38,7 @@ new MutationObserver(applyTopbarTheme).observe(document.documentElement, {
 
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
+installFillDerived(window)
 
 liveSocket.connect()
 window.liveSocket = liveSocket

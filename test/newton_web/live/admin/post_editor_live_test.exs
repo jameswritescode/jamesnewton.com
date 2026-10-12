@@ -728,6 +728,71 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     end
   end
 
+  describe "refilling a cleared derived field in the browser" do
+    test "pushes the body's excerpt when the excerpt is cleared", %{conn: conn} do
+      {view, _post} =
+        open_draft(conn, %{body_markdown: "Seed body paragraph.", excerpt: "Custom words"})
+
+      render_change(view, "validate", %{
+        "post" => %{
+          "title" => "Untitled post",
+          "_unused_title" => "",
+          "slug" => "untitled-post",
+          "_unused_slug" => "",
+          "body_markdown" => "Seed body paragraph.",
+          "_unused_body_markdown" => "",
+          "excerpt" => ""
+        }
+      })
+
+      assert_push_event(view, "fill_derived", %{id: "post_excerpt", value: "Seed body paragraph."})
+    end
+
+    test "pushes the title's slug when a draft's slug is cleared", %{conn: conn} do
+      {view, _post} = open_draft(conn, %{title: "Custom Draft", slug: "my-own-slug"})
+
+      render_change(view, "validate", %{
+        "post" => %{"title" => "Custom Draft", "_unused_title" => "", "slug" => ""}
+      })
+
+      assert_push_event(view, "fill_derived", %{id: "post_slug", value: "custom-draft"})
+    end
+
+    test "pushes nothing for an ordinary keystroke", %{conn: conn} do
+      {view, _post} =
+        open_draft(conn, %{body_markdown: "Seed body paragraph.", excerpt: "Custom words"})
+
+      render_change(view, "validate", %{
+        "post" => %{
+          "title" => "Untitled post",
+          "_unused_title" => "",
+          "slug" => "untitled-post",
+          "_unused_slug" => "",
+          "body_markdown" => "Seed body paragraph.",
+          "_unused_body_markdown" => "",
+          "excerpt" => "Custom wordsx"
+        }
+      })
+
+      refute_push_event(view, "fill_derived", %{})
+    end
+
+    test "pushes nothing when a published post's slug is cleared", %{conn: conn} do
+      {view, _post} =
+        open_draft(conn, %{
+          title: "Live Title",
+          slug: "live-slug",
+          published_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      render_change(view, "validate", %{
+        "post" => %{"title" => "Live Title", "_unused_title" => "", "slug" => ""}
+      })
+
+      refute_push_event(view, "fill_derived", %{id: "post_slug"})
+    end
+  end
+
   test "a post loaded with a blank excerpt autofills it from the body", %{conn: conn} do
     {:ok, post} =
       Newton.Blog.create_post(%{

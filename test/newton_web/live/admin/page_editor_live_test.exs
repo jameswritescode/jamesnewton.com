@@ -575,6 +575,69 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     end
   end
 
+  describe "refilling a cleared derived field in the browser" do
+    test "pushes the body's excerpt when the meta description is cleared", %{conn: conn} do
+      {view, _page} =
+        open_draft(conn, %{body_markdown: "Seed body paragraph.", meta_description: "Custom"})
+
+      render_change(view, "validate", %{
+        "page" => %{
+          "title" => "Untitled",
+          "_unused_title" => "",
+          "slug" => "untitled-page",
+          "_unused_slug" => "",
+          "body_markdown" => "Seed body paragraph.",
+          "_unused_body_markdown" => "",
+          "meta_description" => ""
+        }
+      })
+
+      assert_push_event(view, "fill_derived", %{
+        id: "page_meta_description",
+        value: "Seed body paragraph."
+      })
+    end
+
+    test "pushes the title's slug when a draft's slug is cleared", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{title: "Custom Draft", slug: "my-own-slug"})
+
+      render_change(view, "validate", %{
+        "page" => %{"title" => "Custom Draft", "_unused_title" => "", "slug" => ""}
+      })
+
+      assert_push_event(view, "fill_derived", %{id: "page_slug", value: "custom-draft"})
+    end
+
+    test "pushes nothing for an ordinary keystroke", %{conn: conn} do
+      {view, _page} =
+        open_draft(conn, %{body_markdown: "Seed body paragraph.", meta_description: "Custom"})
+
+      render_change(view, "validate", %{
+        "page" => %{
+          "title" => "Untitled",
+          "_unused_title" => "",
+          "slug" => "untitled-page",
+          "_unused_slug" => "",
+          "body_markdown" => "Seed body paragraph.",
+          "_unused_body_markdown" => "",
+          "meta_description" => "Customx"
+        }
+      })
+
+      refute_push_event(view, "fill_derived", %{})
+    end
+
+    test "pushes nothing when a published page's slug is cleared", %{conn: conn} do
+      {view, _page} = open_draft(conn, %{title: "Live Title", slug: "live-slug", published: true})
+
+      render_change(view, "validate", %{
+        "page" => %{"title" => "Live Title", "_unused_title" => "", "slug" => ""}
+      })
+
+      refute_push_event(view, "fill_derived", %{id: "page_slug"})
+    end
+  end
+
   test "a page loaded with a blank meta description autofills it from the body", %{conn: conn} do
     {view, _page} = open_draft(conn, %{body_markdown: "Stored body.", meta_description: ""})
 

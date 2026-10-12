@@ -63,6 +63,44 @@ defmodule NewtonWeb.Admin.FormHelpers do
   defp blank?(value), do: value |> to_string() |> String.trim() == ""
 
   @doc """
+  The derived fields the author cleared that the server refilled: each `field`
+  submitted blank in `incoming` whose `resolved` value is not, paired with that
+  value. The refill usually matches what the form last rendered, so LiveView
+  sends no DOM change and the browser needs it pushed to stop showing a blank.
+  A field missing from `incoming` was not submitted, so it was not cleared.
+  """
+  @spec derived_refills(map(), map(), [atom()]) :: [{atom(), String.t()}]
+  def derived_refills(incoming, resolved, fields) do
+    for field <- fields,
+        key = Atom.to_string(field),
+        cleared?(incoming[key]),
+        value = resolved[key],
+        not blank?(value),
+        do: {field, value}
+  end
+
+  defp cleared?(value), do: is_binary(value) and blank?(value)
+
+  @doc """
+  Push a `"fill_derived"` event for each of `derived_refills/3`, addressed by the
+  field's DOM id in `form`.
+  """
+  @spec push_derived_refills(
+          Phoenix.LiveView.Socket.t(),
+          Phoenix.HTML.Form.t(),
+          map(),
+          map(),
+          [atom()]
+        ) :: Phoenix.LiveView.Socket.t()
+  def push_derived_refills(socket, form, incoming, resolved, fields) do
+    incoming
+    |> derived_refills(resolved, fields)
+    |> Enum.reduce(socket, fn {field, value}, socket ->
+      Phoenix.LiveView.push_event(socket, "fill_derived", %{id: form[field].id, value: value})
+    end)
+  end
+
+  @doc """
   Put the persisted record's title and slug back where a submission carries them
   blank and untouched. An untouched field can't have been cleared by the author,
   so its blank is a stale browser value, such as one sent just after a create

@@ -415,6 +415,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp apply_validate(socket, params) do
     params = FormHelpers.keep_persisted_identity(params, socket.assigns.post)
+    incoming = params
     published? = not is_nil(socket.assigns.published_at)
 
     slug_locked =
@@ -451,6 +452,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
     socket
     |> assign(:form, form)
+    |> FormHelpers.push_derived_refills(form, incoming, params, ~w(slug excerpt)a)
     |> assign(:slug_locked, slug_locked)
     |> assign(:slug_auto, slug_auto)
     |> assign(:excerpt_locked, excerpt_locked)

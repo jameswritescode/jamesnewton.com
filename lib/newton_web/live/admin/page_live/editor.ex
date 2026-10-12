@@ -175,6 +175,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp apply_validate(socket, params) do
     params = FormHelpers.keep_persisted_identity(params, socket.assigns.page)
+    incoming = params
     published? = socket.assigns.page.published
 
     slug_locked =
@@ -215,6 +216,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
     socket
     |> assign(:form, form)
+    |> FormHelpers.push_derived_refills(form, incoming, params, ~w(slug meta_description)a)
     |> assign(:slug_locked, slug_locked)
     |> assign(:slug_auto, slug_auto)
     |> assign(:meta_locked, meta_locked)

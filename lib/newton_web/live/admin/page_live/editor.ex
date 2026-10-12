@@ -11,9 +11,9 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   alias NewtonWeb.PublicationNotifier
 
   # The `_unused_` markers ride along with the staged params because
-  # FormHelpers.field_edited?/4 reads them to tell an untouched field from one
-  # the author took over. `published` is never staged: it moves through the
-  # drawer alone.
+  # FormHelpers.keep_persisted_identity/2 reads them to tell an untouched blank
+  # from one the author cleared. `published` is never staged: it moves through
+  # the drawer alone.
   @autosave_fields ~w(title slug meta_description body_markdown)
   @autosave_keys Autosave.keys(@autosave_fields)
   @untitled_title "Untitled"
@@ -173,9 +173,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
-  defp apply_validate(socket, params, target) do
-    params = FormHelpers.keep_persisted_identity(params, socket.assigns.page)
-    incoming = params
+  defp apply_validate(socket, incoming, target) do
+    params = FormHelpers.keep_persisted_identity(incoming, socket.assigns.page)
     published? = socket.assigns.page.published
 
     slug_locked =
@@ -198,7 +197,12 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
     {params, slug_auto} =
       FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
-        FormHelpers.title_slug(params["title"], @untitled_title, socket.assigns.slug_auto)
+        FormHelpers.title_slug(
+          params["title"],
+          @untitled_title,
+          socket.assigns.page,
+          socket.assigns.slug_auto
+        )
       end)
 
     {params, meta_auto} =
@@ -218,7 +222,12 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
     socket
     |> assign(:form, form)
-    |> FormHelpers.push_derived_refills(form, incoming, params, ~w(slug meta_description)a)
+    |> FormHelpers.push_derived_refills(
+      form,
+      incoming,
+      params,
+      ~w(title slug meta_description)a
+    )
     |> assign(:slug_locked, slug_locked)
     |> assign(:slug_auto, slug_auto)
     |> assign(:meta_locked, meta_locked)
@@ -244,7 +253,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp persist_autosave(socket, %Page{id: nil}, params) do
     if content?(params) do
-      case Pages.create_page(backfill_new(params)) do
+      case Pages.create_page(backfill_new(socket, params)) do
         {:ok, page} ->
           PublicationNotifier.notify_page_change(nil, page)
 
@@ -286,10 +295,21 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   # Publishing an unsaved page has to create the row first: the drawer acts on
   # the staged form params rather than waiting for a manual save.
   defp publish(socket, %Page{id: nil}) do
+    staged = Map.take(socket.assigns.form.source.params || %{}, @autosave_fields)
+
+    if content?(staged) do
+      create_published(socket, staged)
+    else
+      put_flash(socket, :error, "Add a title or body before publishing")
+    end
+  end
+
+  defp publish(socket, %Page{} = page), do: set_published(socket, page, true)
+
+  defp create_published(socket, staged) do
     attrs =
-      (socket.assigns.form.source.params || %{})
-      |> Map.take(@autosave_fields)
-      |> backfill_new()
+      socket
+      |> backfill_new(staged)
       |> Map.put("published", true)
 
     case Pages.create_page(attrs) do
@@ -308,8 +328,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         assign(socket, :form, FormHelpers.failed_create_form(changeset))
     end
   end
-
-  defp publish(socket, %Page{} = page), do: set_published(socket, page, true)
 
   defp set_published(socket, %Page{} = page, published) do
     case Pages.update_page(page, %{"published" => published}) do
@@ -344,7 +362,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp save(socket, %Page{id: nil}, params) do
-    case Pages.create_page(backfill_new(params)) do
+    case Pages.create_page(backfill_new(socket, params)) do
       {:ok, page} ->
         PublicationNotifier.notify_page_change(nil, page)
         {:noreply, saved(socket)}
@@ -388,14 +406,13 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     not blank?(params["title"]) or not blank?(params["body_markdown"])
   end
 
-  defp backfill_new(params) do
-    if blank?(params["title"]) do
-      params
-      |> Map.put("title", @untitled_title)
-      |> keep_existing("slug", Pages.next_untitled_slug())
-    else
-      keep_existing(params, "slug", Newton.Slug.slugify(params["title"]))
-    end
+  defp backfill_new(socket, params) do
+    FormHelpers.backfill_identity(
+      params,
+      socket.assigns.slug_locked,
+      @untitled_title,
+      &Pages.next_untitled_slug/0
+    )
   end
 
   defp creation_failed(socket, changeset) do
@@ -424,7 +441,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   # The first image dropped into an unsaved page needs a row to hang the ledger
   # entry on, so it creates the draft and moves to its edit URL.
   defp ensure_page(%{assigns: %{page: %Page{id: nil}}} = socket) do
-    case Pages.create_page(backfill_new(staged_content(socket))) do
+    case Pages.create_page(backfill_new(socket, staged_content(socket))) do
       {:ok, page} ->
         PublicationNotifier.notify_page_change(nil, page)
 

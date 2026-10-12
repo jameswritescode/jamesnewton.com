@@ -58,25 +58,60 @@ defmodule NewtonWeb.Admin.FormHelpers do
   end
 
   @doc """
-  The slug a title derives. A blank or placeholder title yields `current`
-  instead: slugifying the placeholder would collapse every untitled draft onto
-  one slug, so a draft keeps its generated slug until it has a real title.
+  The slug a title derives. A blank or placeholder title has no slug of its
+  own: a saved `record` keeps `current`, since slugifying the placeholder would
+  collapse every untitled draft onto one slug, and an unsaved one yields a
+  blank slug so its create generates one (see `backfill_identity/4`).
   """
-  @spec title_slug(String.t() | nil, String.t(), String.t()) :: String.t()
-  def title_slug(title, placeholder_title, current) do
-    if blank?(title) or title == placeholder_title,
-      do: current,
-      else: Newton.Slug.slugify(title)
+  @spec title_slug(String.t() | nil, String.t(), map(), String.t()) :: String.t()
+  def title_slug(title, placeholder_title, record, current) do
+    cond do
+      not untitled?(title, placeholder_title) -> Newton.Slug.slugify(title)
+      Map.get(record, :id) -> current
+      true -> ""
+    end
   end
+
+  @doc """
+  Fill in the identity a create needs from staged `params`. An untitled draft
+  takes `placeholder_title` and a slug from `next_placeholder_slug`, unless the
+  author chose its slug (`slug_locked?`); a titled one with a blank slug takes
+  its title's slug.
+  """
+  @spec backfill_identity(map(), boolean(), String.t(), (-> String.t())) :: map()
+  def backfill_identity(params, slug_locked?, placeholder_title, next_placeholder_slug) do
+    cond do
+      untitled?(params["title"], placeholder_title) ->
+        slug =
+          if slug_locked? and not blank?(params["slug"]),
+            do: params["slug"],
+            else: next_placeholder_slug.()
+
+        params
+        |> Map.put("title", placeholder_title)
+        |> Map.put("slug", slug)
+
+      blank?(params["slug"]) ->
+        Map.put(params, "slug", Newton.Slug.slugify(params["title"]))
+
+      true ->
+        params
+    end
+  end
+
+  defp untitled?(title, placeholder_title), do: blank?(title) or title == placeholder_title
 
   defp blank?(value), do: value |> to_string() |> String.trim() == ""
 
   @doc """
-  The derived fields the author cleared that the server refilled: each `field`
-  submitted blank in `incoming` whose `resolved` value is not, paired with that
-  value. The refill usually matches what the form last rendered, so LiveView
-  sends no DOM change and the browser needs it pushed to stop showing a blank.
-  A field missing from `incoming` was not submitted, so it was not cleared.
+  The fields that arrived blank and that the server refilled: each `field`
+  submitted blank in `incoming` (the raw submission, before
+  `keep_persisted_identity/2` repairs it) whose `resolved` value is not, paired
+  with that value. That covers a derived field the author cleared and a stale
+  blank title or slug put back from the record. The refill usually matches what
+  the form last rendered, so LiveView sends no DOM change and the browser needs
+  it pushed to stop showing a blank. A field missing from `incoming` was not
+  submitted, so it was not cleared.
   """
   @spec derived_refills(map(), map(), [atom()]) :: [{atom(), String.t()}]
   def derived_refills(incoming, resolved, fields) do

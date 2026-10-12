@@ -14,9 +14,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   # Autosave writes whatever it buffered without the publish-state scrubbing the
   # explicit "save" handler does, so only content fields are buffered. The
-  # `_unused_` markers ride along because reoffer_identity/3 reads them to tell
-  # an untouched blank from one the author cleared. `published_at` is set from
-  # socket assigns, never from the client.
+  # `_unused_` markers ride along because FormHelpers.keep_persisted_identity/2
+  # reads them to tell an untouched blank from one the author cleared.
+  # `published_at` is set from socket assigns, never from the client.
   @autosave_fields ~w(title slug excerpt body_markdown)
   @autosave_keys Autosave.keys(@autosave_fields)
   @untitled_title "Untitled post"
@@ -49,7 +49,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
-    case Blog.create_post(backfill_new(staged_content(socket))) do
+    case Blog.create_post(backfill_new(socket, staged_content(socket))) do
       {:ok, post} ->
         PublicationNotifier.notify_change(nil, post)
 
@@ -242,16 +242,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       post ->
         {:noreply,
          socket
-         |> assign(:post, post)
-         |> assign(:published_at, post.published_at)
-         |> assign(:images, post_images(post))
-         |> assign(:slug_locked, slug_locked?(post))
-         |> assign(:slug_auto, post.slug)
-         |> assign(:excerpt_locked, excerpt_locked?(post))
-         |> assign(:excerpt_auto, post.excerpt || "")
-         |> assign(:save_state, :saved)
-         |> assign(:autosave_params, nil)
-         |> assign(:form, to_form(Blog.change_post(post)))
+         |> assign_post(post, "Edit post")
          |> assign(:editor_key, new_editor_key())}
     end
   end
@@ -333,7 +324,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp persist_autosave(socket, %Post{id: nil}, params) do
     if content?(params) do
-      case Blog.create_post(backfill_new(params)) do
+      case Blog.create_post(backfill_new(socket, params)) do
         {:ok, post} ->
           PublicationNotifier.notify_change(nil, post)
 
@@ -362,24 +353,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
          |> assign(:post, updated)
          |> assign(:autosave_params, nil)
          |> assign(:autosave_timer, nil)
-         |> assign(:save_state, :saved)
-         |> reoffer_identity(updated, params)}
+         |> assign(:save_state, :saved)}
 
       {:error, :stale} ->
         {:noreply, enter_conflict(socket)}
 
       {:error, _changeset} ->
         {:noreply, assign(socket, :save_state, :error)}
-    end
-  end
-
-  # A blank the author typed stays blank on screen; only untouched blanks
-  # (LiveView's _unused_ markers) get the persisted identity offered back.
-  defp reoffer_identity(socket, post, params) do
-    if Enum.all?(~w(title slug), &(FormHelpers.unused?(params, &1) or not blank?(params[&1]))) do
-      assign(socket, :form, to_form(Blog.change_post(post)))
-    else
-      socket
     end
   end
 
@@ -397,14 +377,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     if blank?(params[key]), do: Map.put(params, key, existing), else: params
   end
 
-  defp backfill_new(params) do
-    if blank?(params["title"]) do
-      params
-      |> Map.put("title", @untitled_title)
-      |> Map.put("slug", Blog.next_untitled_slug())
-    else
-      keep_existing(params, "slug", Newton.Slug.slugify(params["title"]))
-    end
+  defp backfill_new(socket, params) do
+    FormHelpers.backfill_identity(
+      params,
+      socket.assigns.slug_locked,
+      @untitled_title,
+      &Blog.next_untitled_slug/0
+    )
   end
 
   defp creation_failed(socket, changeset) do
@@ -413,9 +392,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:save_state, :error)
   end
 
-  defp apply_validate(socket, params, target) do
-    params = FormHelpers.keep_persisted_identity(params, socket.assigns.post)
-    incoming = params
+  defp apply_validate(socket, incoming, target) do
+    params = FormHelpers.keep_persisted_identity(incoming, socket.assigns.post)
     published? = not is_nil(socket.assigns.published_at)
 
     slug_locked =
@@ -438,7 +416,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
     {params, slug_auto} =
       FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
-        FormHelpers.title_slug(params["title"], @untitled_title, socket.assigns.slug_auto)
+        FormHelpers.title_slug(
+          params["title"],
+          @untitled_title,
+          socket.assigns.post,
+          socket.assigns.slug_auto
+        )
       end)
 
     {params, excerpt_auto} =
@@ -454,7 +437,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
     socket
     |> assign(:form, form)
-    |> FormHelpers.push_derived_refills(form, incoming, params, ~w(slug excerpt)a)
+    |> FormHelpers.push_derived_refills(form, incoming, params, ~w(title slug excerpt)a)
     |> assign(:slug_locked, slug_locked)
     |> assign(:slug_auto, slug_auto)
     |> assign(:excerpt_locked, excerpt_locked)
@@ -544,10 +527,22 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp publish_now(socket, %Post{id: nil}) do
+    staged = Map.take(socket.assigns.form.source.params || %{}, @autosave_fields)
+
+    if content?(staged) do
+      create_published(socket, staged)
+    else
+      put_flash(socket, :error, "Add a title or body before publishing")
+    end
+  end
+
+  defp publish_now(socket, %Post{}),
+    do: set_published(socket, DateTime.truncate(DateTime.utc_now(), :second))
+
+  defp create_published(socket, staged) do
     attrs =
-      (socket.assigns.form.source.params || %{})
-      |> Map.take(@autosave_fields)
-      |> backfill_new()
+      socket
+      |> backfill_new(staged)
       |> Map.put("published_at", DateTime.truncate(DateTime.utc_now(), :second))
 
     case Blog.create_post(attrs) do
@@ -568,9 +563,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         assign(socket, :form, FormHelpers.failed_create_form(changeset))
     end
   end
-
-  defp publish_now(socket, %Post{}),
-    do: set_published(socket, DateTime.truncate(DateTime.utc_now(), :second))
 
   # Publishing toggles publication state on the saved post; content edits in the
   # form are left untouched.
@@ -597,7 +589,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp save(socket, %Post{id: nil}, params) do
-    case Blog.create_post(backfill_new(params)) do
+    case Blog.create_post(backfill_new(socket, params)) do
       {:ok, post} ->
         PublicationNotifier.notify_change(nil, post)
 

@@ -1401,4 +1401,81 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     assert Newton.Blog.get_post!(post.id).preview_token == post.preview_token
   end
+
+  defp change(view, field, params) do
+    render_change(view, "validate", %{"_target" => ["post", field], "post" => params})
+  end
+
+  defp autosave(view) do
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+  end
+
+  describe "a new post autosaved without a title" do
+    test "keeps a slug the author typed", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      change(view, "slug", %{"title" => "", "slug" => "launch-notes", "body_markdown" => ""})
+
+      change(view, "body_markdown", %{
+        "title" => "",
+        "slug" => "launch-notes",
+        "body_markdown" => "Words."
+      })
+
+      autosave(view)
+
+      assert [%{title: "Untitled post", slug: "launch-notes"}] = Newton.Blog.list_posts()
+    end
+
+    test "does not keep a slug derived from a title since deleted", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      change(view, "title", %{"title" => "Hello", "slug" => "", "body_markdown" => ""})
+      change(view, "title", %{"title" => "", "slug" => "hello", "body_markdown" => "Words."})
+      autosave(view)
+
+      assert [%{slug: "untitled-post"} = post] = Newton.Blog.list_posts()
+
+      html =
+        change(view, "title", %{
+          "title" => "Real Title",
+          "slug" => post.slug,
+          "body_markdown" => "Words."
+        })
+
+      assert input_value(html, "post[slug]") == "real-title"
+    end
+  end
+
+  test "publishing an empty new post creates nothing and asks for content", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Publish now") |> render_click()
+
+    assert Newton.Blog.list_posts() == []
+    assert has_element?(view, "#admin-flash-error", "Add a title or body before publishing")
+    assert has_element?(view, "#publish-drawer")
+  end
+
+  test "a stale blank identity after the first image is pushed back to the browser",
+       %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+    upload_inline_image(view, "stale-push.png")
+    assert_patch(view)
+    [%{slug: slug}] = Newton.Blog.list_posts()
+
+    change(view, "body_markdown", %{
+      "title" => "",
+      "_unused_title" => "",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => "![](/media/x.png)"
+    })
+
+    assert_push_event(view, "fill_derived", %{id: "post_title", value: "Untitled post"})
+    assert_push_event(view, "fill_derived", %{id: "post_slug", value: ^slug})
+  end
 end

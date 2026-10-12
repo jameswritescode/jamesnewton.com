@@ -779,4 +779,81 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
 
     assert_raise Ecto.NoResultsError, fn -> Newton.Pages.get_page!(page.id) end
   end
+
+  defp change(view, field, params) do
+    render_change(view, "validate", %{"_target" => ["page", field], "page" => params})
+  end
+
+  defp autosave(view) do
+    send(view.pid, :autosave)
+    _ = :sys.get_state(view.pid)
+  end
+
+  describe "a new page autosaved without a title" do
+    test "keeps a slug the author typed", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      change(view, "slug", %{"title" => "", "slug" => "launch-notes", "body_markdown" => ""})
+
+      change(view, "body_markdown", %{
+        "title" => "",
+        "slug" => "launch-notes",
+        "body_markdown" => "Words."
+      })
+
+      autosave(view)
+
+      assert [%{title: "Untitled", slug: "launch-notes"}] = Newton.Pages.list_pages()
+    end
+
+    test "does not keep a slug derived from a title since deleted", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      change(view, "title", %{"title" => "Hello", "slug" => "", "body_markdown" => ""})
+      change(view, "title", %{"title" => "", "slug" => "hello", "body_markdown" => "Words."})
+      autosave(view)
+
+      assert [%{slug: "untitled-page"} = page] = Newton.Pages.list_pages()
+
+      html =
+        change(view, "title", %{
+          "title" => "Real Title",
+          "slug" => page.slug,
+          "body_markdown" => "Words."
+        })
+
+      assert input_value(html, "page[slug]") == "real-title"
+    end
+  end
+
+  test "publishing an empty new page creates nothing and asks for content", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    view |> element("button", "Settings") |> render_click()
+    view |> element("#publish-drawer button", "Publish") |> render_click()
+
+    assert Newton.Pages.list_pages() == []
+    assert has_element?(view, "#admin-flash-error", "Add a title or body before publishing")
+    assert has_element?(view, "#publish-drawer")
+  end
+
+  test "a stale blank identity after the first image is pushed back to the browser",
+       %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+    upload_inline_image(view, "stale-push.png")
+    assert_patch(view)
+    [%{slug: slug}] = Newton.Pages.list_pages()
+
+    change(view, "body_markdown", %{
+      "title" => "",
+      "_unused_title" => "",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => "![](/media/x.png)"
+    })
+
+    assert_push_event(view, "fill_derived", %{id: "page_title", value: "Untitled"})
+    assert_push_event(view, "fill_derived", %{id: "page_slug", value: ^slug})
+  end
 end

@@ -102,8 +102,10 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
   test "a new page autosaves into a draft and moves to its edit URL", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
 
-    render_change(view, "validate", %{
-      "page" => %{"title" => "Colophon", "slug" => "colophon", "body_markdown" => "Hello body"}
+    change(view, "title", %{
+      "title" => "Colophon",
+      "slug" => "colophon",
+      "body_markdown" => "Hello body"
     })
 
     send(view.pid, :autosave)
@@ -143,13 +145,11 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
   test "the first upload keeps a title typed on a brand-new page", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
 
-    render_change(view, "validate", %{
-      "page" => %{
-        "title" => "Kept Title",
-        "slug" => "",
-        "_unused_slug" => "",
-        "body_markdown" => ""
-      }
+    change(view, "title", %{
+      "title" => "Kept Title",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => ""
     })
 
     image =
@@ -198,16 +198,14 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
       assert_patch(view)
 
       html =
-        render_change(view, "validate", %{
-          "page" => %{
-            "title" => "",
-            "_unused_title" => "",
-            "slug" => "",
-            "_unused_slug" => "",
-            "meta_description" => "",
-            "_unused_meta_description" => "",
-            "body_markdown" => "![](/media/x.png)"
-          }
+        change(view, "body_markdown", %{
+          "title" => "",
+          "_unused_title" => "",
+          "slug" => "",
+          "_unused_slug" => "",
+          "meta_description" => "",
+          "_unused_meta_description" => "",
+          "body_markdown" => "![](/media/x.png)"
         })
 
       assert input_value(html, "page[title]") == "Untitled"
@@ -227,13 +225,9 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "is derived from the title when the first image creates the draft", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
 
-      render_change(view, "validate", %{
-        "page" => %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""}
-      })
+      change(view, "title", %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""})
 
-      render_change(view, "validate", %{
-        "page" => %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => ""}
-      })
+      change(view, "slug", %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => ""})
 
       upload_inline_image(view, "cleared.png")
       assert_patch(view)
@@ -257,21 +251,23 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
          %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
 
-      render_change(view, "validate", %{
-        "page" => %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""}
-      })
+      change(view, "title", %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""})
 
       upload_inline_image(view, "stale.png")
       assert_patch(view)
 
-      render_change(view, "validate", %{
-        "page" => %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => "![](x)"}
+      change(view, "body_markdown", %{
+        "title" => "Cleared Slug",
+        "slug" => "",
+        "body_markdown" => "![](x)"
       })
 
       assert has_element?(view, "#page-form input[name='page[slug]'][value='cleared-slug']")
 
-      render_change(view, "validate", %{
-        "page" => %{"title" => "Renamed", "slug" => "cleared-slug", "body_markdown" => "![](x)"}
+      change(view, "title", %{
+        "title" => "Renamed",
+        "slug" => "cleared-slug",
+        "body_markdown" => "![](x)"
       })
 
       assert has_element?(view, "#page-form input[name='page[slug]'][value='renamed']")
@@ -280,13 +276,11 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "refills from the title when cleared on a draft", %{conn: conn} do
       {view, _page} = open_draft(conn, %{title: "Custom Draft", slug: "my-own-slug"})
 
-      render_change(view, "validate", %{"page" => %{"title" => "Custom Draft", "slug" => ""}})
+      change(view, "slug", %{"title" => "Custom Draft", "slug" => ""})
 
       assert has_element?(view, "#page-form input[name='page[slug]'][value='custom-draft']")
 
-      render_change(view, "validate", %{
-        "page" => %{"title" => "Retitled Draft", "slug" => "custom-draft"}
-      })
+      change(view, "title", %{"title" => "Retitled Draft", "slug" => "custom-draft"})
 
       assert has_element?(view, "#page-form input[name='page[slug]'][value='retitled-draft']")
     end
@@ -294,7 +288,7 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "is not derived from the title once published", %{conn: conn} do
       {view, _page} = open_draft(conn, %{title: "Live Title", slug: "live-slug", published: true})
 
-      render_change(view, "validate", %{"page" => %{"title" => "Live Title", "slug" => ""}})
+      change(view, "slug", %{"title" => "Live Title", "slug" => ""})
 
       refute has_element?(view, "#page-form input[name='page[slug]'][value='live-title']")
     end
@@ -310,9 +304,7 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     [page] = Newton.Pages.list_pages()
     assert page.slug == "untitled-page"
 
-    render_change(view, "validate", %{
-      "page" => %{"title" => "Real Title", "slug" => page.slug, "_unused_slug" => ""}
-    })
+    change(view, "title", %{"title" => "Real Title", "slug" => page.slug, "_unused_slug" => ""})
 
     assert has_element?(view, "#page-form input[name='page[slug]'][value='real-title']")
 
@@ -331,8 +323,10 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
 
     [page] = Newton.Pages.list_pages()
 
-    render_change(view, "validate", %{
-      "page" => %{"title" => "Untitled", "slug" => page.slug, "body_markdown" => "Some words."}
+    change(view, "body_markdown", %{
+      "title" => "Untitled",
+      "slug" => page.slug,
+      "body_markdown" => "Some words."
     })
 
     assert has_element?(view, "#page-form input[name='page[slug]'][value='#{page.slug}']")
@@ -348,8 +342,11 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     {:ok, _} = Newton.Pages.create_page(%{title: "Elsewhere", slug: "taken"})
     {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
 
-    render_change(view, "validate", %{
-      "page" => %{"title" => "Taken", "slug" => "", "_unused_slug" => "", "body_markdown" => ""}
+    change(view, "title", %{
+      "title" => "Taken",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => ""
     })
 
     upload_inline_image(view, "collide.png")
@@ -363,8 +360,11 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     {:ok, _} = Newton.Pages.create_page(%{title: "Elsewhere", slug: "taken"})
     {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
 
-    render_change(view, "validate", %{
-      "page" => %{"title" => "Taken", "slug" => "", "_unused_slug" => "", "body_markdown" => ""}
+    change(view, "title", %{
+      "title" => "Taken",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => ""
     })
 
     send(view.pid, :autosave)
@@ -426,9 +426,7 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
   test "publishing a brand-new page creates the draft and publishes it", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
 
-    render_change(view, "validate", %{
-      "page" => %{"title" => "Now", "slug" => "now", "body_markdown" => "Fresh."}
-    })
+    change(view, "title", %{"title" => "Now", "slug" => "now", "body_markdown" => "Fresh."})
 
     view |> element("button", "Settings") |> render_click()
     view |> element("#publish-drawer button", "Publish") |> render_click()
@@ -442,20 +440,14 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
 
     html =
-      view
-      |> form("#page-form", page: %{title: "My Colophon!", slug: "untitled-page"})
-      |> render_change()
+      change(view, "title", %{"title" => "My Colophon!", "slug" => "untitled-page"})
 
     assert html =~ ~s(value="my-colophon")
 
-    view
-    |> form("#page-form", page: %{title: "My Colophon!", slug: "custom"})
-    |> render_change()
+    change(view, "slug", %{"title" => "My Colophon!", "slug" => "custom"})
 
     html =
-      view
-      |> form("#page-form", page: %{title: "My Colophon Again", slug: "custom"})
-      |> render_change()
+      change(view, "title", %{"title" => "My Colophon Again", "slug" => "custom"})
 
     assert html =~ ~s(value="custom")
   end
@@ -467,9 +459,7 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     view |> element("#publish-drawer button", "Publish") |> render_click()
 
     html =
-      view
-      |> form("#page-form", page: %{title: "Renamed Page", slug: "untitled-page"})
-      |> render_change()
+      change(view, "title", %{"title" => "Renamed Page", "slug" => "untitled-page"})
 
     assert html =~ ~s(value="untitled-page")
   end
@@ -478,24 +468,20 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
 
     html =
-      view
-      |> form("#page-form", page: %{body_markdown: "The first paragraph of the body."})
-      |> render_change()
+      change(view, "body_markdown", %{"body_markdown" => "The first paragraph of the body."})
 
     assert meta_value(html) == "The first paragraph of the body."
 
-    view
-    |> form("#page-form",
-      page: %{body_markdown: "Different body now.", meta_description: "My own summary"}
-    )
-    |> render_change()
+    change(view, "meta_description", %{
+      "body_markdown" => "Different body now.",
+      "meta_description" => "My own summary"
+    })
 
     html =
-      view
-      |> form("#page-form",
-        page: %{body_markdown: "Changed again.", meta_description: "My own summary"}
-      )
-      |> render_change()
+      change(view, "body_markdown", %{
+        "body_markdown" => "Changed again.",
+        "meta_description" => "My own summary"
+      })
 
     assert meta_value(html) == "My own summary"
   end
@@ -504,21 +490,17 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
     stale = "Seed body paragraph."
 
-    render_change(view, "validate", %{
-      "page" => %{
-        "body_markdown" => "Second body version.",
-        "meta_description" => stale,
-        "_unused_meta_description" => ""
-      }
+    change(view, "body_markdown", %{
+      "body_markdown" => "Second body version.",
+      "meta_description" => stale,
+      "_unused_meta_description" => ""
     })
 
     html =
-      render_change(view, "validate", %{
-        "page" => %{
-          "body_markdown" => "Third body version now.",
-          "meta_description" => stale,
-          "_unused_meta_description" => ""
-        }
+      change(view, "body_markdown", %{
+        "body_markdown" => "Third body version now.",
+        "meta_description" => stale,
+        "_unused_meta_description" => ""
       })
 
     assert meta_value(html) == "Third body version now."
@@ -528,24 +510,24 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "re-derives from the body and keeps following it", %{conn: conn} do
       {view, _page} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
 
-      render_change(view, "validate", %{
-        "page" => %{"body_markdown" => "Seed body paragraph.", "meta_description" => "Custom"}
+      change(view, "meta_description", %{
+        "body_markdown" => "Seed body paragraph.",
+        "meta_description" => "Custom"
       })
 
       html =
-        render_change(view, "validate", %{
-          "page" => %{"body_markdown" => "Seed body paragraph.", "meta_description" => ""}
+        change(view, "meta_description", %{
+          "body_markdown" => "Seed body paragraph.",
+          "meta_description" => ""
         })
 
       assert meta_value(html) == "Seed body paragraph."
 
       html =
-        render_change(view, "validate", %{
-          "page" => %{
-            "body_markdown" => "A newer body.",
-            "meta_description" => "Seed body paragraph.",
-            "_unused_meta_description" => ""
-          }
+        change(view, "body_markdown", %{
+          "body_markdown" => "A newer body.",
+          "meta_description" => "Seed body paragraph.",
+          "_unused_meta_description" => ""
         })
 
       assert meta_value(html) == "A newer body."
@@ -554,21 +536,21 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "locks again once the author types a custom value", %{conn: conn} do
       {view, _page} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
 
-      render_change(view, "validate", %{
-        "page" => %{"body_markdown" => "Seed body paragraph.", "meta_description" => ""}
+      change(view, "meta_description", %{
+        "body_markdown" => "Seed body paragraph.",
+        "meta_description" => ""
       })
 
-      render_change(view, "validate", %{
-        "page" => %{"body_markdown" => "Seed body paragraph.", "meta_description" => "Mine now"}
+      change(view, "meta_description", %{
+        "body_markdown" => "Seed body paragraph.",
+        "meta_description" => "Mine now"
       })
 
       html =
-        render_change(view, "validate", %{
-          "page" => %{
-            "body_markdown" => "A newer body.",
-            "meta_description" => "Mine now",
-            "_unused_meta_description" => ""
-          }
+        change(view, "body_markdown", %{
+          "body_markdown" => "A newer body.",
+          "meta_description" => "Mine now",
+          "_unused_meta_description" => ""
         })
 
       assert meta_value(html) == "Mine now"
@@ -581,20 +563,17 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "a stale meta description on a body keystroke keeps following the body", %{conn: conn} do
       {view, _page} = open_draft(conn, %{body_markdown: @harbour, meta_description: @harbour})
 
-      render_change(view, "validate", %{
-        "_target" => ["page", "meta_description"],
-        "page" => %{"body_markdown" => @harbour, "meta_description" => ""}
-      })
+      change(view, "meta_description", %{"body_markdown" => @harbour, "meta_description" => ""})
 
-      render_change(view, "validate", %{
-        "_target" => ["page", "body_markdown"],
-        "page" => %{"body_markdown" => @harbour <> " B", "meta_description" => @harbour}
+      change(view, "body_markdown", %{
+        "body_markdown" => @harbour <> " B",
+        "meta_description" => @harbour
       })
 
       html =
-        render_change(view, "validate", %{
-          "_target" => ["page", "body_markdown"],
-          "page" => %{"body_markdown" => @harbour <> " Boats", "meta_description" => @harbour}
+        change(view, "body_markdown", %{
+          "body_markdown" => @harbour <> " Boats",
+          "meta_description" => @harbour
         })
 
       assert meta_value(html) == @harbour <> " Boats"
@@ -603,21 +582,12 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "a stale slug on a title keystroke keeps following the title", %{conn: conn} do
       {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
 
-      render_change(view, "validate", %{
-        "_target" => ["page", "title"],
-        "page" => %{"title" => "A", "slug" => "untitled-page"}
-      })
+      change(view, "title", %{"title" => "A", "slug" => "untitled-page"})
 
-      render_change(view, "validate", %{
-        "_target" => ["page", "title"],
-        "page" => %{"title" => "Ab", "slug" => "a"}
-      })
+      change(view, "title", %{"title" => "Ab", "slug" => "a"})
 
       html =
-        render_change(view, "validate", %{
-          "_target" => ["page", "title"],
-          "page" => %{"title" => "Abc", "slug" => "a"}
-        })
+        change(view, "title", %{"title" => "Abc", "slug" => "a"})
 
       assert input_value(html, "page[slug]") == "abc"
     end
@@ -625,15 +595,15 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "an edit to the meta description itself still locks it", %{conn: conn} do
       {view, _page} = open_draft(conn, %{body_markdown: @harbour, meta_description: @harbour})
 
-      render_change(view, "validate", %{
-        "_target" => ["page", "meta_description"],
-        "page" => %{"body_markdown" => @harbour, "meta_description" => "My own summary"}
+      change(view, "meta_description", %{
+        "body_markdown" => @harbour,
+        "meta_description" => "My own summary"
       })
 
       html =
-        render_change(view, "validate", %{
-          "_target" => ["page", "body_markdown"],
-          "page" => %{"body_markdown" => "A newer body.", "meta_description" => "My own summary"}
+        change(view, "body_markdown", %{
+          "body_markdown" => "A newer body.",
+          "meta_description" => "My own summary"
         })
 
       assert meta_value(html) == "My own summary"
@@ -642,16 +612,10 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "an edit to the slug itself still locks it", %{conn: conn} do
       {view, _page} = open_draft(conn, %{title: "Untitled page", slug: "untitled-page"})
 
-      render_change(view, "validate", %{
-        "_target" => ["page", "slug"],
-        "page" => %{"title" => "Untitled page", "slug" => "custom"}
-      })
+      change(view, "slug", %{"title" => "Untitled page", "slug" => "custom"})
 
       html =
-        render_change(view, "validate", %{
-          "_target" => ["page", "title"],
-          "page" => %{"title" => "A Real Title", "slug" => "custom"}
-        })
+        change(view, "title", %{"title" => "A Real Title", "slug" => "custom"})
 
       assert input_value(html, "page[slug]") == "custom"
     end
@@ -662,16 +626,14 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
       {view, _page} =
         open_draft(conn, %{body_markdown: "Seed body paragraph.", meta_description: "Custom"})
 
-      render_change(view, "validate", %{
-        "page" => %{
-          "title" => "Untitled",
-          "_unused_title" => "",
-          "slug" => "untitled-page",
-          "_unused_slug" => "",
-          "body_markdown" => "Seed body paragraph.",
-          "_unused_body_markdown" => "",
-          "meta_description" => ""
-        }
+      change(view, "meta_description", %{
+        "title" => "Untitled",
+        "_unused_title" => "",
+        "slug" => "untitled-page",
+        "_unused_slug" => "",
+        "body_markdown" => "Seed body paragraph.",
+        "_unused_body_markdown" => "",
+        "meta_description" => ""
       })
 
       assert_push_event(view, "fill_derived", %{
@@ -683,9 +645,7 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "pushes the title's slug when a draft's slug is cleared", %{conn: conn} do
       {view, _page} = open_draft(conn, %{title: "Custom Draft", slug: "my-own-slug"})
 
-      render_change(view, "validate", %{
-        "page" => %{"title" => "Custom Draft", "_unused_title" => "", "slug" => ""}
-      })
+      change(view, "slug", %{"title" => "Custom Draft", "_unused_title" => "", "slug" => ""})
 
       assert_push_event(view, "fill_derived", %{id: "page_slug", value: "custom-draft"})
     end
@@ -694,16 +654,14 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
       {view, _page} =
         open_draft(conn, %{body_markdown: "Seed body paragraph.", meta_description: "Custom"})
 
-      render_change(view, "validate", %{
-        "page" => %{
-          "title" => "Untitled",
-          "_unused_title" => "",
-          "slug" => "untitled-page",
-          "_unused_slug" => "",
-          "body_markdown" => "Seed body paragraph.",
-          "_unused_body_markdown" => "",
-          "meta_description" => "Customx"
-        }
+      change(view, "meta_description", %{
+        "title" => "Untitled",
+        "_unused_title" => "",
+        "slug" => "untitled-page",
+        "_unused_slug" => "",
+        "body_markdown" => "Seed body paragraph.",
+        "_unused_body_markdown" => "",
+        "meta_description" => "Customx"
       })
 
       refute_push_event(view, "fill_derived", %{})
@@ -712,9 +670,7 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     test "pushes nothing when a published page's slug is cleared", %{conn: conn} do
       {view, _page} = open_draft(conn, %{title: "Live Title", slug: "live-slug", published: true})
 
-      render_change(view, "validate", %{
-        "page" => %{"title" => "Live Title", "_unused_title" => "", "slug" => ""}
-      })
+      change(view, "slug", %{"title" => "Live Title", "_unused_title" => "", "slug" => ""})
 
       refute_push_event(view, "fill_derived", %{id: "page_slug"})
     end
@@ -724,12 +680,10 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     {view, _page} = open_draft(conn, %{body_markdown: "Stored body.", meta_description: ""})
 
     html =
-      render_change(view, "validate", %{
-        "page" => %{
-          "body_markdown" => "Edited body.",
-          "meta_description" => "",
-          "_unused_meta_description" => ""
-        }
+      change(view, "body_markdown", %{
+        "body_markdown" => "Edited body.",
+        "meta_description" => "",
+        "_unused_meta_description" => ""
       })
 
     assert meta_value(html) == "Edited body."
@@ -855,5 +809,39 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
 
     assert_push_event(view, "fill_derived", %{id: "page_title", value: "Untitled"})
     assert_push_event(view, "fill_derived", %{id: "page_slug", value: ^slug})
+  end
+
+  describe "a form recovered after a reconnect, which names no _target" do
+    test "keeps a slug the author had taken over", %{conn: conn} do
+      {view, page} = open_draft(conn)
+
+      render_hook(view, "recover", %{
+        "page" => %{
+          "lock_version" => to_string(page.lock_version),
+          "title" => "Recovered Title",
+          "slug" => "my-own"
+        }
+      })
+
+      html = change(view, "title", %{"title" => "Another Title", "slug" => "my-own"})
+
+      assert input_value(html, "page[slug]") == "my-own"
+    end
+
+    test "lets an untouched slug follow the title", %{conn: conn} do
+      {view, page} = open_draft(conn)
+
+      html =
+        render_hook(view, "recover", %{
+          "page" => %{
+            "lock_version" => to_string(page.lock_version),
+            "title" => "Recovered Title",
+            "slug" => page.slug,
+            "_unused_slug" => ""
+          }
+        })
+
+      assert input_value(html, "page[slug]") == "recovered-title"
+    end
   end
 end

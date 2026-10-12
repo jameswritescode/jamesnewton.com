@@ -216,14 +216,12 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert [post] = Newton.Blog.list_posts(:drafts)
     assert [attached] = Newton.Blog.list_images(post)
 
-    render_change(view, "validate", %{
-      "post" => %{
-        "title" => "",
-        "_unused_title" => "",
-        "slug" => "",
-        "_unused_slug" => "",
-        "body_markdown" => "![](/media/#{attached.key})"
-      }
+    change(view, "body_markdown", %{
+      "title" => "",
+      "_unused_title" => "",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => "![](/media/#{attached.key})"
     })
 
     render_hook(view, "autosave_now", %{})
@@ -242,9 +240,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   test "a deliberately cleared title is not resurrected into the form by a flush", %{conn: conn} do
     {view, post} = open_draft(conn, %{title: "Keep Me", slug: "keep-me", body_markdown: "old"})
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "", "slug" => "keep-me", "body_markdown" => "old and new"}
-    })
+    change(view, "title", %{"title" => "", "slug" => "keep-me", "body_markdown" => "old and new"})
 
     render_hook(view, "autosave_now", %{})
     _ = render(view)
@@ -268,8 +264,10 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   test "autosave persists a changed, non-blank title", %{conn: conn} do
     {view, post} = open_draft(conn, %{title: "Before", slug: "before-slug"})
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "After", "slug" => "before-slug", "body_markdown" => "body"}
+    change(view, "title", %{
+      "title" => "After",
+      "slug" => "before-slug",
+      "body_markdown" => "body"
     })
 
     render_hook(view, "autosave_now", %{})
@@ -297,13 +295,11 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   test "the first upload keeps a title typed on a brand-new post", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-    render_change(view, "validate", %{
-      "post" => %{
-        "title" => "Kept Title",
-        "slug" => "",
-        "_unused_slug" => "",
-        "body_markdown" => ""
-      }
+    change(view, "title", %{
+      "title" => "Kept Title",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => ""
     })
 
     image =
@@ -352,16 +348,14 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
       assert_patch(view)
 
       html =
-        render_change(view, "validate", %{
-          "post" => %{
-            "title" => "",
-            "_unused_title" => "",
-            "slug" => "",
-            "_unused_slug" => "",
-            "excerpt" => "",
-            "_unused_excerpt" => "",
-            "body_markdown" => "![](/media/x.png)"
-          }
+        change(view, "body_markdown", %{
+          "title" => "",
+          "_unused_title" => "",
+          "slug" => "",
+          "_unused_slug" => "",
+          "excerpt" => "",
+          "_unused_excerpt" => "",
+          "body_markdown" => "![](/media/x.png)"
         })
 
       assert input_value(html, "post[title]") == "Untitled post"
@@ -381,13 +375,9 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "is derived from the title when the first image creates the draft", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-      render_change(view, "validate", %{
-        "post" => %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""}
-      })
+      change(view, "title", %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""})
 
-      render_change(view, "validate", %{
-        "post" => %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => ""}
-      })
+      change(view, "slug", %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => ""})
 
       upload_inline_image(view, "cleared.png")
       assert_patch(view)
@@ -411,21 +401,23 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
          %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-      render_change(view, "validate", %{
-        "post" => %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""}
-      })
+      change(view, "title", %{"title" => "Cleared Slug", "slug" => "", "_unused_slug" => ""})
 
       upload_inline_image(view, "stale.png")
       assert_patch(view)
 
-      render_change(view, "validate", %{
-        "post" => %{"title" => "Cleared Slug", "slug" => "", "body_markdown" => "![](x)"}
+      change(view, "body_markdown", %{
+        "title" => "Cleared Slug",
+        "slug" => "",
+        "body_markdown" => "![](x)"
       })
 
       assert has_element?(view, "#post-form input[name='post[slug]'][value='cleared-slug']")
 
-      render_change(view, "validate", %{
-        "post" => %{"title" => "Renamed", "slug" => "cleared-slug", "body_markdown" => "![](x)"}
+      change(view, "title", %{
+        "title" => "Renamed",
+        "slug" => "cleared-slug",
+        "body_markdown" => "![](x)"
       })
 
       assert has_element?(view, "#post-form input[name='post[slug]'][value='renamed']")
@@ -434,13 +426,11 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "refills from the title when cleared on a draft", %{conn: conn} do
       {view, _post} = open_draft(conn, %{title: "Custom Draft", slug: "my-own-slug"})
 
-      render_change(view, "validate", %{"post" => %{"title" => "Custom Draft", "slug" => ""}})
+      change(view, "slug", %{"title" => "Custom Draft", "slug" => ""})
 
       assert has_element?(view, "#post-form input[name='post[slug]'][value='custom-draft']")
 
-      render_change(view, "validate", %{
-        "post" => %{"title" => "Retitled Draft", "slug" => "custom-draft"}
-      })
+      change(view, "title", %{"title" => "Retitled Draft", "slug" => "custom-draft"})
 
       assert has_element?(view, "#post-form input[name='post[slug]'][value='retitled-draft']")
     end
@@ -453,7 +443,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
           published_at: ~U[2026-01-01 00:00:00Z]
         })
 
-      render_change(view, "validate", %{"post" => %{"title" => "Live Title", "slug" => ""}})
+      change(view, "slug", %{"title" => "Live Title", "slug" => ""})
 
       refute has_element?(view, "#post-form input[name='post[slug]'][value='live-title']")
     end
@@ -469,9 +459,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     post = Newton.Blog.get_post_by_slug!("untitled-post-2")
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "Real Title", "slug" => post.slug, "_unused_slug" => ""}
-    })
+    change(view, "title", %{"title" => "Real Title", "slug" => post.slug, "_unused_slug" => ""})
 
     assert has_element?(view, "#post-form input[name='post[slug]'][value='real-title']")
 
@@ -491,8 +479,10 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     post = Newton.Blog.get_post_by_slug!("untitled-post-2")
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "Untitled post", "slug" => post.slug, "body_markdown" => "Words."}
+    change(view, "body_markdown", %{
+      "title" => "Untitled post",
+      "slug" => post.slug,
+      "body_markdown" => "Words."
     })
 
     assert has_element?(view, "#post-form input[name='post[slug]'][value='untitled-post-2']")
@@ -508,8 +498,11 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     {:ok, _} = Newton.Blog.create_post(%{title: "Elsewhere", slug: "taken"})
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "Taken", "slug" => "", "_unused_slug" => "", "body_markdown" => ""}
+    change(view, "title", %{
+      "title" => "Taken",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => ""
     })
 
     upload_inline_image(view, "collide.png")
@@ -523,8 +516,11 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     {:ok, _} = Newton.Blog.create_post(%{title: "Elsewhere", slug: "taken"})
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "Taken", "slug" => "", "_unused_slug" => "", "body_markdown" => ""}
+    change(view, "title", %{
+      "title" => "Taken",
+      "slug" => "",
+      "_unused_slug" => "",
+      "body_markdown" => ""
     })
 
     send(view.pid, :autosave)
@@ -562,9 +558,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     {view, _post} = open_draft(conn)
 
     html =
-      view
-      |> form("#post-form", post: %{title: "My First Post!", slug: "untitled-post"})
-      |> render_change()
+      change(view, "title", %{"title" => "My First Post!", "slug" => "untitled-post"})
 
     assert html =~ ~s(value="my-first-post")
   end
@@ -573,23 +567,23 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     {view, _post} = open_draft(conn)
 
     # First keystroke: slug derives "h" (the field carries the seeded slug).
-    view |> form("#post-form", post: %{title: "h", slug: "untitled-post"}) |> render_change()
+    change(view, "title", %{"title" => "h", "slug" => "untitled-post"})
 
     # Later keystroke sends the slug rendered so far ("h"); it must re-derive
     # from the full title rather than freezing at "h".
-    html = view |> form("#post-form", post: %{title: "hello", slug: "h"}) |> render_change()
+    html = change(view, "title", %{"title" => "hello", "slug" => "h"})
     assert html =~ ~s(value="hello")
   end
 
   test "a manual slug edit stops the slug from following the title", %{conn: conn} do
     {view, _post} = open_draft(conn)
 
-    view |> form("#post-form", post: %{title: "hello", slug: "untitled-post"}) |> render_change()
+    change(view, "title", %{"title" => "hello", "slug" => "untitled-post"})
     # User types a custom slug (differs from the auto value).
-    view |> form("#post-form", post: %{title: "hello", slug: "custom"}) |> render_change()
+    change(view, "slug", %{"title" => "hello", "slug" => "custom"})
     # Changing the title no longer touches the slug.
     html =
-      view |> form("#post-form", post: %{title: "hello world", slug: "custom"}) |> render_change()
+      change(view, "title", %{"title" => "hello world", "slug" => "custom"})
 
     assert html =~ ~s(value="custom")
   end
@@ -607,13 +601,13 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     # Real browser: the user types only in the title. LiveView marks the slug
     # untouched (_unused_slug) and submits a value that lags the derived slug.
     # The slug must keep following the title rather than locking on the stale value.
-    render_change(view, "validate", %{
-      "post" => %{"title" => "h", "slug" => "untitled-post", "_unused_slug" => ""}
-    })
+    change(view, "title", %{"title" => "h", "slug" => "untitled-post", "_unused_slug" => ""})
 
     html =
-      render_change(view, "validate", %{
-        "post" => %{"title" => "hello world", "slug" => "untitled-post", "_unused_slug" => ""}
+      change(view, "title", %{
+        "title" => "hello world",
+        "slug" => "untitled-post",
+        "_unused_slug" => ""
       })
 
     assert html =~ ~s(value="hello-world")
@@ -627,21 +621,17 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     # Real browser: the user types in the body only. The excerpt is untouched
     # (_unused_excerpt) and submits its stale rendered value; it must keep
     # following the body rather than locking on the stale value.
-    render_change(view, "validate", %{
-      "post" => %{
-        "body_markdown" => "Second body version.",
-        "excerpt" => stale,
-        "_unused_excerpt" => ""
-      }
+    change(view, "body_markdown", %{
+      "body_markdown" => "Second body version.",
+      "excerpt" => stale,
+      "_unused_excerpt" => ""
     })
 
     html =
-      render_change(view, "validate", %{
-        "post" => %{
-          "body_markdown" => "Third body version now.",
-          "excerpt" => stale,
-          "_unused_excerpt" => ""
-        }
+      change(view, "body_markdown", %{
+        "body_markdown" => "Third body version now.",
+        "excerpt" => stale,
+        "_unused_excerpt" => ""
       })
 
     assert excerpt_value(html) == "Third body version now."
@@ -651,27 +641,24 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     {view, _post} = open_draft(conn)
 
     html =
-      view
-      |> form("#post-form",
-        post: %{title: "T", body_markdown: "The first paragraph of the body."}
-      )
-      |> render_change()
+      change(view, "body_markdown", %{
+        "title" => "T",
+        "body_markdown" => "The first paragraph of the body."
+      })
 
     assert html =~ "The first paragraph of the body."
 
     # Editing the excerpt locks it; further body changes leave it alone.
-    view
-    |> form("#post-form",
-      post: %{body_markdown: "Different body now.", excerpt: "My custom excerpt"}
-    )
-    |> render_change()
+    change(view, "excerpt", %{
+      "body_markdown" => "Different body now.",
+      "excerpt" => "My custom excerpt"
+    })
 
     html =
-      view
-      |> form("#post-form",
-        post: %{body_markdown: "Changed again.", excerpt: "My custom excerpt"}
-      )
-      |> render_change()
+      change(view, "body_markdown", %{
+        "body_markdown" => "Changed again.",
+        "excerpt" => "My custom excerpt"
+      })
 
     assert html =~ "My custom excerpt"
     refute html =~ "Changed again."
@@ -683,20 +670,14 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "a stale excerpt on a body keystroke keeps following the body", %{conn: conn} do
       {view, _post} = open_draft(conn, %{body_markdown: @harbour, excerpt: @harbour})
 
-      render_change(view, "validate", %{
-        "_target" => ["post", "excerpt"],
-        "post" => %{"body_markdown" => @harbour, "excerpt" => ""}
-      })
+      change(view, "excerpt", %{"body_markdown" => @harbour, "excerpt" => ""})
 
-      render_change(view, "validate", %{
-        "_target" => ["post", "body_markdown"],
-        "post" => %{"body_markdown" => @harbour <> " B", "excerpt" => @harbour}
-      })
+      change(view, "body_markdown", %{"body_markdown" => @harbour <> " B", "excerpt" => @harbour})
 
       html =
-        render_change(view, "validate", %{
-          "_target" => ["post", "body_markdown"],
-          "post" => %{"body_markdown" => @harbour <> " Boats", "excerpt" => @harbour}
+        change(view, "body_markdown", %{
+          "body_markdown" => @harbour <> " Boats",
+          "excerpt" => @harbour
         })
 
       assert excerpt_value(html) == @harbour <> " Boats"
@@ -705,21 +686,12 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "a stale slug on a title keystroke keeps following the title", %{conn: conn} do
       {view, _post} = open_draft(conn)
 
-      render_change(view, "validate", %{
-        "_target" => ["post", "title"],
-        "post" => %{"title" => "A", "slug" => "untitled-post"}
-      })
+      change(view, "title", %{"title" => "A", "slug" => "untitled-post"})
 
-      render_change(view, "validate", %{
-        "_target" => ["post", "title"],
-        "post" => %{"title" => "Ab", "slug" => "a"}
-      })
+      change(view, "title", %{"title" => "Ab", "slug" => "a"})
 
       html =
-        render_change(view, "validate", %{
-          "_target" => ["post", "title"],
-          "post" => %{"title" => "Abc", "slug" => "a"}
-        })
+        change(view, "title", %{"title" => "Abc", "slug" => "a"})
 
       assert input_value(html, "post[slug]") == "abc"
     end
@@ -727,15 +699,12 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "an edit to the excerpt itself still locks it", %{conn: conn} do
       {view, _post} = open_draft(conn, %{body_markdown: @harbour, excerpt: @harbour})
 
-      render_change(view, "validate", %{
-        "_target" => ["post", "excerpt"],
-        "post" => %{"body_markdown" => @harbour, "excerpt" => "My custom excerpt"}
-      })
+      change(view, "excerpt", %{"body_markdown" => @harbour, "excerpt" => "My custom excerpt"})
 
       html =
-        render_change(view, "validate", %{
-          "_target" => ["post", "body_markdown"],
-          "post" => %{"body_markdown" => "A newer body.", "excerpt" => "My custom excerpt"}
+        change(view, "body_markdown", %{
+          "body_markdown" => "A newer body.",
+          "excerpt" => "My custom excerpt"
         })
 
       assert excerpt_value(html) == "My custom excerpt"
@@ -744,16 +713,10 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "an edit to the slug itself still locks it", %{conn: conn} do
       {view, _post} = open_draft(conn)
 
-      render_change(view, "validate", %{
-        "_target" => ["post", "slug"],
-        "post" => %{"title" => "Untitled post", "slug" => "custom"}
-      })
+      change(view, "slug", %{"title" => "Untitled post", "slug" => "custom"})
 
       html =
-        render_change(view, "validate", %{
-          "_target" => ["post", "title"],
-          "post" => %{"title" => "A Real Title", "slug" => "custom"}
-        })
+        change(view, "title", %{"title" => "A Real Title", "slug" => "custom"})
 
       assert input_value(html, "post[slug]") == "custom"
     end
@@ -763,24 +726,21 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "re-derives from the body and keeps following it", %{conn: conn} do
       {view, _post} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
 
-      render_change(view, "validate", %{
-        "post" => %{"body_markdown" => "Seed body paragraph.", "excerpt" => "Custom words"}
+      change(view, "excerpt", %{
+        "body_markdown" => "Seed body paragraph.",
+        "excerpt" => "Custom words"
       })
 
       html =
-        render_change(view, "validate", %{
-          "post" => %{"body_markdown" => "Seed body paragraph.", "excerpt" => ""}
-        })
+        change(view, "excerpt", %{"body_markdown" => "Seed body paragraph.", "excerpt" => ""})
 
       assert excerpt_value(html) == "Seed body paragraph."
 
       html =
-        render_change(view, "validate", %{
-          "post" => %{
-            "body_markdown" => "A newer body.",
-            "excerpt" => "Seed body paragraph.",
-            "_unused_excerpt" => ""
-          }
+        change(view, "body_markdown", %{
+          "body_markdown" => "A newer body.",
+          "excerpt" => "Seed body paragraph.",
+          "_unused_excerpt" => ""
         })
 
       assert excerpt_value(html) == "A newer body."
@@ -789,21 +749,18 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "locks again once the author types a custom value", %{conn: conn} do
       {view, _post} = open_draft(conn, %{body_markdown: "Seed body paragraph."})
 
-      render_change(view, "validate", %{
-        "post" => %{"body_markdown" => "Seed body paragraph.", "excerpt" => ""}
-      })
+      change(view, "excerpt", %{"body_markdown" => "Seed body paragraph.", "excerpt" => ""})
 
-      render_change(view, "validate", %{
-        "post" => %{"body_markdown" => "Seed body paragraph.", "excerpt" => "Mine now"}
+      change(view, "excerpt", %{
+        "body_markdown" => "Seed body paragraph.",
+        "excerpt" => "Mine now"
       })
 
       html =
-        render_change(view, "validate", %{
-          "post" => %{
-            "body_markdown" => "A newer body.",
-            "excerpt" => "Mine now",
-            "_unused_excerpt" => ""
-          }
+        change(view, "body_markdown", %{
+          "body_markdown" => "A newer body.",
+          "excerpt" => "Mine now",
+          "_unused_excerpt" => ""
         })
 
       assert excerpt_value(html) == "Mine now"
@@ -815,16 +772,14 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
       {view, _post} =
         open_draft(conn, %{body_markdown: "Seed body paragraph.", excerpt: "Custom words"})
 
-      render_change(view, "validate", %{
-        "post" => %{
-          "title" => "Untitled post",
-          "_unused_title" => "",
-          "slug" => "untitled-post",
-          "_unused_slug" => "",
-          "body_markdown" => "Seed body paragraph.",
-          "_unused_body_markdown" => "",
-          "excerpt" => ""
-        }
+      change(view, "excerpt", %{
+        "title" => "Untitled post",
+        "_unused_title" => "",
+        "slug" => "untitled-post",
+        "_unused_slug" => "",
+        "body_markdown" => "Seed body paragraph.",
+        "_unused_body_markdown" => "",
+        "excerpt" => ""
       })
 
       assert_push_event(view, "fill_derived", %{id: "post_excerpt", value: "Seed body paragraph."})
@@ -833,9 +788,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     test "pushes the title's slug when a draft's slug is cleared", %{conn: conn} do
       {view, _post} = open_draft(conn, %{title: "Custom Draft", slug: "my-own-slug"})
 
-      render_change(view, "validate", %{
-        "post" => %{"title" => "Custom Draft", "_unused_title" => "", "slug" => ""}
-      })
+      change(view, "slug", %{"title" => "Custom Draft", "_unused_title" => "", "slug" => ""})
 
       assert_push_event(view, "fill_derived", %{id: "post_slug", value: "custom-draft"})
     end
@@ -844,16 +797,14 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
       {view, _post} =
         open_draft(conn, %{body_markdown: "Seed body paragraph.", excerpt: "Custom words"})
 
-      render_change(view, "validate", %{
-        "post" => %{
-          "title" => "Untitled post",
-          "_unused_title" => "",
-          "slug" => "untitled-post",
-          "_unused_slug" => "",
-          "body_markdown" => "Seed body paragraph.",
-          "_unused_body_markdown" => "",
-          "excerpt" => "Custom wordsx"
-        }
+      change(view, "excerpt", %{
+        "title" => "Untitled post",
+        "_unused_title" => "",
+        "slug" => "untitled-post",
+        "_unused_slug" => "",
+        "body_markdown" => "Seed body paragraph.",
+        "_unused_body_markdown" => "",
+        "excerpt" => "Custom wordsx"
       })
 
       refute_push_event(view, "fill_derived", %{})
@@ -867,9 +818,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
           published_at: ~U[2026-01-01 00:00:00Z]
         })
 
-      render_change(view, "validate", %{
-        "post" => %{"title" => "Live Title", "_unused_title" => "", "slug" => ""}
-      })
+      change(view, "slug", %{"title" => "Live Title", "_unused_title" => "", "slug" => ""})
 
       refute_push_event(view, "fill_derived", %{id: "post_slug"})
     end
@@ -888,12 +837,10 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/#{post.id}/edit")
 
     html =
-      render_change(view, "validate", %{
-        "post" => %{
-          "body_markdown" => "Edited body.",
-          "excerpt" => "",
-          "_unused_excerpt" => ""
-        }
+      change(view, "body_markdown", %{
+        "body_markdown" => "Edited body.",
+        "excerpt" => "",
+        "_unused_excerpt" => ""
       })
 
     assert excerpt_value(html) == "Edited body."
@@ -955,9 +902,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   test "publishing a brand-new post creates it published and serves it publicly", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "Straight Out", "slug" => "", "body_markdown" => "Fresh"}
-    })
+    change(view, "title", %{"title" => "Straight Out", "slug" => "", "body_markdown" => "Fresh"})
 
     view |> element("button", "Settings") |> render_click()
     view |> element("#publish-drawer button", "Publish now") |> render_click()
@@ -998,8 +943,10 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   test "typing content into a new post creates it and moves to its edit URL", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "Fresh Post", "slug" => "", "body_markdown" => "Hello body"}
+    change(view, "title", %{
+      "title" => "Fresh Post",
+      "slug" => "",
+      "body_markdown" => "Hello body"
     })
 
     send(view.pid, :autosave)
@@ -1013,9 +960,7 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
   test "a body-only new post is created with a default title", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 
-    render_change(view, "validate", %{
-      "post" => %{"title" => "", "slug" => "", "body_markdown" => "Just a body"}
-    })
+    change(view, "body_markdown", %{"title" => "", "slug" => "", "body_markdown" => "Just a body"})
 
     send(view.pid, :autosave)
     _ = :sys.get_state(view.pid)
@@ -1477,5 +1422,39 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
 
     assert_push_event(view, "fill_derived", %{id: "post_title", value: "Untitled post"})
     assert_push_event(view, "fill_derived", %{id: "post_slug", value: ^slug})
+  end
+
+  describe "a form recovered after a reconnect, which names no _target" do
+    test "keeps a slug the author had taken over", %{conn: conn} do
+      {view, post} = open_draft(conn)
+
+      render_hook(view, "recover", %{
+        "post" => %{
+          "lock_version" => to_string(post.lock_version),
+          "title" => "Recovered Title",
+          "slug" => "my-own"
+        }
+      })
+
+      html = change(view, "title", %{"title" => "Another Title", "slug" => "my-own"})
+
+      assert input_value(html, "post[slug]") == "my-own"
+    end
+
+    test "lets an untouched slug follow the title", %{conn: conn} do
+      {view, post} = open_draft(conn)
+
+      html =
+        render_hook(view, "recover", %{
+          "post" => %{
+            "lock_version" => to_string(post.lock_version),
+            "title" => "Recovered Title",
+            "slug" => post.slug,
+            "_unused_slug" => ""
+          }
+        })
+
+      assert input_value(html, "post[slug]") == "recovered-title"
+    end
   end
 end

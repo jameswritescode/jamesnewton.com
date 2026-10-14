@@ -7,7 +7,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias Newton.Storage
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.DraftEditor
-  alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
   alias NewtonWeb.PublicationNotifier
@@ -45,7 +44,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:drawer_open, false)
      |> assign(:card_preview, nil)
      |> DraftEditor.mount()
      |> InlineImageUpload.allow(progress: &handle_inline_upload/3)}
@@ -89,33 +87,17 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     save(socket, socket.assigns.post, params)
   end
 
-  def handle_event("autosave_now", _params, %{assigns: %{save_state: :conflict}} = socket) do
-    {:noreply, socket}
-  end
-
   def handle_event("autosave_now", params, socket) do
-    socket =
-      case params do
-        %{"body_markdown" => body} ->
-          update(socket, :autosave_params, &Map.put(&1 || %{}, "body_markdown", body))
-
-        _ ->
-          socket
-      end
-
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-    send(self(), :autosave)
-    {:noreply, assign(socket, :autosave_timer, nil)}
+    {:noreply, DraftEditor.autosave_now(socket, params)}
   end
 
   def handle_event("toggle_drawer", _params, socket) do
-    open? = !socket.assigns.drawer_open
-    socket = assign(socket, :drawer_open, open?)
-    {:noreply, if(open?, do: put_card_preview(socket), else: socket)}
+    socket = DraftEditor.toggle_drawer(socket)
+    {:noreply, if(socket.assigns.drawer_open, do: put_card_preview(socket), else: socket)}
   end
 
   def handle_event("close_drawer", _params, socket) do
-    {:noreply, assign(socket, :drawer_open, false)}
+    {:noreply, DraftEditor.close_drawer(socket)}
   end
 
   def handle_event("enable_preview", _params, socket) do
@@ -157,8 +139,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   def handle_event("upload_rejected", %{"rejected" => rejected}, socket) when is_list(rejected) do
-    {:noreply,
-     put_flash(socket, :error, "Not uploaded: #{InlineImageUpload.rejected_summary(rejected)}")}
+    {:noreply, DraftEditor.upload_rejected(socket, rejected)}
   end
 
   def handle_event("conflict_load_latest", _params, socket) do
@@ -213,15 +194,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   def handle_event("recover", %{"post" => params}, socket) do
-    if params["lock_version"] == to_string(socket.assigns.post.lock_version) do
-      {:noreply,
-       socket
-       |> DraftEditor.apply_validate(draft(), params, nil)
-       |> assign(:editor_key, DraftEditor.new_editor_key())}
-    else
-      {:noreply,
-       put_flash(socket, :info, "Updated in another window — showing the latest version.")}
-    end
+    {:noreply, DraftEditor.recover(socket, draft(), params)}
   end
 
   def handle_event("delete", _params, socket) do
@@ -295,37 +268,23 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp publish_now(socket, %Post{id: nil}) do
-    staged = Map.take(socket.assigns.form.source.params || %{}, @autosave_fields)
+    published_at = DateTime.truncate(DateTime.utc_now(), :second)
 
-    if DraftEditor.content?(staged) do
-      create_published(socket, staged)
-    else
-      put_flash(socket, :error, "Add a title or body before publishing")
-    end
+    DraftEditor.publish_new(socket, draft(), %{"published_at" => published_at}, fn socket, post ->
+      socket
+      |> assign(:post, post)
+      |> assign(:published_at, post.published_at)
+      |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), post))
+      |> assign(:autosave_params, nil)
+      |> assign(:save_state, :saved)
+      |> DraftEditor.claim_record(post)
+      |> put_flash(:info, "Post published")
+      |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
+    end)
   end
 
   defp publish_now(socket, %Post{}),
     do: set_published(socket, DateTime.truncate(DateTime.utc_now(), :second))
-
-  defp create_published(socket, staged) do
-    published_at = DateTime.truncate(DateTime.utc_now(), :second)
-
-    case DraftEditor.create(socket, draft(), Map.put(staged, "published_at", published_at)) do
-      {:ok, post} ->
-        socket
-        |> assign(:post, post)
-        |> assign(:published_at, post.published_at)
-        |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), post))
-        |> assign(:autosave_params, nil)
-        |> assign(:save_state, :saved)
-        |> DraftEditor.claim_record(post)
-        |> put_flash(:info, "Post published")
-        |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
-
-      {:error, changeset} ->
-        assign(socket, :form, FormHelpers.failed_create_form(changeset))
-    end
-  end
 
   # Publishing toggles publication state on the saved post; content edits in the
   # form are left untouched.
@@ -352,11 +311,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp save(socket, %Post{id: nil}, params) do
-    if DraftEditor.content?(params) do
-      create_saved(socket, params)
-    else
-      {:noreply, put_flash(socket, :error, "Add a title or body before saving")}
-    end
+    {:noreply,
+     DraftEditor.save_new(socket, draft(), params, fn socket, post ->
+       socket
+       |> put_flash(:info, "Post saved")
+       |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
+     end)}
   end
 
   defp save(socket, %Post{} = post, params) do
@@ -378,19 +338,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
-    end
-  end
-
-  defp create_saved(socket, params) do
-    case DraftEditor.create(socket, draft(), params) do
-      {:ok, post} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Post saved")
-         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, FormHelpers.failed_create_form(changeset))}
     end
   end
 

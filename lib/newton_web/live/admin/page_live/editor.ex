@@ -5,7 +5,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   alias Newton.Pages.Page
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.DraftEditor
-  alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
   alias NewtonWeb.PublicationNotifier
@@ -42,7 +41,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:drawer_open, false)
      |> DraftEditor.mount()
      |> InlineImageUpload.allow(progress: &handle_inline_upload/3)}
   end
@@ -61,31 +59,16 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     save(socket, socket.assigns.page, params)
   end
 
-  def handle_event("autosave_now", _params, %{assigns: %{save_state: :conflict}} = socket) do
-    {:noreply, socket}
-  end
-
   def handle_event("autosave_now", params, socket) do
-    socket =
-      case params do
-        %{"body_markdown" => body} ->
-          update(socket, :autosave_params, &Map.put(&1 || %{}, "body_markdown", body))
-
-        _ ->
-          socket
-      end
-
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-    send(self(), :autosave)
-    {:noreply, assign(socket, :autosave_timer, nil)}
+    {:noreply, DraftEditor.autosave_now(socket, params)}
   end
 
   def handle_event("toggle_drawer", _params, socket) do
-    {:noreply, assign(socket, :drawer_open, !socket.assigns.drawer_open)}
+    {:noreply, DraftEditor.toggle_drawer(socket)}
   end
 
   def handle_event("close_drawer", _params, socket) do
-    {:noreply, assign(socket, :drawer_open, false)}
+    {:noreply, DraftEditor.close_drawer(socket)}
   end
 
   def handle_event("publish", _params, socket) do
@@ -101,20 +84,11 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   def handle_event("upload_rejected", %{"rejected" => rejected}, socket) when is_list(rejected) do
-    summary = InlineImageUpload.rejected_summary(rejected)
-    {:noreply, put_flash(socket, :error, "Not uploaded: #{summary}")}
+    {:noreply, DraftEditor.upload_rejected(socket, rejected)}
   end
 
   def handle_event("recover", %{"page" => params}, socket) do
-    if params["lock_version"] == to_string(socket.assigns.page.lock_version) do
-      {:noreply,
-       socket
-       |> DraftEditor.apply_validate(draft(), params, nil)
-       |> assign(:editor_key, DraftEditor.new_editor_key())}
-    else
-      {:noreply,
-       put_flash(socket, :info, "Updated in another window — showing the latest version.")}
-    end
+    {:noreply, DraftEditor.recover(socket, draft(), params)}
   end
 
   def handle_event("delete", _params, socket) do
@@ -141,32 +115,18 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   # Publishing an unsaved page has to create the row first: the drawer acts on
   # the staged form params rather than waiting for a manual save.
   defp publish(socket, %Page{id: nil}) do
-    staged = Map.take(socket.assigns.form.source.params || %{}, @autosave_fields)
-
-    if DraftEditor.content?(staged) do
-      create_published(socket, staged)
-    else
-      put_flash(socket, :error, "Add a title or body before publishing")
-    end
+    DraftEditor.publish_new(socket, draft(), %{"published" => true}, fn socket, page ->
+      socket
+      |> assign(:page, page)
+      |> assign(:autosave_params, nil)
+      |> assign(:save_state, :saved)
+      |> DraftEditor.claim_record(page)
+      |> put_flash(:info, "Page published")
+      |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
+    end)
   end
 
   defp publish(socket, %Page{} = page), do: set_published(socket, page, true)
-
-  defp create_published(socket, staged) do
-    case DraftEditor.create(socket, draft(), Map.put(staged, "published", true)) do
-      {:ok, page} ->
-        socket
-        |> assign(:page, page)
-        |> assign(:autosave_params, nil)
-        |> assign(:save_state, :saved)
-        |> DraftEditor.claim_record(page)
-        |> put_flash(:info, "Page published")
-        |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
-
-      {:error, changeset} ->
-        assign(socket, :form, FormHelpers.failed_create_form(changeset))
-    end
-  end
 
   defp set_published(socket, %Page{} = page, published) do
     case Pages.update_page(page, %{"published" => published}) do
@@ -201,11 +161,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp save(socket, %Page{id: nil}, params) do
-    if DraftEditor.content?(params) do
-      create_saved(socket, params)
-    else
-      {:noreply, put_flash(socket, :error, "Add a title or body before saving")}
-    end
+    {:noreply,
+     DraftEditor.save_new(socket, draft(), params, fn socket, _page -> saved(socket) end)}
   end
 
   defp save(socket, %Page{} = page, params) do
@@ -219,16 +176,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
-    end
-  end
-
-  defp create_saved(socket, params) do
-    case DraftEditor.create(socket, draft(), params) do
-      {:ok, _page} ->
-        {:noreply, saved(socket)}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, FormHelpers.failed_create_form(changeset))}
     end
   end
 

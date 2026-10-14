@@ -9,8 +9,8 @@ defmodule NewtonWeb.Admin.DraftEditor do
   """
 
   import NewtonWeb.Helpers, only: [blank?: 1]
-  import Phoenix.Component, only: [assign: 3, to_form: 1]
-  import Phoenix.LiveView, only: [push_patch: 2]
+  import Phoenix.Component, only: [assign: 3, to_form: 1, update: 3]
+  import Phoenix.LiveView, only: [push_patch: 2, put_flash: 3]
 
   alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.DraftEditor.Config
@@ -23,6 +23,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
   @spec mount(socket()) :: socket()
   def mount(socket) do
     socket
+    |> assign(:drawer_open, false)
     |> assign(:save_state, :saved)
     |> assign(:autosave_params, nil)
     |> assign(:autosave_timer, nil)
@@ -207,6 +208,98 @@ defmodule NewtonWeb.Admin.DraftEditor do
     socket
     |> assign(:autosave_timer, nil)
     |> assign(:save_state, :conflict)
+  end
+
+  @doc """
+  Save a field's blur right away instead of waiting out the debounce. A body
+  carried in `params` (the editor hook's flush) joins the buffered params. Does
+  nothing during a conflict.
+  """
+  @spec autosave_now(socket(), map()) :: socket()
+  def autosave_now(%{assigns: %{save_state: :conflict}} = socket, _params), do: socket
+
+  def autosave_now(socket, params) do
+    socket =
+      case params do
+        %{"body_markdown" => body} ->
+          update(socket, :autosave_params, &Map.put(&1 || %{}, "body_markdown", body))
+
+        _ ->
+          socket
+      end
+
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+    send(self(), :autosave)
+    assign(socket, :autosave_timer, nil)
+  end
+
+  @doc """
+  Restore a form the client recovered after a reconnect, unless the record has
+  moved on since: then the latest version stays and the author is told why.
+  """
+  @spec recover(socket(), Config.t(), map()) :: socket()
+  def recover(socket, %Config{} = config, params) do
+    if params["lock_version"] == to_string(record(socket, config).lock_version) do
+      socket
+      |> apply_validate(config, params, nil)
+      |> assign(:editor_key, new_editor_key())
+    else
+      put_flash(socket, :info, "Updated in another window — showing the latest version.")
+    end
+  end
+
+  @doc "Open the settings drawer if closed, close it if open."
+  @spec toggle_drawer(socket()) :: socket()
+  def toggle_drawer(socket), do: assign(socket, :drawer_open, !socket.assigns.drawer_open)
+
+  @doc "Close the settings drawer."
+  @spec close_drawer(socket()) :: socket()
+  def close_drawer(socket), do: assign(socket, :drawer_open, false)
+
+  @doc "Flash the files the client-side upload hook refused."
+  @spec upload_rejected(socket(), [map()]) :: socket()
+  def upload_rejected(socket, rejected) do
+    put_flash(socket, :error, "Not uploaded: #{InlineImageUpload.rejected_summary(rejected)}")
+  end
+
+  @doc """
+  Save a new record from the submitted `params`, then hand it to `on_saved`.
+  Refuses, with a flash, when there is neither a title nor a body.
+  """
+  @spec save_new(socket(), Config.t(), map(), (socket(), Config.draft() -> socket())) ::
+          socket()
+  def save_new(socket, %Config{} = config, params, on_saved) do
+    require_content(socket, params, "saving", fn ->
+      create_or_show_errors(socket, config, params, on_saved)
+    end)
+  end
+
+  @doc """
+  Create a new record published from the form's staged content, merged with
+  `published_attrs`, then hand it to `on_published`. Refuses, with a flash, when
+  there is neither a title nor a body.
+  """
+  @spec publish_new(socket(), Config.t(), map(), (socket(), Config.draft() -> socket())) ::
+          socket()
+  def publish_new(socket, %Config{} = config, published_attrs, on_published) do
+    staged = Map.take(socket.assigns.form.source.params || %{}, config.autosave_fields)
+
+    require_content(socket, staged, "publishing", fn ->
+      create_or_show_errors(socket, config, Map.merge(staged, published_attrs), on_published)
+    end)
+  end
+
+  defp require_content(socket, params, action, create) do
+    if content?(params),
+      do: create.(),
+      else: put_flash(socket, :error, "Add a title or body before #{action}")
+  end
+
+  defp create_or_show_errors(socket, config, params, on_created) do
+    case create(socket, config, params) do
+      {:ok, record} -> on_created.(socket, record)
+      {:error, changeset} -> assign(socket, :form, FormHelpers.failed_create_form(changeset))
+    end
   end
 
   @doc "Assign the slug and derived-field lock state of a freshly loaded `record`."

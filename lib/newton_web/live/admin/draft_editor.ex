@@ -10,10 +10,147 @@ defmodule NewtonWeb.Admin.DraftEditor do
 
   import NewtonWeb.Helpers, only: [blank?: 1]
   import Phoenix.Component, only: [assign: 3, to_form: 1]
+  import Phoenix.LiveView, only: [push_patch: 2]
 
   alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.DraftEditor.Config
   alias NewtonWeb.Admin.FormHelpers
+
+  @type socket :: Phoenix.LiveView.Socket.t()
+
+  @doc "Assign the draft-lifecycle state a freshly mounted editor starts from."
+  @spec mount(socket()) :: socket()
+  def mount(socket) do
+    socket
+    |> assign(:save_state, :saved)
+    |> assign(:autosave_params, nil)
+    |> assign(:autosave_timer, nil)
+    |> assign(:editor_key, new_editor_key())
+    |> assign(:editor_record_id, :unset)
+  end
+
+  @doc "Load `record` into the editor: its form, lock state, and a clean save state."
+  @spec assign_record(socket(), Config.t(), Config.draft(), String.t()) :: socket()
+  def assign_record(socket, %Config{} = config, record, page_title) do
+    socket
+    |> sync_editor_key(record.id)
+    |> assign(:page_title, page_title)
+    |> assign(config.record, record)
+    |> assign_locks(config, record)
+    |> assign(:save_state, :saved)
+    |> assign(:autosave_params, nil)
+    |> assign(:form, to_form(config.change.(record, %{})))
+  end
+
+  # The body editor's DOM is phx-update="ignore", so a same-module patch to a
+  # DIFFERENT record would leave the previous record's content in CodeMirror.
+  # Changing the key (and with it every id in the region) forces morphdom to
+  # rebuild it; the key survives the /new -> /:id/edit patch of one editing
+  # session because every create claims the new record's id first.
+  defp sync_editor_key(socket, record_id) do
+    case socket.assigns.editor_record_id do
+      :unset ->
+        assign(socket, :editor_record_id, record_id)
+
+      ^record_id ->
+        socket
+
+      _changed ->
+        socket |> assign(:editor_key, new_editor_key()) |> assign(:editor_record_id, record_id)
+    end
+  end
+
+  @doc "A fresh key for the body editor region, forcing its DOM to rebuild."
+  @spec new_editor_key() :: String.t()
+  def new_editor_key, do: "ed#{System.unique_integer([:positive])}"
+
+  @doc "Create a record from staged `params`, backfilling its identity, and notify the change."
+  @spec create(socket(), Config.t(), map()) ::
+          {:ok, Config.draft()} | {:error, Ecto.Changeset.t()}
+  def create(socket, %Config{} = config, params) do
+    with {:ok, record} <- config.create.(backfill_new(socket, config, params)) do
+      config.notify.(nil, record)
+      {:ok, record}
+    end
+  end
+
+  @doc "Mark `record` as the one this editing session created, so the editor keeps its key."
+  @spec claim_record(socket(), Config.draft()) :: socket()
+  def claim_record(socket, record), do: assign(socket, :editor_record_id, record.id)
+
+  defp created(socket, config, record) do
+    socket
+    |> claim_record(record)
+    |> config.load_saved.(record)
+    |> push_patch(to: config.edit_path.(record))
+  end
+
+  @doc """
+  Write the buffered autosave params, if any, of a draft: create the record
+  once there is content, otherwise update it, entering a conflict when another
+  window saved first.
+  """
+  @spec autosave(socket(), Config.t()) :: socket()
+  def autosave(socket, %Config{} = config) do
+    params = socket.assigns.autosave_params
+
+    if not config.editing_published?.(socket.assigns) and params do
+      persist_autosave(socket, config, record(socket, config), params)
+    else
+      socket
+    end
+  end
+
+  defp persist_autosave(socket, config, %{id: nil}, params) do
+    if content?(params) do
+      case create(socket, config, params) do
+        {:ok, record} ->
+          socket
+          |> assign(:autosave_timer, nil)
+          |> created(config, record)
+
+        {:error, changeset} ->
+          creation_failed(socket, changeset)
+      end
+    else
+      assign(socket, :save_state, :saved)
+    end
+  end
+
+  defp persist_autosave(socket, config, record, params) do
+    case config.update.(record, never_blank_identity(params, record)) do
+      {:ok, updated} ->
+        config.notify.(record, updated)
+
+        socket
+        |> assign(config.record, updated)
+        |> assign(:autosave_params, nil)
+        |> assign(:autosave_timer, nil)
+        |> assign(:save_state, :saved)
+
+      {:error, :stale} ->
+        enter_conflict(socket)
+
+      {:error, _changeset} ->
+        assign(socket, :save_state, :error)
+    end
+  end
+
+  defp creation_failed(socket, changeset) do
+    socket
+    |> assign(:form, FormHelpers.failed_create_form(changeset))
+    |> assign(:save_state, :error)
+  end
+
+  @doc "Stop autosaving and show the conflict banner: another window saved first."
+  @spec enter_conflict(socket()) :: socket()
+  def enter_conflict(socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+
+    socket
+    |> assign(:autosave_timer, nil)
+    |> assign(:save_state, :conflict)
+  end
 
   @doc "Assign the slug and derived-field lock state of a freshly loaded `record`."
   @spec assign_locks(Phoenix.LiveView.Socket.t(), Config.t(), Config.draft()) ::

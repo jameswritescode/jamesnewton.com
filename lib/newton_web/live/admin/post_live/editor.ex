@@ -46,11 +46,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
      socket
      |> assign(:drawer_open, false)
      |> assign(:card_preview, nil)
-     |> assign(:save_state, :saved)
-     |> assign(:autosave_params, nil)
-     |> assign(:autosave_timer, nil)
-     |> assign(:editor_key, new_editor_key())
-     |> assign(:editor_post_id, :unset)
+     |> DraftEditor.mount()
      |> InlineImageUpload.allow(progress: &handle_inline_upload/3)}
   end
 
@@ -67,14 +63,12 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
-    case Blog.create_post(DraftEditor.backfill_new(socket, draft(), staged_content(socket))) do
+    case DraftEditor.create(socket, draft(), staged_content(socket)) do
       {:ok, post} ->
-        PublicationNotifier.notify_change(nil, post)
-
         socket =
           socket
           |> cancel_autosave()
-          |> assign(:editor_post_id, post.id)
+          |> DraftEditor.claim_record(post)
           |> assign_post(post, "Edit post")
           |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
 
@@ -122,36 +116,10 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp assign_post(socket, %Post{} = post, page_title) do
     socket
-    |> sync_editor_key(post.id)
-    |> assign(:page_title, page_title)
-    |> assign(:post, post)
+    |> DraftEditor.assign_record(draft(), post, page_title)
     |> assign(:images, post_images(post))
     |> assign(:published_at, post.published_at)
-    |> DraftEditor.assign_locks(draft(), post)
-    |> assign(:save_state, :saved)
-    |> assign(:autosave_params, nil)
-    |> assign(:form, to_form(Blog.change_post(post)))
   end
-
-  # The body editor's DOM is phx-update="ignore", so a same-module patch to a
-  # DIFFERENT post would leave the previous post's content in CodeMirror.
-  # Changing the key (and with it every id in the region) forces morphdom to
-  # rebuild it; the key survives the /new -> /:id/edit patch of one editing
-  # session because ensure_post/persist_autosave pre-assign the new post id.
-  defp sync_editor_key(socket, post_id) do
-    case socket.assigns.editor_post_id do
-      :unset ->
-        assign(socket, :editor_post_id, post_id)
-
-      ^post_id ->
-        socket
-
-      _changed ->
-        socket |> assign(:editor_key, new_editor_key()) |> assign(:editor_post_id, post_id)
-    end
-  end
-
-  defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
   @impl true
   def handle_event("validate", %{"post" => params} = payload, socket) do
@@ -244,7 +212,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         {:noreply,
          socket
          |> assign_post(post, "Edit post")
-         |> assign(:editor_key, new_editor_key())}
+         |> assign(:editor_key, DraftEditor.new_editor_key())}
     end
   end
 
@@ -272,13 +240,13 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
               if Map.has_key?(params, "body_markdown") do
                 socket
               else
-                assign(socket, :editor_key, new_editor_key())
+                assign(socket, :editor_key, DraftEditor.new_editor_key())
               end
 
             {:noreply, socket}
 
           {:error, :stale} ->
-            {:noreply, enter_conflict(socket)}
+            {:noreply, DraftEditor.enter_conflict(socket)}
 
           {:error, _} ->
             {:noreply, assign(socket, :save_state, :error)}
@@ -291,7 +259,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       {:noreply,
        socket
        |> DraftEditor.apply_validate(draft(), params, nil)
-       |> assign(:editor_key, new_editor_key())}
+       |> assign(:editor_key, DraftEditor.new_editor_key())}
     else
       {:noreply,
        put_flash(socket, :info, "Updated in another window — showing the latest version.")}
@@ -315,54 +283,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   @impl true
-  def handle_info(:autosave, socket) do
-    if is_nil(socket.assigns.published_at) and socket.assigns.autosave_params do
-      persist_autosave(socket, socket.assigns.post, socket.assigns.autosave_params)
-    else
-      {:noreply, socket}
-    end
-  end
-
-  defp persist_autosave(socket, %Post{id: nil}, params) do
-    if DraftEditor.content?(params) do
-      case Blog.create_post(DraftEditor.backfill_new(socket, draft(), params)) do
-        {:ok, post} ->
-          PublicationNotifier.notify_change(nil, post)
-
-          {:noreply,
-           socket
-           |> assign(:autosave_timer, nil)
-           |> assign(:editor_post_id, post.id)
-           |> assign_post(post, "Edit post")
-           |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
-
-        {:error, changeset} ->
-          {:noreply, creation_failed(socket, changeset)}
-      end
-    else
-      {:noreply, assign(socket, :save_state, :saved)}
-    end
-  end
-
-  defp persist_autosave(socket, %Post{} = post, params) do
-    case Blog.update_post(post, DraftEditor.never_blank_identity(params, post)) do
-      {:ok, updated} ->
-        PublicationNotifier.notify_change(post, updated)
-
-        {:noreply,
-         socket
-         |> assign(:post, updated)
-         |> assign(:autosave_params, nil)
-         |> assign(:autosave_timer, nil)
-         |> assign(:save_state, :saved)}
-
-      {:error, :stale} ->
-        {:noreply, enter_conflict(socket)}
-
-      {:error, _changeset} ->
-        {:noreply, assign(socket, :save_state, :error)}
-    end
-  end
+  def handle_info(:autosave, socket), do: {:noreply, DraftEditor.autosave(socket, draft())}
 
   defp creation_failed(socket, changeset) do
     socket
@@ -385,14 +306,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       {render_slot(@inner_block)}
     </button>
     """
-  end
-
-  defp enter_conflict(socket) do
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-
-    socket
-    |> assign(:autosave_timer, nil)
-    |> assign(:save_state, :conflict)
   end
 
   # Render the social card from the current form state (works for drafts/unsaved
@@ -443,22 +356,17 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     do: set_published(socket, DateTime.truncate(DateTime.utc_now(), :second))
 
   defp create_published(socket, staged) do
-    attrs =
-      socket
-      |> DraftEditor.backfill_new(draft(), staged)
-      |> Map.put("published_at", DateTime.truncate(DateTime.utc_now(), :second))
+    published_at = DateTime.truncate(DateTime.utc_now(), :second)
 
-    case Blog.create_post(attrs) do
+    case DraftEditor.create(socket, draft(), Map.put(staged, "published_at", published_at)) do
       {:ok, post} ->
-        PublicationNotifier.notify_change(nil, post)
-
         socket
         |> assign(:post, post)
         |> assign(:published_at, post.published_at)
         |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), post))
         |> assign(:autosave_params, nil)
         |> assign(:save_state, :saved)
-        |> assign(:editor_post_id, post.id)
+        |> DraftEditor.claim_record(post)
         |> put_flash(:info, "Post published")
         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
 
@@ -484,7 +392,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       {:error, :stale} ->
         socket
         |> update(:autosave_params, &Map.put(&1 || %{}, "published_at", published_at))
-        |> enter_conflict()
+        |> DraftEditor.enter_conflict()
 
       {:error, _changeset} ->
         assign(socket, :save_state, :error)
@@ -514,7 +422,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
          |> assign(:autosave_params, nil)}
 
       {:error, :stale} ->
-        {:noreply, socket |> assign(:autosave_params, params) |> enter_conflict()}
+        {:noreply, socket |> assign(:autosave_params, params) |> DraftEditor.enter_conflict()}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -522,10 +430,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp create_saved(socket, params) do
-    case Blog.create_post(DraftEditor.backfill_new(socket, draft(), params)) do
+    case DraftEditor.create(socket, draft(), params) do
       {:ok, post} ->
-        PublicationNotifier.notify_change(nil, post)
-
         {:noreply,
          socket
          |> put_flash(:info, "Post saved")

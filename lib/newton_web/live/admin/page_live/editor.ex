@@ -42,11 +42,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     {:ok,
      socket
      |> assign(:drawer_open, false)
-     |> assign(:save_state, :saved)
-     |> assign(:autosave_params, nil)
-     |> assign(:autosave_timer, nil)
-     |> assign(:editor_key, new_editor_key())
-     |> assign(:editor_page_id, :unset)
+     |> DraftEditor.mount()
      |> InlineImageUpload.allow(progress: &handle_inline_upload/3)}
   end
 
@@ -113,7 +109,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
       {:noreply,
        socket
        |> DraftEditor.apply_validate(draft(), params, nil)
-       |> assign(:editor_key, new_editor_key())}
+       |> assign(:editor_key, DraftEditor.new_editor_key())}
     else
       {:noreply,
        put_flash(socket, :info, "Updated in another window — showing the latest version.")}
@@ -131,90 +127,15 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   @impl true
-  def handle_info(:autosave, socket) do
-    if not socket.assigns.page.published and socket.assigns.autosave_params do
-      persist_autosave(socket, socket.assigns.page, socket.assigns.autosave_params)
-    else
-      {:noreply, socket}
-    end
-  end
+  def handle_info(:autosave, socket), do: {:noreply, DraftEditor.autosave(socket, draft())}
 
   defp apply_action(socket, :new, _params), do: assign_page(socket, %Page{}, "New page")
 
   defp apply_action(socket, :edit, %{"id" => id}),
     do: assign_page(socket, Pages.get_page!(id), "Edit page")
 
-  defp assign_page(socket, %Page{} = page, page_title) do
-    socket
-    |> sync_editor_key(page.id)
-    |> assign(:page_title, page_title)
-    |> assign(:page, page)
-    |> DraftEditor.assign_locks(draft(), page)
-    |> assign(:save_state, :saved)
-    |> assign(:autosave_params, nil)
-    |> assign(:form, to_form(Pages.change_page(page)))
-  end
-
-  # The body editor's DOM is phx-update="ignore", so patching to a DIFFERENT page
-  # would leave the previous page's content in CodeMirror. Changing the key (and
-  # with it every id in the region) forces morphdom to rebuild it; the key
-  # survives the /new -> /:id/edit patch of one editing session because
-  # ensure_page/persist_autosave pre-assign the new page id.
-  defp sync_editor_key(socket, page_id) do
-    case socket.assigns.editor_page_id do
-      :unset ->
-        assign(socket, :editor_page_id, page_id)
-
-      ^page_id ->
-        socket
-
-      _changed ->
-        socket |> assign(:editor_key, new_editor_key()) |> assign(:editor_page_id, page_id)
-    end
-  end
-
-  defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
-
-  defp persist_autosave(socket, %Page{id: nil}, params) do
-    if DraftEditor.content?(params) do
-      case Pages.create_page(DraftEditor.backfill_new(socket, draft(), params)) do
-        {:ok, page} ->
-          PublicationNotifier.notify_page_change(nil, page)
-
-          {:noreply,
-           socket
-           |> assign(:autosave_timer, nil)
-           |> assign(:editor_page_id, page.id)
-           |> assign_page(page, "Edit page")
-           |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")}
-
-        {:error, changeset} ->
-          {:noreply, creation_failed(socket, changeset)}
-      end
-    else
-      {:noreply, assign(socket, :save_state, :saved)}
-    end
-  end
-
-  defp persist_autosave(socket, %Page{} = page, params) do
-    case Pages.update_page(page, DraftEditor.never_blank_identity(params, page)) do
-      {:ok, updated} ->
-        PublicationNotifier.notify_page_change(page, updated)
-
-        {:noreply,
-         socket
-         |> assign(:page, updated)
-         |> assign(:autosave_params, nil)
-         |> assign(:autosave_timer, nil)
-         |> assign(:save_state, :saved)}
-
-      {:error, :stale} ->
-        {:noreply, enter_conflict(socket)}
-
-      {:error, _changeset} ->
-        {:noreply, assign(socket, :save_state, :error)}
-    end
-  end
+  defp assign_page(socket, %Page{} = page, page_title),
+    do: DraftEditor.assign_record(socket, draft(), page, page_title)
 
   # Publishing an unsaved page has to create the row first: the drawer acts on
   # the staged form params rather than waiting for a manual save.
@@ -231,20 +152,13 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp publish(socket, %Page{} = page), do: set_published(socket, page, true)
 
   defp create_published(socket, staged) do
-    attrs =
-      socket
-      |> DraftEditor.backfill_new(draft(), staged)
-      |> Map.put("published", true)
-
-    case Pages.create_page(attrs) do
+    case DraftEditor.create(socket, draft(), Map.put(staged, "published", true)) do
       {:ok, page} ->
-        PublicationNotifier.notify_page_change(nil, page)
-
         socket
         |> assign(:page, page)
         |> assign(:autosave_params, nil)
         |> assign(:save_state, :saved)
-        |> assign(:editor_page_id, page.id)
+        |> DraftEditor.claim_record(page)
         |> put_flash(:info, "Page published")
         |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
 
@@ -264,7 +178,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         |> put_flash(:info, if(published, do: "Page published", else: "Moved to draft"))
 
       {:error, :stale} ->
-        enter_conflict(socket)
+        DraftEditor.enter_conflict(socket)
 
       {:error, _changeset} ->
         assign(socket, :save_state, :error)
@@ -278,7 +192,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         assign(socket, :page, updated)
 
       {:error, :stale} ->
-        enter_conflict(socket)
+        DraftEditor.enter_conflict(socket)
 
       {:error, _changeset} ->
         assign(socket, :save_state, :error)
@@ -300,7 +214,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
         {:noreply, saved(socket)}
 
       {:error, :stale} ->
-        {:noreply, enter_conflict(socket)}
+        {:noreply, DraftEditor.enter_conflict(socket)}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -308,9 +222,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp create_saved(socket, params) do
-    case Pages.create_page(DraftEditor.backfill_new(socket, draft(), params)) do
-      {:ok, page} ->
-        PublicationNotifier.notify_page_change(nil, page)
+    case DraftEditor.create(socket, draft(), params) do
+      {:ok, _page} ->
         {:noreply, saved(socket)}
 
       {:error, changeset} ->
@@ -324,14 +237,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     |> assign(:autosave_params, nil)
     |> put_flash(:info, "Saved.")
     |> push_navigate(to: ~p"/admin/pages")
-  end
-
-  defp enter_conflict(socket) do
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-
-    socket
-    |> assign(:autosave_timer, nil)
-    |> assign(:save_state, :conflict)
   end
 
   defp creation_failed(socket, changeset) do
@@ -350,14 +255,12 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   # The first image dropped into an unsaved page needs a row to hang the ledger
   # entry on, so it creates the draft and moves to its edit URL.
   defp ensure_page(%{assigns: %{page: %Page{id: nil}}} = socket) do
-    case Pages.create_page(DraftEditor.backfill_new(socket, draft(), staged_content(socket))) do
+    case DraftEditor.create(socket, draft(), staged_content(socket)) do
       {:ok, page} ->
-        PublicationNotifier.notify_page_change(nil, page)
-
         socket =
           socket
           |> cancel_autosave()
-          |> assign(:editor_page_id, page.id)
+          |> DraftEditor.claim_record(page)
           |> assign_page(page, "Edit page")
           |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
 

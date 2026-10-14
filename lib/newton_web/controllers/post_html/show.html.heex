@@ -1,7 +1,12 @@
 <Layouts.app flash={@flash}>
   <div :if={@preview == :admin} class="preview-banner">
-    <strong>Draft — not public</strong>
-    <span>Only you can see this post until it is published.</span>
+    <%= if Newton.Blog.publish_status(@post.published_at) == :scheduled do %>
+      <strong>Scheduled — not public</strong>
+      <span>Only you can see this post until it goes live.</span>
+    <% else %>
+      <strong>Draft — not public</strong>
+      <span>Only you can see this post until it is published.</span>
+    <% end %>
   </div>
 
   <div :if={@preview == :link} class="preview-banner">

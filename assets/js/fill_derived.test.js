@@ -45,6 +45,32 @@ describe("fillDerived", () => {
     expect(el.value).toBe("my-own")
   })
 
+  it("fills a focused field with the latest value pushed before it blurs", () => {
+    const el = field("post_slug")
+    el.focus()
+
+    fillDerived({id: "post_slug", value: "first-title"})
+    fillDerived({id: "post_slug", value: "second-title"})
+    el.blur()
+
+    expect(el.value).toBe("second-title")
+  })
+
+  it("waits again after a blur when a later push finds the field focused", () => {
+    const el = field("post_slug")
+    el.focus()
+    fillDerived({id: "post_slug", value: "first-title"})
+    el.value = "typed"
+    el.blur()
+
+    el.value = ""
+    el.focus()
+    fillDerived({id: "post_slug", value: "second-title"})
+    el.blur()
+
+    expect(el.value).toBe("second-title")
+  })
+
   it("never overwrites a field that has text", () => {
     const el = field("post_excerpt", "Mine")
 

@@ -86,6 +86,30 @@ defmodule NewtonWeb.PostControllerTest do
       assert html =~ "noindex"
     end
 
+    test "a signed-in admin sees a scheduled banner on a post that is not live yet", %{
+      conn: conn
+    } do
+      {:ok, user} = Newton.Release.create_admin("preview-admin3@example.com", "supersecret123")
+
+      {:ok, _} =
+        Blog.create_post(%{
+          slug: "coming-soon",
+          title: "Coming Soon",
+          body_markdown: "Later.",
+          published_at: ~U[2999-01-01 12:00:00Z]
+        })
+
+      html =
+        conn
+        |> log_in_user(user)
+        |> get(~p"/posts/coming-soon")
+        |> html_response(200)
+
+      assert html =~ "Scheduled — not public"
+      assert html =~ "Only you can see this post until it goes live."
+      refute html =~ "Draft — not public"
+    end
+
     test "a signed-in admin sees no banner on a published post", %{conn: conn} do
       {:ok, user} = Newton.Release.create_admin("preview-admin2@example.com", "supersecret123")
 

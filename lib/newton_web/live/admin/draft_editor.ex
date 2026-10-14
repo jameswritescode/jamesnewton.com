@@ -72,245 +72,37 @@ defmodule NewtonWeb.Admin.DraftEditor do
   @spec new_editor_key() :: String.t()
   def new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
-  defp create(socket, %Config{} = config, params) do
-    with {:ok, record} <- config.create.(backfill_new(socket, config, params)) do
-      config.notify.(nil, record)
-      {:ok, record}
-    end
-  end
-
-  defp claim_record(socket, record), do: assign(socket, :editor_record_id, record.id)
-
-  defp after_create(socket, config, record) do
-    socket
-    |> claim_record(record)
-    |> config.load_saved.(record)
-    |> push_patch(to: config.edit_path.(record))
-  end
-
-  @doc """
-  Write the buffered autosave params, if any, of a draft: create the record
-  once there is content, otherwise update it, entering a conflict when another
-  window saved first.
-  """
-  @spec autosave(socket(), Config.t()) :: socket()
-  def autosave(socket, %Config{} = config) do
-    params = socket.assigns.autosave_params
-
-    if not config.published?.(record(socket, config)) and params do
-      persist_autosave(socket, config, record(socket, config), params)
-    else
-      socket
-    end
-  end
-
-  defp persist_autosave(socket, config, %{id: nil}, params) do
-    if content?(params) do
-      case create(socket, config, params) do
-        {:ok, record} ->
-          socket
-          |> assign(:autosave_timer, nil)
-          |> after_create(config, record)
-
-        {:error, changeset} ->
-          creation_failed(socket, changeset)
-      end
-    else
-      assign(socket, :save_state, :saved)
-    end
-  end
-
-  defp persist_autosave(socket, config, record, params) do
-    case config.update.(record, never_blank_identity(params, record)) do
-      {:ok, updated} ->
-        config.notify.(record, updated)
-
-        socket
-        |> assign(config.record_assign, updated)
-        |> assign(:autosave_params, nil)
-        |> assign(:autosave_timer, nil)
-        |> assign(:save_state, :saved)
-
-      {:error, :stale} ->
-        enter_conflict(socket)
-
-      {:error, _changeset} ->
-        assign(socket, :save_state, :error)
-    end
-  end
-
-  @doc """
-  Handle progress on an inline image upload, recording a finished one on the
-  record's image ledger. The first image dropped into an unsaved record needs a
-  row to hang the ledger entry on, so it creates the draft and moves to its
-  edit URL.
-  """
-  @spec upload_progress(Phoenix.LiveView.UploadEntry.t(), socket(), Config.t()) ::
-          {:noreply, socket()}
-  def upload_progress(entry, socket, %Config{} = config) do
-    InlineImageUpload.handle_progress(entry, socket, %{
-      ensure: &ensure_record(&1, config),
-      attach: &attach_image(config, &1, &2, &3)
-    })
-  end
-
-  defp ensure_record(socket, config) do
-    case record(socket, config) do
-      %{id: nil} = unsaved ->
-        case create(socket, config, staged_content(socket, config)) do
-          {:ok, record} ->
-            socket =
-              socket
-              |> cancel_autosave()
-              |> after_create(config, record)
-
-            {socket, record}
-
-          {:error, changeset} ->
-            {creation_failed(socket, changeset), unsaved}
-        end
-
-      record ->
-        {socket, record}
-    end
-  end
-
-  defp attach_image(_config, %{id: nil}, _key, _original_filename), do: :ok
-
-  defp attach_image(config, record, key, original_filename) do
-    config.attach_image.(record, key, original_filename)
-    :ok
-  end
-
-  defp staged_content(socket, config) do
-    (socket.assigns.autosave_params || socket.assigns.form.source.params || %{})
-    |> Map.take(config.autosave_fields)
-  end
-
-  defp cancel_autosave(socket) do
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-
-    socket
-    |> assign(:autosave_timer, nil)
-    |> assign(:autosave_params, nil)
-  end
-
-  defp creation_failed(socket, changeset) do
-    socket
-    |> assign(:form, FormHelpers.failed_create_form(changeset))
-    |> assign(:save_state, :error)
-  end
-
-  @doc "Stop autosaving and show the conflict banner: another window saved first."
-  @spec enter_conflict(socket()) :: socket()
-  def enter_conflict(socket) do
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-
-    socket
-    |> assign(:autosave_timer, nil)
-    |> assign(:save_state, :conflict)
-  end
-
-  @doc """
-  Save a field's blur right away instead of waiting out the debounce. A body
-  carried in `params` (the editor hook's flush) joins the buffered params. Does
-  nothing during a conflict.
-  """
-  @spec autosave_now(socket(), map()) :: socket()
-  def autosave_now(%{assigns: %{save_state: :conflict}} = socket, _params), do: socket
-
-  def autosave_now(socket, params) do
-    socket =
-      case params do
-        %{"body_markdown" => body} ->
-          update(socket, :autosave_params, &Map.put(&1 || %{}, "body_markdown", body))
-
-        _ ->
-          socket
-      end
-
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-    send(self(), :autosave)
-    assign(socket, :autosave_timer, nil)
-  end
-
-  @doc """
-  Restore a form the client recovered after a reconnect, unless the record has
-  moved on since: then the latest version stays and the author is told why.
-  """
-  @spec recover(socket(), Config.t(), map()) :: socket()
-  def recover(socket, %Config{} = config, params) do
-    if params["lock_version"] == to_string(record(socket, config).lock_version) do
-      socket
-      |> apply_validate(config, params, nil)
-      |> assign(:editor_key, new_editor_key())
-    else
-      put_flash(socket, :info, "Updated in another window — showing the latest version.")
-    end
-  end
-
-  @doc "Open the settings drawer if closed, close it if open."
-  @spec toggle_drawer(socket()) :: socket()
-  def toggle_drawer(socket), do: assign(socket, :drawer_open, !socket.assigns.drawer_open)
-
-  @doc "Close the settings drawer."
-  @spec close_drawer(socket()) :: socket()
-  def close_drawer(socket), do: assign(socket, :drawer_open, false)
-
-  @doc "Flash the files the client-side upload hook refused."
-  @spec upload_rejected(socket(), [map()]) :: socket()
-  def upload_rejected(socket, rejected) do
-    put_flash(socket, :error, "Not uploaded: #{InlineImageUpload.rejected_summary(rejected)}")
-  end
-
-  @doc """
-  Save a new record from the submitted `params`, then hand it to `on_saved`.
-  Refuses, with a flash, when there is neither a title nor a body. An untitled
-  record takes the placeholder title and the next untitled slug (see
-  `FormHelpers.backfill_identity/4`), as every create here does.
-  """
-  @spec save_new(socket(), Config.t(), map(), (socket(), Config.draft() -> socket())) ::
-          socket()
-  def save_new(socket, %Config{} = config, params, on_saved) do
-    require_content(socket, params, "saving", fn ->
-      create_or_show_errors(socket, config, params, on_saved)
-    end)
-  end
-
-  @doc """
-  Create a new record published from the form's staged content, merged with
-  `published_attrs`, then hand it to `on_published`. Refuses, with a flash, when
-  there is neither a title nor a body.
-  """
-  @spec publish_new(socket(), Config.t(), map(), (socket(), Config.draft() -> socket())) ::
-          socket()
-  def publish_new(socket, %Config{} = config, published_attrs, on_published) do
-    staged = Map.take(socket.assigns.form.source.params || %{}, config.autosave_fields)
-
-    require_content(socket, staged, "publishing", fn ->
-      create_or_show_errors(socket, config, Map.merge(staged, published_attrs), on_published)
-    end)
-  end
-
-  defp require_content(socket, params, action, create) do
-    if content?(params),
-      do: create.(),
-      else: put_flash(socket, :error, "Add a title or body before #{action}")
-  end
-
-  defp create_or_show_errors(socket, config, params, on_created) do
-    case create(socket, config, params) do
-      {:ok, record} -> socket |> claim_record(record) |> on_created.(record)
-      {:error, changeset} -> assign(socket, :form, FormHelpers.failed_create_form(changeset))
-    end
-  end
-
   defp assign_locks(socket, %Config{} = config, record) do
     socket
     |> assign(:slug_locked, loaded_slug_locked?(config, record))
     |> assign(:slug_auto, record.slug || "")
     |> assign(:derived_locked, loaded_derived_locked?(config, record))
     |> assign(:derived_auto, Map.fetch!(record, config.derived_field) || "")
+  end
+
+  @doc """
+  Does a loaded `record` keep its slug rather than follow its title? A
+  published record does, so existing links don't break, and so does a slug the
+  author chose, unlike the placeholder identity of an untitled draft.
+  """
+  @spec loaded_slug_locked?(Config.t(), Config.draft()) :: boolean()
+  def loaded_slug_locked?(_config, %{id: nil}), do: false
+
+  def loaded_slug_locked?(%Config{} = config, record) do
+    config.published?.(record) or
+      (record.slug != Newton.Slug.slugify(record.title || "") and
+         not FormHelpers.placeholder_identity?(
+           record,
+           config.placeholder_title,
+           config.untitled_slug_prefix
+         ))
+  end
+
+  defp loaded_derived_locked?(_config, %{id: nil}), do: false
+
+  defp loaded_derived_locked?(%Config{derived_field: field}, record) do
+    value = Map.fetch!(record, field)
+    not blank?(value) and value != Newton.Markdown.excerpt(record.body_markdown || "")
   end
 
   @doc """
@@ -400,6 +192,239 @@ defmodule NewtonWeb.Admin.DraftEditor do
     Autosave.content_params(params, Autosave.keys(config.autosave_fields))
   end
 
+  @doc """
+  Save a field's blur right away instead of waiting out the debounce. A body
+  carried in `params` (the editor hook's flush) joins the buffered params. Does
+  nothing during a conflict.
+  """
+  @spec autosave_now(socket(), map()) :: socket()
+  def autosave_now(%{assigns: %{save_state: :conflict}} = socket, _params), do: socket
+
+  def autosave_now(socket, params) do
+    socket =
+      case params do
+        %{"body_markdown" => body} ->
+          update(socket, :autosave_params, &Map.put(&1 || %{}, "body_markdown", body))
+
+        _ ->
+          socket
+      end
+
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+    send(self(), :autosave)
+    assign(socket, :autosave_timer, nil)
+  end
+
+  @doc """
+  Write the buffered autosave params, if any, of a draft: create the record
+  once there is content, otherwise update it, entering a conflict when another
+  window saved first.
+  """
+  @spec autosave(socket(), Config.t()) :: socket()
+  def autosave(socket, %Config{} = config) do
+    params = socket.assigns.autosave_params
+
+    if not config.published?.(record(socket, config)) and params do
+      persist_autosave(socket, config, record(socket, config), params)
+    else
+      socket
+    end
+  end
+
+  defp persist_autosave(socket, config, %{id: nil}, params) do
+    if content?(params) do
+      case create(socket, config, params) do
+        {:ok, record} ->
+          socket
+          |> assign(:autosave_timer, nil)
+          |> after_create(config, record)
+
+        {:error, changeset} ->
+          creation_failed(socket, changeset)
+      end
+    else
+      assign(socket, :save_state, :saved)
+    end
+  end
+
+  defp persist_autosave(socket, config, record, params) do
+    case config.update.(record, never_blank_identity(params, record)) do
+      {:ok, updated} ->
+        config.notify.(record, updated)
+
+        socket
+        |> assign(config.record_assign, updated)
+        |> assign(:autosave_params, nil)
+        |> assign(:autosave_timer, nil)
+        |> assign(:save_state, :saved)
+
+      {:error, :stale} ->
+        enter_conflict(socket)
+
+      {:error, _changeset} ->
+        assign(socket, :save_state, :error)
+    end
+  end
+
+  defp create(socket, %Config{} = config, params) do
+    with {:ok, record} <- config.create.(backfill_new(socket, config, params)) do
+      config.notify.(nil, record)
+      {:ok, record}
+    end
+  end
+
+  defp claim_record(socket, record), do: assign(socket, :editor_record_id, record.id)
+
+  defp after_create(socket, config, record) do
+    socket
+    |> claim_record(record)
+    |> config.load_saved.(record)
+    |> push_patch(to: config.edit_path.(record))
+  end
+
+  defp creation_failed(socket, changeset) do
+    socket
+    |> assign(:form, FormHelpers.failed_create_form(changeset))
+    |> assign(:save_state, :error)
+  end
+
+  @doc """
+  Handle progress on an inline image upload, recording a finished one on the
+  record's image ledger. The first image dropped into an unsaved record needs a
+  row to hang the ledger entry on, so it creates the draft and moves to its
+  edit URL.
+  """
+  @spec upload_progress(Phoenix.LiveView.UploadEntry.t(), socket(), Config.t()) ::
+          {:noreply, socket()}
+  def upload_progress(entry, socket, %Config{} = config) do
+    InlineImageUpload.handle_progress(entry, socket, %{
+      ensure: &ensure_record(&1, config),
+      attach: &attach_image(config, &1, &2, &3)
+    })
+  end
+
+  defp ensure_record(socket, config) do
+    case record(socket, config) do
+      %{id: nil} = unsaved ->
+        case create(socket, config, staged_content(socket, config)) do
+          {:ok, record} ->
+            socket =
+              socket
+              |> cancel_autosave()
+              |> after_create(config, record)
+
+            {socket, record}
+
+          {:error, changeset} ->
+            {creation_failed(socket, changeset), unsaved}
+        end
+
+      record ->
+        {socket, record}
+    end
+  end
+
+  defp attach_image(_config, %{id: nil}, _key, _original_filename), do: :ok
+
+  defp attach_image(config, record, key, original_filename) do
+    config.attach_image.(record, key, original_filename)
+    :ok
+  end
+
+  defp staged_content(socket, config) do
+    (socket.assigns.autosave_params || socket.assigns.form.source.params || %{})
+    |> Map.take(config.autosave_fields)
+  end
+
+  defp cancel_autosave(socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+
+    socket
+    |> assign(:autosave_timer, nil)
+    |> assign(:autosave_params, nil)
+  end
+
+  @doc "Flash the files the client-side upload hook refused."
+  @spec upload_rejected(socket(), [map()]) :: socket()
+  def upload_rejected(socket, rejected) do
+    put_flash(socket, :error, "Not uploaded: #{InlineImageUpload.rejected_summary(rejected)}")
+  end
+
+  @doc "Stop autosaving and show the conflict banner: another window saved first."
+  @spec enter_conflict(socket()) :: socket()
+  def enter_conflict(socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+
+    socket
+    |> assign(:autosave_timer, nil)
+    |> assign(:save_state, :conflict)
+  end
+
+  @doc """
+  Restore a form the client recovered after a reconnect, unless the record has
+  moved on since: then the latest version stays and the author is told why.
+  """
+  @spec recover(socket(), Config.t(), map()) :: socket()
+  def recover(socket, %Config{} = config, params) do
+    if params["lock_version"] == to_string(record(socket, config).lock_version) do
+      socket
+      |> apply_validate(config, params, nil)
+      |> assign(:editor_key, new_editor_key())
+    else
+      put_flash(socket, :info, "Updated in another window — showing the latest version.")
+    end
+  end
+
+  @doc "Open the settings drawer if closed, close it if open."
+  @spec toggle_drawer(socket()) :: socket()
+  def toggle_drawer(socket), do: assign(socket, :drawer_open, !socket.assigns.drawer_open)
+
+  @doc "Close the settings drawer."
+  @spec close_drawer(socket()) :: socket()
+  def close_drawer(socket), do: assign(socket, :drawer_open, false)
+
+  @doc """
+  Save a new record from the submitted `params`, then hand it to `on_saved`.
+  Refuses, with a flash, when there is neither a title nor a body. An untitled
+  record takes the placeholder title and the next untitled slug (see
+  `FormHelpers.backfill_identity/4`), as every create here does.
+  """
+  @spec save_new(socket(), Config.t(), map(), (socket(), Config.draft() -> socket())) ::
+          socket()
+  def save_new(socket, %Config{} = config, params, on_saved) do
+    require_content(socket, params, "saving", fn ->
+      create_or_show_errors(socket, config, params, on_saved)
+    end)
+  end
+
+  @doc """
+  Create a new record published from the form's staged content, merged with
+  `published_attrs`, then hand it to `on_published`. Refuses, with a flash, when
+  there is neither a title nor a body.
+  """
+  @spec publish_new(socket(), Config.t(), map(), (socket(), Config.draft() -> socket())) ::
+          socket()
+  def publish_new(socket, %Config{} = config, published_attrs, on_published) do
+    staged = Map.take(socket.assigns.form.source.params || %{}, config.autosave_fields)
+
+    require_content(socket, staged, "publishing", fn ->
+      create_or_show_errors(socket, config, Map.merge(staged, published_attrs), on_published)
+    end)
+  end
+
+  defp require_content(socket, params, action, create) do
+    if content?(params),
+      do: create.(),
+      else: put_flash(socket, :error, "Add a title or body before #{action}")
+  end
+
+  defp create_or_show_errors(socket, config, params, on_created) do
+    case create(socket, config, params) do
+      {:ok, record} -> socket |> claim_record(record) |> on_created.(record)
+      {:error, changeset} -> assign(socket, :form, FormHelpers.failed_create_form(changeset))
+    end
+  end
+
   defp record(socket, %Config{record_assign: key}), do: Map.fetch!(socket.assigns, key)
 
   defp content?(params) do
@@ -425,30 +450,5 @@ defmodule NewtonWeb.Admin.DraftEditor do
       config.placeholder_title,
       config.next_untitled_slug
     )
-  end
-
-  @doc """
-  Does a loaded `record` keep its slug rather than follow its title? A
-  published record does, so existing links don't break, and so does a slug the
-  author chose, unlike the placeholder identity of an untitled draft.
-  """
-  @spec loaded_slug_locked?(Config.t(), Config.draft()) :: boolean()
-  def loaded_slug_locked?(_config, %{id: nil}), do: false
-
-  def loaded_slug_locked?(%Config{} = config, record) do
-    config.published?.(record) or
-      (record.slug != Newton.Slug.slugify(record.title || "") and
-         not FormHelpers.placeholder_identity?(
-           record,
-           config.placeholder_title,
-           config.untitled_slug_prefix
-         ))
-  end
-
-  defp loaded_derived_locked?(_config, %{id: nil}), do: false
-
-  defp loaded_derived_locked?(%Config{derived_field: field}, record) do
-    value = Map.fetch!(record, field)
-    not blank?(value) and value != Newton.Markdown.excerpt(record.body_markdown || "")
   end
 end

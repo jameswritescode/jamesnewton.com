@@ -232,9 +232,9 @@ Tests assert on outcomes and interactions, not static markup.
 
 ## Changes since this spec
 
-*Recorded 2026-10-07 and updated 2026-10-11 against the `admin-pages` branch
+*Recorded 2026-10-07 and updated 2026-10-14 against the `admin-pages` branch
 as shipped. The editor rules below apply to the post editor too, since both
-share the autofill and draft-creation helpers.*
+editors run the same draft lifecycle (see "Shared draft editor").*
 
 - **Settings drawer, not an inline toggle.** The page editor adopted the post
   editor's settings drawer: Publish / Move to draft / Delete live in the drawer
@@ -274,3 +274,16 @@ share the autofill and draft-creation helpers.*
   values; nothing appends a suffix automatically. An image dropped while the
   slug collides is stored and inserted into the body but not recorded on the
   draft's image ledger.
+- **Nothing empty is created.** Save and Publish on a new record with neither a
+  title nor a body create nothing and say so ("Add a title or body before
+  saving" / "… publishing"), matching autosave, which never creates an empty
+  draft.
+- **Shared draft editor.** The draft lifecycle both editors had duplicated —
+  autofill and field locks, save-state tracking, autosave and create, the
+  first-image draft, conflict entry, and the shared event handlers — lives in
+  `NewtonWeb.Admin.DraftEditor`, configured per editor by
+  `NewtonWeb.Admin.DraftEditor.Config`. Each LiveView keeps its own one-line
+  `handle_event`/`handle_info` delegates, so every event an editor handles is
+  still visible in that editor; post-only concerns (preview links, scheduling,
+  the social card, the image list) and the page's sitemap switch stay in their
+  editors.

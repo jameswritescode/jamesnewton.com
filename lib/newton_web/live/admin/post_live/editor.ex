@@ -277,7 +277,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), post))
       |> assign(:autosave_params, nil)
       |> assign(:save_state, :saved)
-      |> DraftEditor.claim_record(post)
       |> put_flash(:info, "Post published")
       |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
     end)

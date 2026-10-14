@@ -120,7 +120,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
       |> assign(:page, page)
       |> assign(:autosave_params, nil)
       |> assign(:save_state, :saved)
-      |> DraftEditor.claim_record(page)
       |> put_flash(:info, "Page published")
       |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
     end)

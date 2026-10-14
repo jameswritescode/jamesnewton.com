@@ -48,7 +48,8 @@ defmodule NewtonWeb.Admin.DraftEditor do
   # DIFFERENT record would leave the previous record's content in CodeMirror.
   # Changing the key (and with it every id in the region) forces morphdom to
   # rebuild it; the key survives the /new -> /:id/edit patch of one editing
-  # session because every create claims the new record's id first.
+  # session because every create (autosave, first image, Save, Publish) claims
+  # the new record's id before patching to it.
   defp sync_editor_key(socket, record_id) do
     case socket.assigns.editor_record_id do
       :unset ->
@@ -297,7 +298,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
 
   defp create_or_show_errors(socket, config, params, on_created) do
     case create(socket, config, params) do
-      {:ok, record} -> on_created.(socket, record)
+      {:ok, record} -> socket |> claim_record(record) |> on_created.(record)
       {:error, changeset} -> assign(socket, :form, FormHelpers.failed_create_form(changeset))
     end
   end

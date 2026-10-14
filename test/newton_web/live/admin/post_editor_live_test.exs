@@ -157,6 +157,18 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     assert editor_key(view) != key_new
   end
 
+  test "manually saving a new post keeps the editor region", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+    key_new = editor_key(view)
+
+    view
+    |> form("#post-form", post: %{title: "Saved New", slug: "", body_markdown: "Body."})
+    |> render_submit()
+
+    assert_patch(view)
+    assert editor_key(view) == key_new
+  end
+
   test "typing (validate) between drop and upload completion doesn't lose the upload", %{
     conn: conn
   } do

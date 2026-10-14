@@ -31,13 +31,18 @@ defmodule NewtonWeb.Admin.DraftEditor do
     |> assign(:editor_record_id, :unset)
   end
 
-  @doc "Load `record` into the editor: its form, lock state, and a clean save state."
+  @doc """
+  Load `record` into the editor: its form, a clean save state, and its lock
+  state. The slug stays locked when it is published or one the author chose,
+  and the derived field when it holds text the author wrote rather than the
+  body's excerpt.
+  """
   @spec assign_record(socket(), Config.t(), Config.draft(), String.t()) :: socket()
   def assign_record(socket, %Config{} = config, record, page_title) do
     socket
     |> sync_editor_key(record.id)
     |> assign(:page_title, page_title)
-    |> assign(config.record, record)
+    |> assign(config.record_assign, record)
     |> assign_locks(config, record)
     |> assign(:save_state, :saved)
     |> assign(:autosave_params, nil)
@@ -67,21 +72,16 @@ defmodule NewtonWeb.Admin.DraftEditor do
   @spec new_editor_key() :: String.t()
   def new_editor_key, do: "ed#{System.unique_integer([:positive])}"
 
-  @doc "Create a record from staged `params`, backfilling its identity, and notify the change."
-  @spec create(socket(), Config.t(), map()) ::
-          {:ok, Config.draft()} | {:error, Ecto.Changeset.t()}
-  def create(socket, %Config{} = config, params) do
+  defp create(socket, %Config{} = config, params) do
     with {:ok, record} <- config.create.(backfill_new(socket, config, params)) do
       config.notify.(nil, record)
       {:ok, record}
     end
   end
 
-  @doc "Mark `record` as the one this editing session created, so the editor keeps its key."
-  @spec claim_record(socket(), Config.draft()) :: socket()
-  def claim_record(socket, record), do: assign(socket, :editor_record_id, record.id)
+  defp claim_record(socket, record), do: assign(socket, :editor_record_id, record.id)
 
-  defp created(socket, config, record) do
+  defp after_create(socket, config, record) do
     socket
     |> claim_record(record)
     |> config.load_saved.(record)
@@ -97,7 +97,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
   def autosave(socket, %Config{} = config) do
     params = socket.assigns.autosave_params
 
-    if not config.editing_published?.(socket.assigns) and params do
+    if not config.published?.(record(socket, config)) and params do
       persist_autosave(socket, config, record(socket, config), params)
     else
       socket
@@ -110,7 +110,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
         {:ok, record} ->
           socket
           |> assign(:autosave_timer, nil)
-          |> created(config, record)
+          |> after_create(config, record)
 
         {:error, changeset} ->
           creation_failed(socket, changeset)
@@ -126,7 +126,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
         config.notify.(record, updated)
 
         socket
-        |> assign(config.record, updated)
+        |> assign(config.record_assign, updated)
         |> assign(:autosave_params, nil)
         |> assign(:autosave_timer, nil)
         |> assign(:save_state, :saved)
@@ -162,7 +162,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
             socket =
               socket
               |> cancel_autosave()
-              |> created(config, record)
+              |> after_create(config, record)
 
             {socket, record}
 
@@ -265,7 +265,9 @@ defmodule NewtonWeb.Admin.DraftEditor do
 
   @doc """
   Save a new record from the submitted `params`, then hand it to `on_saved`.
-  Refuses, with a flash, when there is neither a title nor a body.
+  Refuses, with a flash, when there is neither a title nor a body. An untitled
+  record takes the placeholder title and the next untitled slug (see
+  `FormHelpers.backfill_identity/4`), as every create here does.
   """
   @spec save_new(socket(), Config.t(), map(), (socket(), Config.draft() -> socket())) ::
           socket()
@@ -303,10 +305,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
     end
   end
 
-  @doc "Assign the slug and derived-field lock state of a freshly loaded `record`."
-  @spec assign_locks(Phoenix.LiveView.Socket.t(), Config.t(), Config.draft()) ::
-          Phoenix.LiveView.Socket.t()
-  def assign_locks(socket, %Config{} = config, record) do
+  defp assign_locks(socket, %Config{} = config, record) do
     socket
     |> assign(:slug_locked, loaded_slug_locked?(config, record))
     |> assign(:slug_auto, record.slug || "")
@@ -320,13 +319,13 @@ defmodule NewtonWeb.Admin.DraftEditor do
   for a recovered form), autofill the rest, push refills the browser would
   otherwise miss, and track the save state.
   """
-  @spec apply_validate(Phoenix.LiveView.Socket.t(), Config.t(), map(), [String.t()] | nil) ::
-          Phoenix.LiveView.Socket.t()
+  @spec apply_validate(socket(), Config.t(), map(), [String.t()] | nil) ::
+          socket()
   def apply_validate(socket, %Config{} = config, incoming, target) do
     record = record(socket, config)
     derived = Atom.to_string(config.derived_field)
     params = FormHelpers.keep_persisted_identity(incoming, record)
-    published? = config.editing_published?.(socket.assigns)
+    published? = config.published?.(record)
 
     slug_locked =
       FormHelpers.slug_locked?(
@@ -401,11 +400,9 @@ defmodule NewtonWeb.Admin.DraftEditor do
     Autosave.content_params(params, Autosave.keys(config.autosave_fields))
   end
 
-  defp record(socket, %Config{record: key}), do: Map.fetch!(socket.assigns, key)
+  defp record(socket, %Config{record_assign: key}), do: Map.fetch!(socket.assigns, key)
 
-  @doc "Does `params` carry a title or a body, enough to create a record from?"
-  @spec content?(map()) :: boolean()
-  def content?(params) do
+  defp content?(params) do
     not blank?(params["title"]) or not blank?(params["body_markdown"])
   end
 
@@ -421,9 +418,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
     if blank?(params[key]), do: Map.put(params, key, existing), else: params
   end
 
-  @doc "Fill in the identity a create of staged `params` needs (see `FormHelpers.backfill_identity/4`)."
-  @spec backfill_new(Phoenix.LiveView.Socket.t(), Config.t(), map()) :: map()
-  def backfill_new(socket, %Config{} = config, params) do
+  defp backfill_new(socket, %Config{} = config, params) do
     FormHelpers.backfill_identity(
       params,
       socket.assigns.slug_locked,
@@ -450,11 +445,9 @@ defmodule NewtonWeb.Admin.DraftEditor do
          ))
   end
 
-  @doc "Does a loaded `record` carry a derived field the author wrote rather than its body's excerpt?"
-  @spec loaded_derived_locked?(Config.t(), Config.draft()) :: boolean()
-  def loaded_derived_locked?(_config, %{id: nil}), do: false
+  defp loaded_derived_locked?(_config, %{id: nil}), do: false
 
-  def loaded_derived_locked?(%Config{derived_field: field}, record) do
+  defp loaded_derived_locked?(%Config{derived_field: field}, record) do
     value = Map.fetch!(record, field)
     not blank?(value) and value != Newton.Markdown.excerpt(record.body_markdown || "")
   end

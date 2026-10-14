@@ -19,7 +19,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   defp draft do
     %DraftEditor.Config{
-      record: :page,
+      record_assign: :page,
       change: &Pages.change_page/2,
       create: &Pages.create_page/1,
       update: &Pages.update_page/2,
@@ -30,7 +30,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
       untitled_slug_prefix: @untitled_slug_prefix,
       next_untitled_slug: &Pages.next_untitled_slug/0,
       published?: & &1.published,
-      editing_published?: & &1.page.published,
       notify: &PublicationNotifier.notify_page_change/2,
       edit_path: fn page -> ~p"/admin/pages/#{page.id}/edit" end,
       load_saved: &assign_page(&1, &2, "Edit page")

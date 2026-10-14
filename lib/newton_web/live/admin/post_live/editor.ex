@@ -22,7 +22,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   defp draft do
     %DraftEditor.Config{
-      record: :post,
+      record_assign: :post,
       change: &Blog.change_post/2,
       create: &Blog.create_post/1,
       update: &Blog.update_post/2,
@@ -33,7 +33,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       untitled_slug_prefix: @untitled_slug_prefix,
       next_untitled_slug: &Blog.next_untitled_slug/0,
       published?: &(not is_nil(&1.published_at)),
-      editing_published?: &(not is_nil(&1.published_at)),
       notify: &PublicationNotifier.notify_change/2,
       edit_path: fn post -> ~p"/admin/posts/#{post.id}/edit" end,
       load_saved: &assign_post(&1, &2, "Edit post")

@@ -7,6 +7,8 @@ defmodule NewtonWeb.Admin.FormHelpers do
   through unchanged; when unlocked, `derive` recomputes the value, writes it into
   params, and becomes the new auto baseline.
   """
+  @spec autofill(map(), String.t(), boolean(), String.t(), (-> String.t())) ::
+          {map(), String.t()}
   def autofill(params, _field, true, prev_auto, _derive), do: {params, prev_auto}
 
   def autofill(params, field, false, _prev_auto, derive) do
@@ -15,6 +17,7 @@ defmodule NewtonWeb.Admin.FormHelpers do
   end
 
   @doc "Did LiveView mark `key` as untouched in this submission?"
+  @spec unused?(map(), String.t()) :: boolean()
   def unused?(params, key), do: Map.has_key?(params, "_unused_" <> key)
 
   @doc """
@@ -169,10 +172,10 @@ defmodule NewtonWeb.Admin.FormHelpers do
   no title: the placeholder title plus a `slug_prefix` or `slug_prefix-N` slug?
   Such a slug was never chosen by the author, so it keeps following the title.
   """
+  @spec placeholder_identity?(map(), String.t(), String.t()) :: boolean()
   def placeholder_identity?(%{title: title, slug: slug}, placeholder_title, slug_prefix)
       when is_binary(slug) do
-    title == placeholder_title and
-      (slug == slug_prefix or Regex.match?(~r/\A#{Regex.escape(slug_prefix)}-\d+\z/, slug))
+    title == placeholder_title and Newton.Slug.in_sequence?(slug, slug_prefix)
   end
 
   def placeholder_identity?(_record, _placeholder_title, _slug_prefix), do: false
@@ -181,6 +184,7 @@ defmodule NewtonWeb.Admin.FormHelpers do
   The form for a create the database refused. LiveView's `_unused_` markers are
   dropped so the errors render even on fields the author never touched.
   """
+  @spec failed_create_form(Ecto.Changeset.t()) :: Phoenix.HTML.Form.t()
   def failed_create_form(%Ecto.Changeset{} = changeset) do
     params = Map.reject(changeset.params || %{}, fn {key, _} -> unused_marker?(key) end)
 

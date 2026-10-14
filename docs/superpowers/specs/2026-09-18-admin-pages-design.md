@@ -228,7 +228,7 @@ Tests assert on outcomes and interactions, not static markup.
 - A generic polymorphic content abstraction, or a single shared `images` table
   (mirror tables + shared behavior chosen instead; revisit if a third
   image-owning content type appears).
-- Consolidating `Blog.ImageAudit`'s direct `media_root` access (unrelated).
+- Consolidating `Newton.Media.Audit`'s direct `media_root` access (unrelated).
 
 ## Changes since this spec
 

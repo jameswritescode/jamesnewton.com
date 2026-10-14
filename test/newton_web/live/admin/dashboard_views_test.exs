@@ -50,9 +50,9 @@ defmodule NewtonWeb.Admin.DashboardViewsTest do
 
     {:ok, view, _html} = live(conn, ~p"/admin")
 
-    assert has_element?(view, "#top-content", "The Top Post")
-    assert has_element?(view, "#top-content", "/posts/deleted-post")
-    refute has_element?(view, ~s(#top-content a[href="/posts/deleted-post"]))
+    assert has_element?(view, "#top-content-posts-top-post", "The Top Post")
+    assert has_element?(view, "#top-content-posts-deleted-post", "/posts/deleted-post")
+    refute has_element?(view, "#top-content-posts-deleted-post a")
   end
 
   test "top content ranks pages and posts together and skips section paths", %{conn: conn} do

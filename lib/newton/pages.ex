@@ -60,15 +60,12 @@ defmodule Newton.Pages do
   @doc "The first free slug in the untitled-page, untitled-page-2, … sequence."
   @spec next_untitled_slug() :: String.t()
   def next_untitled_slug do
-    taken =
-      Repo.all(from p in Page, where: like(p.slug, "untitled-page%"), select: p.slug)
-      |> MapSet.new()
-
-    Stream.iterate(1, &(&1 + 1))
-    |> Enum.find_value(fn n ->
-      slug = if n == 1, do: "untitled-page", else: "untitled-page-#{n}"
-      if slug not in taken, do: slug
-    end)
+    Repo.all(
+      from p in Page,
+        where: p.slug == "untitled-page" or like(p.slug, "untitled-page-%"),
+        select: p.slug
+    )
+    |> then(&Newton.Slug.first_free("untitled-page", &1))
   end
 
   @spec list_images(%Page{}) :: [%PageImage{}]

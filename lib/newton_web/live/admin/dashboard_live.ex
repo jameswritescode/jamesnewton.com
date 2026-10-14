@@ -62,7 +62,7 @@ defmodule NewtonWeb.Admin.DashboardLive do
             Top content — last 7 days
           </h2>
           <ol class="flex flex-col gap-3">
-            <li :for={item <- @top_content} id={"top-content-#{item.path}"}>
+            <li :for={item <- @top_content} id={"top-content-#{Newton.Slug.slugify(item.path)}"}>
               <div class="flex items-baseline justify-between gap-3">
                 <.link
                   :if={item.href}

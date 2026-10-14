@@ -5,7 +5,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias Newton.Blog.Post
   alias Newton.SocialCard
   alias Newton.Storage
-  alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.DraftEditor
   alias NewtonWeb.Admin.FormHelpers
@@ -19,7 +18,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   # reads them to tell an untouched blank from one the author cleared.
   # `published_at` is set from socket assigns, never from the client.
   @autosave_fields ~w(title slug excerpt body_markdown)
-  @autosave_keys Autosave.keys(@autosave_fields)
   @untitled_title "Untitled post"
   @untitled_slug_prefix "untitled-post"
 
@@ -129,10 +127,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:post, post)
     |> assign(:images, post_images(post))
     |> assign(:published_at, post.published_at)
-    |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), post))
-    |> assign(:slug_auto, post.slug || "")
-    |> assign(:excerpt_locked, DraftEditor.loaded_derived_locked?(draft(), post))
-    |> assign(:excerpt_auto, post.excerpt || "")
+    |> DraftEditor.assign_locks(draft(), post)
     |> assign(:save_state, :saved)
     |> assign(:autosave_params, nil)
     |> assign(:form, to_form(Blog.change_post(post)))
@@ -160,7 +155,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   @impl true
   def handle_event("validate", %{"post" => params} = payload, socket) do
-    {:noreply, apply_validate(socket, params, payload["_target"])}
+    {:noreply, DraftEditor.apply_validate(socket, draft(), params, payload["_target"])}
   end
 
   def handle_event("save", %{"post" => params}, socket) do
@@ -295,7 +290,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     if params["lock_version"] == to_string(socket.assigns.post.lock_version) do
       {:noreply,
        socket
-       |> apply_validate(params, nil)
+       |> DraftEditor.apply_validate(draft(), params, nil)
        |> assign(:editor_key, new_editor_key())}
     else
       {:noreply,
@@ -373,81 +368,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     socket
     |> assign(:form, FormHelpers.failed_create_form(changeset))
     |> assign(:save_state, :error)
-  end
-
-  defp apply_validate(socket, incoming, target) do
-    params = FormHelpers.keep_persisted_identity(incoming, socket.assigns.post)
-    published? = not is_nil(socket.assigns.published_at)
-
-    slug_locked =
-      FormHelpers.slug_locked?(
-        params,
-        socket.assigns.slug_locked,
-        socket.assigns.slug_auto,
-        published?,
-        target
-      )
-
-    excerpt_locked =
-      FormHelpers.derived_locked?(
-        params,
-        "excerpt",
-        socket.assigns.excerpt_locked,
-        socket.assigns.excerpt_auto,
-        target
-      )
-
-    {params, slug_auto} =
-      FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
-        FormHelpers.title_slug(
-          params["title"],
-          @untitled_title,
-          socket.assigns.post,
-          socket.assigns.slug_auto
-        )
-      end)
-
-    {params, excerpt_auto} =
-      FormHelpers.autofill(params, "excerpt", excerpt_locked, socket.assigns.excerpt_auto, fn ->
-        Newton.Markdown.excerpt(params["body_markdown"] || "")
-      end)
-
-    form =
-      socket.assigns.post
-      |> Blog.change_post(params)
-      |> Map.put(:action, :validate)
-      |> to_form()
-
-    socket
-    |> assign(:form, form)
-    |> FormHelpers.push_derived_refills(form, incoming, params, ~w(title slug excerpt)a)
-    |> assign(:slug_locked, slug_locked)
-    |> assign(:slug_auto, slug_auto)
-    |> assign(:excerpt_locked, excerpt_locked)
-    |> assign(:excerpt_auto, excerpt_auto)
-    |> track_save_state(params, published?)
-  end
-
-  defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, params, _published?) do
-    assign(socket, :autosave_params, Autosave.content_params(params, @autosave_keys))
-  end
-
-  defp track_save_state(socket, params, false), do: maybe_schedule_autosave(socket, params, true)
-
-  defp track_save_state(socket, params, true) do
-    dirty? = Autosave.dirty?(params, socket.assigns.post, @autosave_fields)
-    assign(socket, :save_state, if(dirty?, do: :unsaved, else: :saved))
-  end
-
-  defp maybe_schedule_autosave(socket, params, true) do
-    socket
-    |> assign(:autosave_params, Autosave.content_params(params, @autosave_keys))
-    |> assign(:save_state, :unsaved)
-    |> reschedule_autosave_timer()
-  end
-
-  defp reschedule_autosave_timer(socket) do
-    assign(socket, :autosave_timer, Autosave.schedule(socket.assigns.autosave_timer))
   end
 
   attr :id, :string, required: true

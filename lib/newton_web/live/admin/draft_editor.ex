@@ -9,9 +9,111 @@ defmodule NewtonWeb.Admin.DraftEditor do
   """
 
   import NewtonWeb.Helpers, only: [blank?: 1]
+  import Phoenix.Component, only: [assign: 3, to_form: 1]
 
+  alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.DraftEditor.Config
   alias NewtonWeb.Admin.FormHelpers
+
+  @doc "Assign the slug and derived-field lock state of a freshly loaded `record`."
+  @spec assign_locks(Phoenix.LiveView.Socket.t(), Config.t(), Config.draft()) ::
+          Phoenix.LiveView.Socket.t()
+  def assign_locks(socket, %Config{} = config, record) do
+    socket
+    |> assign(:slug_locked, loaded_slug_locked?(config, record))
+    |> assign(:slug_auto, record.slug || "")
+    |> assign(:derived_locked, loaded_derived_locked?(config, record))
+    |> assign(:derived_auto, Map.fetch!(record, config.derived_field) || "")
+  end
+
+  @doc """
+  Apply a form change: repair stale blank identity values, decide which derived
+  fields the author has taken over (`target` is the change's `"_target"`, nil
+  for a recovered form), autofill the rest, push refills the browser would
+  otherwise miss, and track the save state.
+  """
+  @spec apply_validate(Phoenix.LiveView.Socket.t(), Config.t(), map(), [String.t()] | nil) ::
+          Phoenix.LiveView.Socket.t()
+  def apply_validate(socket, %Config{} = config, incoming, target) do
+    record = record(socket, config)
+    derived = Atom.to_string(config.derived_field)
+    params = FormHelpers.keep_persisted_identity(incoming, record)
+    published? = config.editing_published?.(socket.assigns)
+
+    slug_locked =
+      FormHelpers.slug_locked?(
+        params,
+        socket.assigns.slug_locked,
+        socket.assigns.slug_auto,
+        published?,
+        target
+      )
+
+    derived_locked =
+      FormHelpers.derived_locked?(
+        params,
+        derived,
+        socket.assigns.derived_locked,
+        socket.assigns.derived_auto,
+        target
+      )
+
+    {params, slug_auto} =
+      FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
+        FormHelpers.title_slug(
+          params["title"],
+          config.placeholder_title,
+          record,
+          socket.assigns.slug_auto
+        )
+      end)
+
+    {params, derived_auto} =
+      FormHelpers.autofill(params, derived, derived_locked, socket.assigns.derived_auto, fn ->
+        Newton.Markdown.excerpt(params["body_markdown"] || "")
+      end)
+
+    form =
+      record
+      |> config.change.(params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    socket
+    |> assign(:form, form)
+    |> FormHelpers.push_derived_refills(form, incoming, params, [
+      :title,
+      :slug,
+      config.derived_field
+    ])
+    |> assign(:slug_locked, slug_locked)
+    |> assign(:slug_auto, slug_auto)
+    |> assign(:derived_locked, derived_locked)
+    |> assign(:derived_auto, derived_auto)
+    |> track_save_state(config, params, published?)
+  end
+
+  defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, config, params, _pub?) do
+    assign(socket, :autosave_params, autosave_params(config, params))
+  end
+
+  defp track_save_state(socket, config, params, true) do
+    dirty? = Autosave.dirty?(params, record(socket, config), config.autosave_fields)
+    assign(socket, :save_state, if(dirty?, do: :unsaved, else: :saved))
+  end
+
+  defp track_save_state(socket, config, params, false) do
+    socket
+    |> assign(:autosave_params, autosave_params(config, params))
+    |> assign(:save_state, :unsaved)
+    |> assign(:autosave_timer, Autosave.schedule(socket.assigns.autosave_timer))
+  end
+
+  defp autosave_params(config, params) do
+    Autosave.content_params(params, Autosave.keys(config.autosave_fields))
+  end
+
+  defp record(socket, %Config{record: key}), do: Map.fetch!(socket.assigns, key)
 
   @doc "Does `params` carry a title or a body, enough to create a record from?"
   @spec content?(map()) :: boolean()

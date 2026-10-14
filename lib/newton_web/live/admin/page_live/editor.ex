@@ -3,7 +3,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   alias Newton.Pages
   alias Newton.Pages.Page
-  alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.Components
   alias NewtonWeb.Admin.DraftEditor
   alias NewtonWeb.Admin.FormHelpers
@@ -16,7 +15,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   # from one the author cleared. `published` is never staged: it moves through
   # the drawer alone.
   @autosave_fields ~w(title slug meta_description body_markdown)
-  @autosave_keys Autosave.keys(@autosave_fields)
   @untitled_title "Untitled"
   @untitled_slug_prefix "untitled-page"
 
@@ -59,7 +57,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   @impl true
   def handle_event("validate", %{"page" => params} = payload, socket) do
-    {:noreply, apply_validate(socket, params, payload["_target"])}
+    {:noreply, DraftEditor.apply_validate(socket, draft(), params, payload["_target"])}
   end
 
   def handle_event("save", %{"page" => params}, socket) do
@@ -112,7 +110,10 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
   def handle_event("recover", %{"page" => params}, socket) do
     if params["lock_version"] == to_string(socket.assigns.page.lock_version) do
-      {:noreply, socket |> apply_validate(params, nil) |> assign(:editor_key, new_editor_key())}
+      {:noreply,
+       socket
+       |> DraftEditor.apply_validate(draft(), params, nil)
+       |> assign(:editor_key, new_editor_key())}
     else
       {:noreply,
        put_flash(socket, :info, "Updated in another window — showing the latest version.")}
@@ -148,10 +149,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     |> sync_editor_key(page.id)
     |> assign(:page_title, page_title)
     |> assign(:page, page)
-    |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), page))
-    |> assign(:slug_auto, page.slug || "")
-    |> assign(:meta_locked, DraftEditor.loaded_derived_locked?(draft(), page))
-    |> assign(:meta_auto, page.meta_description || "")
+    |> DraftEditor.assign_locks(draft(), page)
     |> assign(:save_state, :saved)
     |> assign(:autosave_params, nil)
     |> assign(:form, to_form(Pages.change_page(page)))
@@ -176,84 +174,6 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
-
-  defp apply_validate(socket, incoming, target) do
-    params = FormHelpers.keep_persisted_identity(incoming, socket.assigns.page)
-    published? = socket.assigns.page.published
-
-    slug_locked =
-      FormHelpers.slug_locked?(
-        params,
-        socket.assigns.slug_locked,
-        socket.assigns.slug_auto,
-        published?,
-        target
-      )
-
-    meta_locked =
-      FormHelpers.derived_locked?(
-        params,
-        "meta_description",
-        socket.assigns.meta_locked,
-        socket.assigns.meta_auto,
-        target
-      )
-
-    {params, slug_auto} =
-      FormHelpers.autofill(params, "slug", slug_locked, socket.assigns.slug_auto, fn ->
-        FormHelpers.title_slug(
-          params["title"],
-          @untitled_title,
-          socket.assigns.page,
-          socket.assigns.slug_auto
-        )
-      end)
-
-    {params, meta_auto} =
-      FormHelpers.autofill(
-        params,
-        "meta_description",
-        meta_locked,
-        socket.assigns.meta_auto,
-        fn -> Newton.Markdown.excerpt(params["body_markdown"] || "") end
-      )
-
-    form =
-      socket.assigns.page
-      |> Pages.change_page(params)
-      |> Map.put(:action, :validate)
-      |> to_form()
-
-    socket
-    |> assign(:form, form)
-    |> FormHelpers.push_derived_refills(
-      form,
-      incoming,
-      params,
-      ~w(title slug meta_description)a
-    )
-    |> assign(:slug_locked, slug_locked)
-    |> assign(:slug_auto, slug_auto)
-    |> assign(:meta_locked, meta_locked)
-    |> assign(:meta_auto, meta_auto)
-    |> track_save_state(params)
-  end
-
-  defp track_save_state(%{assigns: %{save_state: :conflict}} = socket, params) do
-    assign(socket, :autosave_params, Autosave.content_params(params, @autosave_keys))
-  end
-
-  defp track_save_state(%{assigns: %{page: %Page{published: true}}} = socket, params) do
-    dirty? = Autosave.dirty?(params, socket.assigns.page, @autosave_fields)
-    assign(socket, :save_state, if(dirty?, do: :unsaved, else: :saved))
-  end
-
-  defp track_save_state(socket, params) do
-    socket
-    |> assign(:autosave_params, Autosave.content_params(params, @autosave_keys))
-    |> assign(:save_state, :unsaved)
-    |> assign(:autosave_timer, Autosave.schedule(socket.assigns.autosave_timer))
-  end
 
   defp persist_autosave(socket, %Page{id: nil}, params) do
     if DraftEditor.content?(params) do

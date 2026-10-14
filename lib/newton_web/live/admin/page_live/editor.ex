@@ -362,13 +362,10 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp save(socket, %Page{id: nil}, params) do
-    case Pages.create_page(backfill_new(socket, params)) do
-      {:ok, page} ->
-        PublicationNotifier.notify_page_change(nil, page)
-        {:noreply, saved(socket)}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, FormHelpers.failed_create_form(changeset))}
+    if content?(params) do
+      create_saved(socket, params)
+    else
+      {:noreply, put_flash(socket, :error, "Add a title or body before saving")}
     end
   end
 
@@ -383,6 +380,17 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
+    end
+  end
+
+  defp create_saved(socket, params) do
+    case Pages.create_page(backfill_new(socket, params)) do
+      {:ok, page} ->
+        PublicationNotifier.notify_page_change(nil, page)
+        {:noreply, saved(socket)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :form, FormHelpers.failed_create_form(changeset))}
     end
   end
 

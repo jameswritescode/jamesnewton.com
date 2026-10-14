@@ -780,6 +780,40 @@ defmodule NewtonWeb.Admin.PageEditorLiveTest do
     end
   end
 
+  describe "saving a new page" do
+    test "with neither a title nor a body creates nothing and asks for content", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      view
+      |> form("#page-form", page: %{title: "", slug: "", body_markdown: ""})
+      |> render_submit()
+
+      assert Newton.Pages.list_pages() == []
+      assert has_element?(view, "#admin-flash-error", "Add a title or body before saving")
+      assert page_title(view) =~ "New page"
+    end
+
+    test "with only a title creates the draft", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      view
+      |> form("#page-form", page: %{title: "Only Title", slug: "", body_markdown: ""})
+      |> render_submit()
+
+      assert [%{title: "Only Title"}] = Newton.Pages.list_pages()
+    end
+
+    test "with only a body creates the draft", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
+
+      view
+      |> form("#page-form", page: %{title: "", slug: "", body_markdown: "Just a body."})
+      |> render_submit()
+
+      assert [%{body_markdown: "Just a body."}] = Newton.Pages.list_pages()
+    end
+  end
+
   test "publishing an empty new page creates nothing and asks for content", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/pages/new")
 

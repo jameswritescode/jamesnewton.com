@@ -589,17 +589,10 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp save(socket, %Post{id: nil}, params) do
-    case Blog.create_post(backfill_new(socket, params)) do
-      {:ok, post} ->
-        PublicationNotifier.notify_change(nil, post)
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Post saved")
-         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, FormHelpers.failed_create_form(changeset))}
+    if content?(params) do
+      create_saved(socket, params)
+    else
+      {:noreply, put_flash(socket, :error, "Add a title or body before saving")}
     end
   end
 
@@ -622,6 +615,21 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
+    end
+  end
+
+  defp create_saved(socket, params) do
+    case Blog.create_post(backfill_new(socket, params)) do
+      {:ok, post} ->
+        PublicationNotifier.notify_change(nil, post)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Post saved")
+         |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :form, FormHelpers.failed_create_form(changeset))}
     end
   end
 

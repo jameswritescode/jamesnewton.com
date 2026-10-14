@@ -1393,6 +1393,40 @@ defmodule NewtonWeb.Admin.PostEditorLiveTest do
     end
   end
 
+  describe "saving a new post" do
+    test "with neither a title nor a body creates nothing and asks for content", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      view
+      |> form("#post-form", post: %{title: "", slug: "", body_markdown: ""})
+      |> render_submit()
+
+      assert Newton.Blog.list_posts() == []
+      assert has_element?(view, "#admin-flash-error", "Add a title or body before saving")
+      assert page_title(view) =~ "New post"
+    end
+
+    test "with only a title creates the draft", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      view
+      |> form("#post-form", post: %{title: "Only Title", slug: "", body_markdown: ""})
+      |> render_submit()
+
+      assert [%{title: "Only Title"}] = Newton.Blog.list_posts()
+    end
+
+    test "with only a body creates the draft", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
+
+      view
+      |> form("#post-form", post: %{title: "", slug: "", body_markdown: "Just a body."})
+      |> render_submit()
+
+      assert [%{body_markdown: "Just a body."}] = Newton.Blog.list_posts()
+    end
+  end
+
   test "publishing an empty new post creates nothing and asks for content", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin/posts/new")
 

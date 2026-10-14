@@ -24,6 +24,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
       change: &Pages.change_page/2,
       create: &Pages.create_page/1,
       update: &Pages.update_page/2,
+      attach_image: &Pages.attach_image/3,
       autosave_fields: @autosave_fields,
       derived_field: :meta_description,
       placeholder_title: @untitled_title,
@@ -239,59 +240,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     |> push_navigate(to: ~p"/admin/pages")
   end
 
-  defp creation_failed(socket, changeset) do
-    socket
-    |> assign(:form, FormHelpers.failed_create_form(changeset))
-    |> assign(:save_state, :error)
-  end
-
-  defp handle_inline_upload(:inline_images, entry, socket) do
-    InlineImageUpload.handle_progress(entry, socket, %{
-      ensure: &ensure_page/1,
-      attach: &attach_image/3
-    })
-  end
-
-  # The first image dropped into an unsaved page needs a row to hang the ledger
-  # entry on, so it creates the draft and moves to its edit URL.
-  defp ensure_page(%{assigns: %{page: %Page{id: nil}}} = socket) do
-    case DraftEditor.create(socket, draft(), staged_content(socket)) do
-      {:ok, page} ->
-        socket =
-          socket
-          |> cancel_autosave()
-          |> DraftEditor.claim_record(page)
-          |> assign_page(page, "Edit page")
-          |> push_patch(to: ~p"/admin/pages/#{page.id}/edit")
-
-        {socket, page}
-
-      {:error, changeset} ->
-        {creation_failed(socket, changeset), socket.assigns.page}
-    end
-  end
-
-  defp ensure_page(socket), do: {socket, socket.assigns.page}
-
-  defp staged_content(socket) do
-    (socket.assigns.autosave_params || socket.assigns.form.source.params || %{})
-    |> Map.take(@autosave_fields)
-  end
-
-  defp cancel_autosave(socket) do
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-
-    socket
-    |> assign(:autosave_timer, nil)
-    |> assign(:autosave_params, nil)
-  end
-
-  defp attach_image(%Page{id: nil}, _key, _original_filename), do: :ok
-
-  defp attach_image(%Page{} = page, key, original_filename) do
-    Pages.attach_image(page, key, original_filename)
-    :ok
-  end
+  defp handle_inline_upload(:inline_images, entry, socket),
+    do: DraftEditor.upload_progress(entry, socket, draft())
 
   defp save_state_label(:unsaved), do: "Unsaved changes…"
   defp save_state_label(:error), do: "Couldn't save"

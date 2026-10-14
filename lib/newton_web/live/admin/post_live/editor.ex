@@ -27,6 +27,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       change: &Blog.change_post/2,
       create: &Blog.create_post/1,
       update: &Blog.update_post/2,
+      attach_image: &Blog.attach_image/3,
       autosave_fields: @autosave_fields,
       derived_field: :excerpt,
       placeholder_title: @untitled_title,
@@ -53,52 +54,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp handle_inline_upload(:inline_images, %{done?: false}, socket), do: {:noreply, socket}
 
   defp handle_inline_upload(:inline_images, entry, socket) do
-    {:noreply, socket} =
-      InlineImageUpload.handle_progress(entry, socket, %{
-        ensure: &ensure_post/1,
-        attach: &attach_image/3
-      })
+    {:noreply, socket} = DraftEditor.upload_progress(entry, socket, draft())
 
     {:noreply, assign(socket, :images, post_images(socket.assigns.post))}
-  end
-
-  defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
-    case DraftEditor.create(socket, draft(), staged_content(socket)) do
-      {:ok, post} ->
-        socket =
-          socket
-          |> cancel_autosave()
-          |> DraftEditor.claim_record(post)
-          |> assign_post(post, "Edit post")
-          |> push_patch(to: ~p"/admin/posts/#{post.id}/edit")
-
-        {socket, post}
-
-      {:error, changeset} ->
-        {creation_failed(socket, changeset), socket.assigns.post}
-    end
-  end
-
-  defp ensure_post(socket), do: {socket, socket.assigns.post}
-
-  defp staged_content(socket) do
-    (socket.assigns.autosave_params || socket.assigns.form.source.params || %{})
-    |> Map.take(@autosave_fields)
-  end
-
-  defp cancel_autosave(socket) do
-    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
-
-    socket
-    |> assign(:autosave_timer, nil)
-    |> assign(:autosave_params, nil)
-  end
-
-  defp attach_image(%Post{id: nil}, _key, _original_filename), do: :ok
-
-  defp attach_image(%Post{} = post, key, original_filename) do
-    Blog.attach_image(post, key, original_filename)
-    :ok
   end
 
   defp post_images(%Post{id: nil}), do: []
@@ -284,12 +242,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
 
   @impl true
   def handle_info(:autosave, socket), do: {:noreply, DraftEditor.autosave(socket, draft())}
-
-  defp creation_failed(socket, changeset) do
-    socket
-    |> assign(:form, FormHelpers.failed_create_form(changeset))
-    |> assign(:save_state, :error)
-  end
 
   attr :id, :string, required: true
   attr :event, :string, required: true

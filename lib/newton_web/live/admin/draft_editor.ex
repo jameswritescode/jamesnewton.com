@@ -15,6 +15,7 @@ defmodule NewtonWeb.Admin.DraftEditor do
   alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.DraftEditor.Config
   alias NewtonWeb.Admin.FormHelpers
+  alias NewtonWeb.Admin.InlineImageUpload
 
   @type socket :: Phoenix.LiveView.Socket.t()
 
@@ -134,6 +135,62 @@ defmodule NewtonWeb.Admin.DraftEditor do
       {:error, _changeset} ->
         assign(socket, :save_state, :error)
     end
+  end
+
+  @doc """
+  Handle progress on an inline image upload, recording a finished one on the
+  record's image ledger. The first image dropped into an unsaved record needs a
+  row to hang the ledger entry on, so it creates the draft and moves to its
+  edit URL.
+  """
+  @spec upload_progress(Phoenix.LiveView.UploadEntry.t(), socket(), Config.t()) ::
+          {:noreply, socket()}
+  def upload_progress(entry, socket, %Config{} = config) do
+    InlineImageUpload.handle_progress(entry, socket, %{
+      ensure: &ensure_record(&1, config),
+      attach: &attach_image(config, &1, &2, &3)
+    })
+  end
+
+  defp ensure_record(socket, config) do
+    case record(socket, config) do
+      %{id: nil} = unsaved ->
+        case create(socket, config, staged_content(socket, config)) do
+          {:ok, record} ->
+            socket =
+              socket
+              |> cancel_autosave()
+              |> created(config, record)
+
+            {socket, record}
+
+          {:error, changeset} ->
+            {creation_failed(socket, changeset), unsaved}
+        end
+
+      record ->
+        {socket, record}
+    end
+  end
+
+  defp attach_image(_config, %{id: nil}, _key, _original_filename), do: :ok
+
+  defp attach_image(config, record, key, original_filename) do
+    config.attach_image.(record, key, original_filename)
+    :ok
+  end
+
+  defp staged_content(socket, config) do
+    (socket.assigns.autosave_params || socket.assigns.form.source.params || %{})
+    |> Map.take(config.autosave_fields)
+  end
+
+  defp cancel_autosave(socket) do
+    if ref = socket.assigns.autosave_timer, do: Process.cancel_timer(ref)
+
+    socket
+    |> assign(:autosave_timer, nil)
+    |> assign(:autosave_params, nil)
   end
 
   defp creation_failed(socket, changeset) do

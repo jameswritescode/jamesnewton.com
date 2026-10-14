@@ -5,6 +5,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   alias Newton.Pages.Page
   alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.Components
+  alias NewtonWeb.Admin.DraftEditor
   alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
@@ -18,6 +19,25 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   @autosave_keys Autosave.keys(@autosave_fields)
   @untitled_title "Untitled"
   @untitled_slug_prefix "untitled-page"
+
+  defp draft do
+    %DraftEditor.Config{
+      record: :page,
+      change: &Pages.change_page/2,
+      create: &Pages.create_page/1,
+      update: &Pages.update_page/2,
+      autosave_fields: @autosave_fields,
+      derived_field: :meta_description,
+      placeholder_title: @untitled_title,
+      untitled_slug_prefix: @untitled_slug_prefix,
+      next_untitled_slug: &Pages.next_untitled_slug/0,
+      published?: & &1.published,
+      editing_published?: & &1.page.published,
+      notify: &PublicationNotifier.notify_page_change/2,
+      edit_path: fn page -> ~p"/admin/pages/#{page.id}/edit" end,
+      load_saved: &assign_page(&1, &2, "Edit page")
+    }
+  end
 
   @impl true
   def mount(_params, _session, socket) do
@@ -128,29 +148,13 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     |> sync_editor_key(page.id)
     |> assign(:page_title, page_title)
     |> assign(:page, page)
-    |> assign(:slug_locked, slug_locked?(page))
+    |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), page))
     |> assign(:slug_auto, page.slug || "")
-    |> assign(:meta_locked, meta_locked?(page))
+    |> assign(:meta_locked, DraftEditor.loaded_derived_locked?(draft(), page))
     |> assign(:meta_auto, page.meta_description || "")
     |> assign(:save_state, :saved)
     |> assign(:autosave_params, nil)
     |> assign(:form, to_form(Pages.change_page(page)))
-  end
-
-  # A published page locks its slug so existing links don't break.
-  defp slug_locked?(%Page{id: nil}), do: false
-
-  defp slug_locked?(%Page{} = page) do
-    page.published or
-      (page.slug != Newton.Slug.slugify(page.title || "") and
-         not FormHelpers.placeholder_identity?(page, @untitled_title, @untitled_slug_prefix))
-  end
-
-  defp meta_locked?(%Page{id: nil}), do: false
-
-  defp meta_locked?(%Page{} = page) do
-    not blank?(page.meta_description) and
-      page.meta_description != Newton.Markdown.excerpt(page.body_markdown || "")
   end
 
   # The body editor's DOM is phx-update="ignore", so patching to a DIFFERENT page
@@ -252,8 +256,8 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp persist_autosave(socket, %Page{id: nil}, params) do
-    if content?(params) do
-      case Pages.create_page(backfill_new(socket, params)) do
+    if DraftEditor.content?(params) do
+      case Pages.create_page(DraftEditor.backfill_new(socket, draft(), params)) do
         {:ok, page} ->
           PublicationNotifier.notify_page_change(nil, page)
 
@@ -273,7 +277,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp persist_autosave(socket, %Page{} = page, params) do
-    case Pages.update_page(page, never_blank_identity(params, page)) do
+    case Pages.update_page(page, DraftEditor.never_blank_identity(params, page)) do
       {:ok, updated} ->
         PublicationNotifier.notify_page_change(page, updated)
 
@@ -297,7 +301,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp publish(socket, %Page{id: nil}) do
     staged = Map.take(socket.assigns.form.source.params || %{}, @autosave_fields)
 
-    if content?(staged) do
+    if DraftEditor.content?(staged) do
       create_published(socket, staged)
     else
       put_flash(socket, :error, "Add a title or body before publishing")
@@ -309,7 +313,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   defp create_published(socket, staged) do
     attrs =
       socket
-      |> backfill_new(staged)
+      |> DraftEditor.backfill_new(draft(), staged)
       |> Map.put("published", true)
 
     case Pages.create_page(attrs) do
@@ -336,7 +340,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
 
         socket
         |> assign(:page, updated)
-        |> assign(:slug_locked, slug_locked?(updated))
+        |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), updated))
         |> put_flash(:info, if(published, do: "Page published", else: "Moved to draft"))
 
       {:error, :stale} ->
@@ -362,7 +366,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp save(socket, %Page{id: nil}, params) do
-    if content?(params) do
+    if DraftEditor.content?(params) do
       create_saved(socket, params)
     else
       {:noreply, put_flash(socket, :error, "Add a title or body before saving")}
@@ -384,7 +388,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   end
 
   defp create_saved(socket, params) do
-    case Pages.create_page(backfill_new(socket, params)) do
+    case Pages.create_page(DraftEditor.backfill_new(socket, draft(), params)) do
       {:ok, page} ->
         PublicationNotifier.notify_page_change(nil, page)
         {:noreply, saved(socket)}
@@ -410,33 +414,10 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
     |> assign(:save_state, :conflict)
   end
 
-  defp content?(params) do
-    not blank?(params["title"]) or not blank?(params["body_markdown"])
-  end
-
-  defp backfill_new(socket, params) do
-    FormHelpers.backfill_identity(
-      params,
-      socket.assigns.slug_locked,
-      @untitled_title,
-      &Pages.next_untitled_slug/0
-    )
-  end
-
   defp creation_failed(socket, changeset) do
     socket
     |> assign(:form, FormHelpers.failed_create_form(changeset))
     |> assign(:save_state, :error)
-  end
-
-  defp never_blank_identity(params, %Page{} = page) do
-    params
-    |> keep_existing("title", page.title)
-    |> keep_existing("slug", page.slug)
-  end
-
-  defp keep_existing(params, key, existing) do
-    if blank?(params[key]), do: Map.put(params, key, existing), else: params
   end
 
   defp handle_inline_upload(:inline_images, entry, socket) do
@@ -449,7 +430,7 @@ defmodule NewtonWeb.Admin.PageLive.Editor do
   # The first image dropped into an unsaved page needs a row to hang the ledger
   # entry on, so it creates the draft and moves to its edit URL.
   defp ensure_page(%{assigns: %{page: %Page{id: nil}}} = socket) do
-    case Pages.create_page(backfill_new(socket, staged_content(socket))) do
+    case Pages.create_page(DraftEditor.backfill_new(socket, draft(), staged_content(socket))) do
       {:ok, page} ->
         PublicationNotifier.notify_page_change(nil, page)
 

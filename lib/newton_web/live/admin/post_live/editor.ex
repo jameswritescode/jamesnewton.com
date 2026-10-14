@@ -7,6 +7,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   alias Newton.Storage
   alias NewtonWeb.Admin.Autosave
   alias NewtonWeb.Admin.Components
+  alias NewtonWeb.Admin.DraftEditor
   alias NewtonWeb.Admin.FormHelpers
   alias NewtonWeb.Admin.InlineImageUpload
   alias NewtonWeb.Admin.Layouts
@@ -21,6 +22,25 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   @autosave_keys Autosave.keys(@autosave_fields)
   @untitled_title "Untitled post"
   @untitled_slug_prefix "untitled-post"
+
+  defp draft do
+    %DraftEditor.Config{
+      record: :post,
+      change: &Blog.change_post/2,
+      create: &Blog.create_post/1,
+      update: &Blog.update_post/2,
+      autosave_fields: @autosave_fields,
+      derived_field: :excerpt,
+      placeholder_title: @untitled_title,
+      untitled_slug_prefix: @untitled_slug_prefix,
+      next_untitled_slug: &Blog.next_untitled_slug/0,
+      published?: &(not is_nil(&1.published_at)),
+      editing_published?: &(not is_nil(&1.published_at)),
+      notify: &PublicationNotifier.notify_change/2,
+      edit_path: fn post -> ~p"/admin/posts/#{post.id}/edit" end,
+      load_saved: &assign_post(&1, &2, "Edit post")
+    }
+  end
 
   @impl true
   def mount(_params, _session, socket) do
@@ -49,7 +69,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp ensure_post(%{assigns: %{post: %Post{id: nil}}} = socket) do
-    case Blog.create_post(backfill_new(socket, staged_content(socket))) do
+    case Blog.create_post(DraftEditor.backfill_new(socket, draft(), staged_content(socket))) do
       {:ok, post} ->
         PublicationNotifier.notify_change(nil, post)
 
@@ -109,9 +129,9 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
     |> assign(:post, post)
     |> assign(:images, post_images(post))
     |> assign(:published_at, post.published_at)
-    |> assign(:slug_locked, slug_locked?(post))
+    |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), post))
     |> assign(:slug_auto, post.slug || "")
-    |> assign(:excerpt_locked, excerpt_locked?(post))
+    |> assign(:excerpt_locked, DraftEditor.loaded_derived_locked?(draft(), post))
     |> assign(:excerpt_auto, post.excerpt || "")
     |> assign(:save_state, :saved)
     |> assign(:autosave_params, nil)
@@ -137,20 +157,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp new_editor_key, do: "ed#{System.unique_integer([:positive])}"
-
-  # Published posts lock the slug so existing links/SEO don't break.
-  defp slug_locked?(%Post{id: nil}), do: false
-
-  defp slug_locked?(post) do
-    not is_nil(post.published_at) or
-      (post.slug != Newton.Slug.slugify(post.title) and
-         not FormHelpers.placeholder_identity?(post, @untitled_title, @untitled_slug_prefix))
-  end
-
-  defp excerpt_locked?(post) do
-    not blank?(post.excerpt) and
-      post.excerpt != Newton.Markdown.excerpt(post.body_markdown || "")
-  end
 
   @impl true
   def handle_event("validate", %{"post" => params} = payload, socket) do
@@ -255,7 +261,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       fresh ->
         params = socket.assigns.autosave_params || %{}
 
-        case Blog.update_post(fresh, never_blank_identity(params, fresh)) do
+        case Blog.update_post(fresh, DraftEditor.never_blank_identity(params, fresh)) do
           {:ok, updated} ->
             PublicationNotifier.notify_change(fresh, updated)
 
@@ -323,8 +329,8 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp persist_autosave(socket, %Post{id: nil}, params) do
-    if content?(params) do
-      case Blog.create_post(backfill_new(socket, params)) do
+    if DraftEditor.content?(params) do
+      case Blog.create_post(DraftEditor.backfill_new(socket, draft(), params)) do
         {:ok, post} ->
           PublicationNotifier.notify_change(nil, post)
 
@@ -344,7 +350,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp persist_autosave(socket, %Post{} = post, params) do
-    case Blog.update_post(post, never_blank_identity(params, post)) do
+    case Blog.update_post(post, DraftEditor.never_blank_identity(params, post)) do
       {:ok, updated} ->
         PublicationNotifier.notify_change(post, updated)
 
@@ -361,29 +367,6 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
       {:error, _changeset} ->
         {:noreply, assign(socket, :save_state, :error)}
     end
-  end
-
-  defp content?(params) do
-    not blank?(params["title"]) or not blank?(params["body_markdown"])
-  end
-
-  defp never_blank_identity(params, post) do
-    params
-    |> keep_existing("title", post.title)
-    |> keep_existing("slug", post.slug)
-  end
-
-  defp keep_existing(params, key, existing) do
-    if blank?(params[key]), do: Map.put(params, key, existing), else: params
-  end
-
-  defp backfill_new(socket, params) do
-    FormHelpers.backfill_identity(
-      params,
-      socket.assigns.slug_locked,
-      @untitled_title,
-      &Blog.next_untitled_slug/0
-    )
   end
 
   defp creation_failed(socket, changeset) do
@@ -529,7 +512,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp publish_now(socket, %Post{id: nil}) do
     staged = Map.take(socket.assigns.form.source.params || %{}, @autosave_fields)
 
-    if content?(staged) do
+    if DraftEditor.content?(staged) do
       create_published(socket, staged)
     else
       put_flash(socket, :error, "Add a title or body before publishing")
@@ -542,7 +525,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   defp create_published(socket, staged) do
     attrs =
       socket
-      |> backfill_new(staged)
+      |> DraftEditor.backfill_new(draft(), staged)
       |> Map.put("published_at", DateTime.truncate(DateTime.utc_now(), :second))
 
     case Blog.create_post(attrs) do
@@ -552,7 +535,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
         socket
         |> assign(:post, post)
         |> assign(:published_at, post.published_at)
-        |> assign(:slug_locked, slug_locked?(post))
+        |> assign(:slug_locked, DraftEditor.loaded_slug_locked?(draft(), post))
         |> assign(:autosave_params, nil)
         |> assign(:save_state, :saved)
         |> assign(:editor_post_id, post.id)
@@ -589,7 +572,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp save(socket, %Post{id: nil}, params) do
-    if content?(params) do
+    if DraftEditor.content?(params) do
       create_saved(socket, params)
     else
       {:noreply, put_flash(socket, :error, "Add a title or body before saving")}
@@ -619,7 +602,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
   end
 
   defp create_saved(socket, params) do
-    case Blog.create_post(backfill_new(socket, params)) do
+    case Blog.create_post(DraftEditor.backfill_new(socket, draft(), params)) do
       {:ok, post} ->
         PublicationNotifier.notify_change(nil, post)
 

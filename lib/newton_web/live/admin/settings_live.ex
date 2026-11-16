@@ -258,7 +258,7 @@ defmodule NewtonWeb.Admin.SettingsLive do
           No passkeys yet. Your password still works as a sign-in method.
         </p>
 
-        <form phx-change="set_label" class="flex flex-col gap-3">
+        <form id="passkey-label-form" phx-change="set_label" class="flex flex-col gap-3">
           <Components.field
             type="text"
             name="new_label"

@@ -216,8 +216,20 @@ export const RippleCanvas = {
 
     // Honor prefers-reduced-motion: keep the dot matrix, drop the motion.
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const applyMotionPreference = () =>
+    // The Gibson takeover hides this canvas with CSS only; rAF keeps firing on
+    // a visibility:hidden canvas, so the loop has to be stopped explicitly.
+    const root = document.documentElement;
+    const takenOver = () => root.classList.contains("gibson-takeover");
+    const pauseAnimation = () => {
+      cancelAnimationFrame(this._raf);
+      this._raf = null;
+    };
+    const applyMotionPreference = () => {
+      if (takenOver()) return pauseAnimation();
       reduceMotion.matches ? stopAnimation() : startAnimation();
+    };
+    this._takeoverObserver = new MutationObserver(applyMotionPreference);
+    this._takeoverObserver.observe(root, { attributes: true, attributeFilter: ["class"] });
 
     this._reduceMotion = reduceMotion;
     this._onMotionChange = applyMotionPreference;
@@ -243,6 +255,7 @@ export const RippleCanvas = {
 
   destroyed() {
     cancelAnimationFrame(this._raf);
+    this._takeoverObserver.disconnect();
     window.removeEventListener("resize", this._onResize);
     window.removeEventListener("keydown", this._onKonami);
     document.removeEventListener("swup:content:replace", this._onSwupContent);

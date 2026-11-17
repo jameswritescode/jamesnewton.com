@@ -28,7 +28,7 @@ function mountWith({reduce}) {
   hook.el = canvas
   hook.mounted()
 
-  return {ctx, raf}
+  return {ctx, raf, hook}
 }
 
 describe("RippleCanvas + prefers-reduced-motion", () => {
@@ -43,6 +43,39 @@ describe("RippleCanvas + prefers-reduced-motion", () => {
     const {ctx, raf} = mountWith({reduce: true})
     expect(raf).not.toHaveBeenCalled()
     expect(ctx.arc).toHaveBeenCalled()
+  })
+})
+
+describe("RippleCanvas under the Gibson takeover", () => {
+  const root = document.documentElement
+  let mounted
+
+  afterEach(() => {
+    mounted.hook.destroyed()
+    root.classList.remove("gibson-takeover")
+    vi.unstubAllGlobals()
+  })
+
+  it("neither animates nor paints while the takeover hides the canvas", () => {
+    root.classList.add("gibson-takeover")
+    mounted = mountWith({reduce: false})
+    expect(mounted.raf).not.toHaveBeenCalled()
+    expect(mounted.ctx.arc).not.toHaveBeenCalled()
+  })
+
+  it("starts animating once the takeover releases the page", async () => {
+    root.classList.add("gibson-takeover")
+    mounted = mountWith({reduce: false})
+    root.classList.remove("gibson-takeover")
+    await vi.waitFor(() => expect(mounted.raf).toHaveBeenCalled())
+  })
+
+  it("stops animating when a takeover begins", async () => {
+    const cancel = vi.fn()
+    mounted = mountWith({reduce: false})
+    vi.stubGlobal("cancelAnimationFrame", cancel)
+    root.classList.add("gibson-takeover")
+    await vi.waitFor(() => expect(cancel).toHaveBeenCalledWith(1))
   })
 })
 

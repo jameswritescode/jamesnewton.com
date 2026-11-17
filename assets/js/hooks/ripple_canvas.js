@@ -42,7 +42,18 @@ export const RippleCanvas = {
     const FROWN_EYE_INFLUENCE = DOT_SPACING * 2.8, FROWN_MOUTH_INFLUENCE = DOT_SPACING * 1.7;
     const FROWN_PEAK = 0.9, FROWN_PERIOD = 3500;
 
+    // The ripple takes 8s to cross the screen; above ~60fps is wasted work on
+    // high-refresh displays. The slack keeps a 60Hz display from skipping.
+    const MIN_FRAME_MS = 1000 / 60 - 1.5;
+    const OPACITY_EPSILON = 1e-5;
+    const DOT_CELL = 3;
+
     let width, height, cols, rows, maxDist;
+    let theme = null;
+    let painted = new Float64Array(0);
+    let changedDots = new Uint32Array(0);
+    let stale = true;
+    let lastDrawAt = -Infinity;
     let frown = null;
     const ripples = [];
     const blooms = [];
@@ -59,12 +70,26 @@ export const RippleCanvas = {
       frown = document.querySelector("[data-frown]") ? frownPoints(width, height) : null;
     };
 
+    const readTheme = () => {
+      const style = getComputedStyle(document.documentElement);
+      theme = {
+        bg: style.getPropertyValue("--bg").trim(),
+        dot: style.getPropertyValue("--dot").trim(),
+        baseOpacity: parseFloat(style.getPropertyValue("--dot-base-opacity").trim()) || BASE_OPACITY,
+        ripplePeakOpacity: parseFloat(style.getPropertyValue("--ripple-peak-opacity").trim()) || RIPPLE_PEAK_OPACITY,
+      };
+    };
+
     const resize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
       cols = Math.ceil(width / DOT_SPACING) + 1;
       rows = Math.ceil(height / DOT_SPACING) + 1;
       maxDist = Math.sqrt(width * width + height * height);
+      painted = new Float64Array(cols * rows);
+      changedDots = new Uint32Array(cols * rows);
+      stale = true;
+      readTheme();
       updateFrown();
     };
     // Extra opacity for dots near the frown's features. `amp` (0..1) is the
@@ -89,82 +114,116 @@ export const RippleCanvas = {
     const spawnRipple = (t) => ripples.push({ originX: Math.random()*width, originY: Math.random()*height, startTime: t });
     const spawnBloom = (t) => { blooms.push({ centerX: Math.random()*width, centerY: Math.random()*height, startTime: t }); lastBloomSpawn = t; };
 
-    const draw = (timestamp) => {
-      const style = getComputedStyle(document.documentElement);
-      const bg = style.getPropertyValue("--bg").trim();
-      const dot = style.getPropertyValue("--dot").trim();
-      const baseOpacity = parseFloat(style.getPropertyValue("--dot-base-opacity").trim()) || BASE_OPACITY;
-      const ripplePeakOpacity = parseFloat(style.getPropertyValue("--ripple-peak-opacity").trim()) || RIPPLE_PEAK_OPACITY;
-
+    const paintBackdrop = () => {
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = bg;
+      ctx.fillStyle = theme.bg;
       ctx.fillRect(0, 0, width, height);
+    };
 
-      if (konamiMode) {
-        for (let i = blooms.length - 1; i >= 0; i--) {
-          if (timestamp - blooms[i].startTime >= BLOOM_DURATION) blooms.splice(i, 1);
-        }
-        if (timestamp - lastBloomSpawn >= BLOOM_SPAWN_INTERVAL) spawnBloom(timestamp);
-        const activeBlooms = blooms.map((b) => {
-          const t01 = (timestamp - b.startTime) / BLOOM_DURATION;
-          const s = Math.sin(Math.PI * t01);
-          return { x: b.centerX, y: b.centerY, intensity: s * s };
-        });
-        const bloomSigmaSq2 = 2 * BLOOM_SIGMA * BLOOM_SIGMA;
-        const bloomCutoffSq = (BLOOM_SIGMA * 3) * (BLOOM_SIGMA * 3);
-        const alphaSpan = BLOOM_PEAK_ALPHA - BLOOM_BASE_ALPHA;
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < cols; col++) {
-            const x = col * DOT_SPACING, y = row * DOT_SPACING;
-            let boost = 0;
-            for (const b of activeBlooms) {
-              const dx = x - b.x, dy = y - b.y, distSq = dx*dx + dy*dy;
-              if (distSq > bloomCutoffSq) continue;
-              boost += b.intensity * Math.exp(-distSq / bloomSigmaSq2);
-            }
-            if (boost > 1) boost = 1;
-            const alpha = BLOOM_BASE_ALPHA + alphaSpan * boost;
-            const hue = (col * 47 + row * 137) % 360;
-            ctx.beginPath();
-            ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${hue}, 90%, 60%, ${alpha})`;
-            ctx.fill();
+    const drawBlooms = (timestamp) => {
+      paintBackdrop();
+      stale = true;
+      for (let i = blooms.length - 1; i >= 0; i--) {
+        if (timestamp - blooms[i].startTime >= BLOOM_DURATION) blooms.splice(i, 1);
+      }
+      if (timestamp - lastBloomSpawn >= BLOOM_SPAWN_INTERVAL) spawnBloom(timestamp);
+      const activeBlooms = blooms.map((b) => {
+        const t01 = (timestamp - b.startTime) / BLOOM_DURATION;
+        const s = Math.sin(Math.PI * t01);
+        return { x: b.centerX, y: b.centerY, intensity: s * s };
+      });
+      const bloomSigmaSq2 = 2 * BLOOM_SIGMA * BLOOM_SIGMA;
+      const bloomCutoffSq = (BLOOM_SIGMA * 3) * (BLOOM_SIGMA * 3);
+      const alphaSpan = BLOOM_PEAK_ALPHA - BLOOM_BASE_ALPHA;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = col * DOT_SPACING, y = row * DOT_SPACING;
+          let boost = 0;
+          for (const b of activeBlooms) {
+            const dx = x - b.x, dy = y - b.y, distSq = dx*dx + dy*dy;
+            if (distSq > bloomCutoffSq) continue;
+            boost += b.intensity * Math.exp(-distSq / bloomSigmaSq2);
           }
-        }
-      } else {
-        for (let i = ripples.length - 1; i >= 0; i--) {
-          if ((timestamp - ripples[i].startTime) / CYCLE_DURATION >= 1) ripples.splice(i, 1);
-        }
-        if (ripples.length === 0) spawnRipple(timestamp);
-        const active = ripples.map((r) => ({
-          originX: r.originX, originY: r.originY,
-          rippleRadius: Math.min((timestamp - r.startTime) / CYCLE_DURATION, 1) * (maxDist + RIPPLE_WIDTH),
-        }));
-        const sigmaSq2 = 2 * (RIPPLE_WIDTH / 3) * (RIPPLE_WIDTH / 3);
-        const halfWidth = RIPPLE_WIDTH / 2;
-        const frownAmp = 0.7 + 0.3 * Math.sin((timestamp / FROWN_PERIOD) * 2 * Math.PI);
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < cols; col++) {
-            const x = col * DOT_SPACING, y = row * DOT_SPACING;
-            let totalEffect = 0, behindAny = false;
-            for (const r of active) {
-              const dx = x - r.originX, dy = y - r.originY, dist = Math.sqrt(dx*dx + dy*dy);
-              if (dist > r.rippleRadius + halfWidth) continue;
-              behindAny = true;
-              const distFromRing = Math.abs(dist - r.rippleRadius);
-              totalEffect += Math.exp(-(distFromRing * distFromRing) / sigmaSq2);
-            }
-            const combinedEffect = totalEffect > 1 ? 1 : totalEffect;
-            const opacity = behindAny ? baseOpacity + (ripplePeakOpacity - baseOpacity) * combinedEffect : baseOpacity;
-            const finalOpacity = Math.min(1, opacity + FROWN_PEAK * frownBoost(x, y, frownAmp));
-            ctx.beginPath();
-            ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${dot}, ${finalOpacity})`;
-            ctx.fill();
-          }
+          if (boost > 1) boost = 1;
+          const alpha = BLOOM_BASE_ALPHA + alphaSpan * boost;
+          const hue = (col * 47 + row * 137) % 360;
+          ctx.beginPath();
+          ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${hue}, 90%, 60%, ${alpha})`;
+          ctx.fill();
         }
       }
+    };
+
+    // The canvas keeps its pixels between frames: only dots whose opacity
+    // moved since they were last painted are redrawn, each inside its own
+    // cell so the result matches a full clear-and-redraw exactly.
+    const drawRipples = (timestamp) => {
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        if ((timestamp - ripples[i].startTime) / CYCLE_DURATION >= 1) ripples.splice(i, 1);
+      }
+      if (ripples.length === 0) spawnRipple(timestamp);
+      const active = ripples.map((r) => ({
+        originX: r.originX, originY: r.originY,
+        rippleRadius: Math.min((timestamp - r.startTime) / CYCLE_DURATION, 1) * (maxDist + RIPPLE_WIDTH),
+      }));
+      const { baseOpacity, ripplePeakOpacity } = theme;
+      const sigmaSq2 = 2 * (RIPPLE_WIDTH / 3) * (RIPPLE_WIDTH / 3);
+      const halfWidth = RIPPLE_WIDTH / 2;
+      const frownAmp = 0.7 + 0.3 * Math.sin((timestamp / FROWN_PERIOD) * 2 * Math.PI);
+
+      if (stale) painted.fill(NaN);
+      let changed = 0;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = col * DOT_SPACING, y = row * DOT_SPACING;
+          let totalEffect = 0, behindAny = false;
+          for (const r of active) {
+            const dx = x - r.originX, dy = y - r.originY, dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > r.rippleRadius + halfWidth) continue;
+            behindAny = true;
+            const distFromRing = Math.abs(dist - r.rippleRadius);
+            totalEffect += Math.exp(-(distFromRing * distFromRing) / sigmaSq2);
+          }
+          const combinedEffect = totalEffect > 1 ? 1 : totalEffect;
+          const opacity = behindAny ? baseOpacity + (ripplePeakOpacity - baseOpacity) * combinedEffect : baseOpacity;
+          const finalOpacity = Math.min(1, opacity + FROWN_PEAK * frownBoost(x, y, frownAmp));
+          const idx = row * cols + col;
+          if (Math.abs(finalOpacity - painted[idx]) < OPACITY_EPSILON) continue;
+          painted[idx] = finalOpacity;
+          changedDots[changed++] = idx;
+        }
+      }
+
+      if (stale) {
+        paintBackdrop();
+        stale = false;
+      } else {
+        for (let i = 0; i < changed; i++) {
+          const idx = changedDots[i];
+          ctx.clearRect((idx % cols) * DOT_SPACING - DOT_CELL, Math.floor(idx / cols) * DOT_SPACING - DOT_CELL, DOT_CELL * 2, DOT_CELL * 2);
+        }
+        ctx.fillStyle = theme.bg;
+        for (let i = 0; i < changed; i++) {
+          const idx = changedDots[i];
+          ctx.fillRect((idx % cols) * DOT_SPACING - DOT_CELL, Math.floor(idx / cols) * DOT_SPACING - DOT_CELL, DOT_CELL * 2, DOT_CELL * 2);
+        }
+      }
+      for (let i = 0; i < changed; i++) {
+        const idx = changedDots[i];
+        ctx.beginPath();
+        ctx.arc((idx % cols) * DOT_SPACING, Math.floor(idx / cols) * DOT_SPACING, DOT_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${theme.dot}, ${painted[idx]})`;
+        ctx.fill();
+      }
+    };
+
+    const draw = (timestamp) => {
       this._raf = requestAnimationFrame(draw);
+      if (timestamp - lastDrawAt < MIN_FRAME_MS) return;
+      lastDrawAt = timestamp;
+      if (konamiMode) drawBlooms(timestamp);
+      else drawRipples(timestamp);
     };
 
     this._onKonami = (event) => {
@@ -183,22 +242,15 @@ export const RippleCanvas = {
     };
     // Paint the dot matrix once, with no ripple and no animation loop.
     const renderStatic = () => {
-      const style = getComputedStyle(document.documentElement);
-      const bg = style.getPropertyValue("--bg").trim();
-      const dot = style.getPropertyValue("--dot").trim();
-      const baseOpacity =
-        parseFloat(style.getPropertyValue("--dot-base-opacity").trim()) || BASE_OPACITY;
-
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, width, height);
+      paintBackdrop();
+      stale = true;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           const x = col * DOT_SPACING, y = row * DOT_SPACING;
-          const opacity = Math.min(1, baseOpacity + FROWN_PEAK * frownBoost(x, y, 1));
+          const opacity = Math.min(1, theme.baseOpacity + FROWN_PEAK * frownBoost(x, y, 1));
           ctx.beginPath();
           ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${dot}, ${opacity})`;
+          ctx.fillStyle = `rgba(${theme.dot}, ${opacity})`;
           ctx.fill();
         }
       }
@@ -206,6 +258,7 @@ export const RippleCanvas = {
 
     const startAnimation = () => {
       cancelAnimationFrame(this._raf);
+      lastDrawAt = -Infinity;
       this._raf = requestAnimationFrame(draw);
     };
     const stopAnimation = () => {

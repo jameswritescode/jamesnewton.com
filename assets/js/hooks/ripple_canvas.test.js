@@ -46,6 +46,57 @@ describe("RippleCanvas + prefers-reduced-motion", () => {
   })
 })
 
+describe("RippleCanvas animation cost", () => {
+  let mounted
+  const frame = (at) => mounted.raf.mock.calls.at(-1)[0](at)
+
+  afterEach(() => {
+    mounted.hook.destroyed()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it("paints every dot on the first frame", () => {
+    mounted = mountWith({reduce: false})
+    frame(1000)
+    const cols = Math.ceil(window.innerWidth / 20) + 1
+    const rows = Math.ceil(window.innerHeight / 20) + 1
+    expect(mounted.ctx.arc).toHaveBeenCalledTimes(cols * rows)
+  })
+
+  it("repaints only the dots the ripple changed on later frames", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5)
+    mounted = mountWith({reduce: false})
+    frame(1000)
+    const all = mounted.ctx.arc.mock.calls.length
+    frame(1500)
+    const repainted = mounted.ctx.arc.mock.calls.length - all
+    expect(repainted).toBeGreaterThan(0)
+    expect(repainted).toBeLessThan(all / 4)
+  })
+
+  it("skips frames that arrive faster than 60fps", () => {
+    mounted = mountWith({reduce: false})
+    frame(1000)
+    const drawn = mounted.ctx.arc.mock.calls.length
+    frame(1004)
+    frame(1008)
+    expect(mounted.ctx.arc.mock.calls.length).toBe(drawn)
+    frame(1017)
+    expect(mounted.ctx.arc.mock.calls.length).toBeGreaterThan(drawn)
+  })
+
+  it("reads the theme colours once, not on every frame", () => {
+    const computed = vi.spyOn(window, "getComputedStyle")
+    mounted = mountWith({reduce: false})
+    const atMount = computed.mock.calls.length
+    frame(1000)
+    frame(1100)
+    frame(1200)
+    expect(computed.mock.calls.length).toBe(atMount)
+  })
+})
+
 describe("RippleCanvas under the Gibson takeover", () => {
   const root = document.documentElement
   let mounted

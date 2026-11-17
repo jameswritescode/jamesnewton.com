@@ -102,8 +102,18 @@ defmodule NewtonWeb.Admin.SettingsLiveTest do
     {:ok, view, html} = live(conn, ~p"/admin/settings")
     assert html =~ "Recovery codes"
 
-    html = view |> element("button", "Generate recovery codes") |> render_click()
-    assert length(Regex.scan(~r/[A-Z0-9]{5}-[A-Z0-9]{5}/, html)) == 10
+    view |> element("button", "Generate recovery codes") |> render_click()
+
+    shown_codes =
+      view
+      |> element("#recovery-codes")
+      |> render()
+      |> LazyHTML.from_fragment()
+      |> LazyHTML.query("span")
+      |> Enum.map(&LazyHTML.text/1)
+
+    assert length(shown_codes) == 10
+    assert Enum.all?(shown_codes, &(&1 =~ ~r/^[A-Z0-9]{5}-[A-Z0-9]{5}$/))
     assert Newton.Accounts.count_unused_recovery_codes(user) == 10
 
     # the button now offers to regenerate

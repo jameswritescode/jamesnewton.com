@@ -706,8 +706,7 @@ defmodule NewtonWeb.Admin.PostLive.Editor do
             <span
               :if={saving?(@published_at, @save_state)}
               class="size-3 animate-spin rounded-full border-2 border-white/40 border-t-white"
-            >
-            </span>
+            ></span>
             {if saving?(@published_at, @save_state), do: "Saving…", else: "Save"}
           </Components.button>
         </div>

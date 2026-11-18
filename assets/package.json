@@ -6,7 +6,7 @@
   },
   "devDependencies": {
     "fontkit": "^2.0.4",
-    "jsdom": "^30.0.1",
+    "jsdom": "^31.0.1",
     "png-to-ico": "^3.0.2",
     "sharp": "^0.35.5",
     "vitest": "^5.0.0"
